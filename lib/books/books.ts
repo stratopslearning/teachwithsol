@@ -20,7 +20,7 @@ import {
   MAX_BOOK_UPLOAD_BYTES,
 } from '@/lib/books/constants';
 import { countTopLevelChapters } from '@/lib/books/hierarchy';
-import { processBook, processBookFromBuffer } from '@/lib/books/process';
+import { processBookFromBuffer } from '@/lib/books/process';
 import { scheduleBookProcess } from '@/lib/books/scheduleProcess';
 import type {
   BookChapterSummary,
@@ -455,8 +455,8 @@ export async function completeBookDirectUpload(
     throw ApiError.badRequest('Uploaded file size does not match — try again');
   }
 
-  await processBook(book.id);
-
+  // Do not parse EPUB/PDF inline — large books exceed the platform gateway
+  // timeout (504 on /direct-upload complete). Queue Inngest/after() instead.
   await logAudit({
     actorUserId: user.id,
     actorClerkId: user.clerkId,
@@ -468,27 +468,14 @@ export async function completeBookDirectUpload(
       sourceKind: book.sourceKind,
       byteSize: head.contentLength,
       directUpload: true,
+      queued: true,
     },
     ip: audit?.ip ?? null,
     userAgent: audit?.userAgent ?? null,
   });
 
-  const refreshed = await fetchHostedBookByIdDefiner(book.id);
-  const toc = (await fetchBookChaptersTocForCourseDefiner(book.courseId)).filter(
-    (ch) => ch.bookId === book.id,
-  );
-
-  if (refreshed?.status === 'FAILED') {
-    throw ApiError.badRequest(
-      refreshed.errorMessage || 'Could not parse book file',
-    );
-  }
-
-  const resolvedTitle = refreshed?.title ?? book.title;
-  return toSummary(
-    refreshed ?? book,
-    countTopLevelChapters(toc, resolvedTitle),
-  );
+  scheduleBookProcess(book.id, await getCourseWorkspaceId(book.courseId));
+  return toSummary(book, 0);
 }
 
 /** Re-queue parse so chapters get sanitized HTML (and refreshed markdown). */

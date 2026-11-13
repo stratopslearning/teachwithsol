@@ -473,9 +473,13 @@ export default function KnowledgeClient({
         return;
       }
       toast.success(
-        activeCourseTitle
-          ? `Book uploaded for ${activeCourseTitle}`
-          : "Book uploaded",
+        result.book?.status === "READY"
+          ? activeCourseTitle
+            ? `Book uploaded for ${activeCourseTitle}`
+            : "Book uploaded"
+          : activeCourseTitle
+            ? `Book queued for ${activeCourseTitle} — chapters appear when ready`
+            : "Book queued — chapters appear when ready",
       );
       clearBookFile();
       setBookTitle("");

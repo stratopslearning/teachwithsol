@@ -98,6 +98,7 @@ const FilePenLineIcon = forwardRef<FilePenLineIconHandle, FilePenLineIconProps>(
           <motion.path
             animate={controls}
             d="M8 18h1"
+            initial="normal"
             transition={{ duration: 0.5 }}
             variants={{
               normal: { d: "M8 18h1" },

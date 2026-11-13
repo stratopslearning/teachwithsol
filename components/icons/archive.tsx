@@ -114,11 +114,13 @@ const ArchiveIcon = forwardRef<ArchiveIconHandle, ArchiveIconProps>(
           <motion.path
             animate={controls}
             d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"
+            initial="normal"
             variants={PATH_VARIANTS}
           />
           <motion.path
             animate={controls}
             d="M10 12h4"
+            initial="normal"
             variants={SECONDARY_PATH_VARIANTS}
           />
         </svg>

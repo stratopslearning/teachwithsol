@@ -94,11 +94,13 @@ const ArrowDownIcon = forwardRef<ArrowDownIconHandle, ArrowDownIconProps>(
           <motion.path
             animate={controls}
             d="m19 12-7 7-7-7"
+            initial="normal"
             variants={PATH_VARIANTS}
           />
           <motion.path
             animate={controls}
             d="M12 5v14"
+            initial="normal"
             variants={SECOND_PATH_VARIANTS}
           />
         </svg>
