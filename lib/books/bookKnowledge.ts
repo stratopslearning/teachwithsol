@@ -1,14 +1,15 @@
-import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-import {
-  bookChapters,
-  courseMaterialChunks,
-  courseMaterials,
-  hostedBooks,
-} from '@/app/db/schema';
+import { bookChapters, hostedBooks } from '@/app/db/schema';
 import { indexBookAsMaterial } from '@/lib/books/indexChapterMaterial';
 import type { ParsedChapter } from '@/lib/books/types';
+import { fetchHostedBookByIdDefiner } from '@/lib/db/bookWriteDefiners';
+import {
+  fetchBookChaptersForRagDefiner,
+  setBookChaptersMaterialDefiner,
+  softDeleteCourseMaterialsDefiner,
+} from '@/lib/db/knowledgeJobDefiners';
 
 /** Soft-delete Knowledge materials + chunks (book-linked RAG rows). */
 export async function softDeleteLinkedMaterials(
@@ -16,15 +17,7 @@ export async function softDeleteLinkedMaterials(
 ): Promise<void> {
   const ids = [...new Set(materialIds.filter(Boolean))];
   if (ids.length === 0) return;
-  const now = new Date();
-  await db
-    .update(courseMaterials)
-    .set({ deletedAt: now, updatedAt: now })
-    .where(inArray(courseMaterials.id, ids));
-  await db
-    .update(courseMaterialChunks)
-    .set({ deletedAt: now })
-    .where(inArray(courseMaterialChunks.materialId, ids));
+  await softDeleteCourseMaterialsDefiner(ids);
 }
 
 /** Build one RAG markdown body from ordered chapters. */
@@ -91,15 +84,17 @@ export async function indexBookChaptersAsSingleMaterial(opts: {
     })),
   );
 
-  if (markdown.length < 20) return null;
+  if (markdown.length < 200) return null;
 
   try {
-    return await indexBookAsMaterial({
+    const materialId = await indexBookAsMaterial({
       courseId: opts.courseId,
       uploadedByUserId: opts.uploadedByUserId,
       title: opts.bookTitle.slice(0, 200),
       markdown,
     });
+    await setBookChaptersMaterialDefiner(opts.bookId, materialId);
+    return materialId;
   } catch (err) {
     console.warn('[indexBookChaptersAsSingleMaterial] failed', {
       bookId: opts.bookId,
@@ -116,18 +111,12 @@ export async function indexBookChaptersAsSingleMaterial(opts: {
 export async function consolidateBookKnowledge(
   bookId: string,
 ): Promise<{ consolidated: boolean }> {
-  const book = await db.query.hostedBooks.findFirst({
-    where: and(eq(hostedBooks.id, bookId), isNull(hostedBooks.deletedAt)),
-  });
-  if (!book || book.status !== 'READY') return { consolidated: false };
+  const book = await fetchHostedBookByIdDefiner(bookId);
+  if (!book || book.status !== 'READY') {
+    return { consolidated: false };
+  }
 
-  const chapters = await db.query.bookChapters.findMany({
-    where: and(
-      eq(bookChapters.bookId, bookId),
-      isNull(bookChapters.deletedAt),
-    ),
-    orderBy: (c, { asc }) => [asc(c.position)],
-  });
+  const chapters = await fetchBookChaptersForRagDefiner(bookId);
   if (chapters.length === 0) return { consolidated: false };
 
   const distinct = new Set(
@@ -137,7 +126,7 @@ export async function consolidateBookKnowledge(
   );
   if (distinct.size <= 1) return { consolidated: false };
 
-  const materialId = await indexBookChaptersAsSingleMaterial({
+  await indexBookChaptersAsSingleMaterial({
     bookId: book.id,
     courseId: book.courseId,
     uploadedByUserId: book.createdByUserId,
@@ -146,14 +135,43 @@ export async function consolidateBookKnowledge(
     priorMaterialIds: [...distinct],
   });
 
-  await db
-    .update(bookChapters)
-    .set({ materialId, updatedAt: new Date() })
-    .where(
-      and(eq(bookChapters.bookId, bookId), isNull(bookChapters.deletedAt)),
-    );
-
   return { consolidated: true };
+}
+
+/**
+ * Index (or re-index) Knowledge RAG for a READY book that has chapters but no
+ * usable linked material — e.g. after a prior RLS failure during import.
+ */
+export async function ensureBookKnowledgeIndexed(
+  bookId: string,
+  opts?: { force?: boolean },
+): Promise<{ materialId: string | null; indexed: boolean }> {
+  const book = await fetchHostedBookByIdDefiner(bookId);
+  if (!book || book.status !== 'READY') {
+    return { materialId: null, indexed: false };
+  }
+
+  const chapters = await fetchBookChaptersForRagDefiner(bookId);
+  if (chapters.length === 0) return { materialId: null, indexed: false };
+
+  const linked = chapters
+    .map((c) => c.materialId)
+    .filter((id): id is string => id != null);
+  const distinct = [...new Set(linked)];
+  if (!opts?.force && distinct.length === 1) {
+    return { materialId: distinct[0]!, indexed: false };
+  }
+
+  const materialId = await indexBookChaptersAsSingleMaterial({
+    bookId: book.id,
+    courseId: book.courseId,
+    uploadedByUserId: book.createdByUserId,
+    bookTitle: book.title,
+    chapters,
+    priorMaterialIds: distinct,
+  });
+
+  return { materialId, indexed: materialId != null };
 }
 
 /**

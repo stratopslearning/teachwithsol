@@ -174,3 +174,122 @@ export async function updateKnowledgeConnectorDefiner(
   if (!parsed?.id) throw new Error('sol_update_knowledge_connector returned no row');
   return parsed;
 }
+
+export type CreatedCourseMaterial = {
+  id: string;
+  courseId: string;
+  tenantId: string | null;
+  status: string;
+};
+
+export async function createCourseMaterialDefiner(payload: {
+  courseId: string;
+  uploadedByUserId: string;
+  title: string;
+  sourceType?: 'UPLOAD' | 'URL';
+  mimeType?: string | null;
+  byteSize?: number | null;
+  status?: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED';
+}): Promise<CreatedCourseMaterial> {
+  const result = await db.execute(sql`
+    SELECT sol_create_course_material(${JSON.stringify(payload)}::jsonb) AS row
+  `);
+  const raw = parseJsonb<Record<string, unknown>>(
+    rowsFromExecute<{ row: unknown }>(result)[0]?.row,
+  );
+  if (!raw?.id) throw new Error('sol_create_course_material returned no row');
+  return {
+    id: String(raw.id),
+    courseId: String(raw.course_id ?? raw.courseId ?? payload.courseId),
+    tenantId: raw.tenant_id
+      ? String(raw.tenant_id)
+      : raw.tenantId
+        ? String(raw.tenantId)
+        : null,
+    status: String(raw.status ?? payload.status ?? 'PROCESSING'),
+  };
+}
+
+export async function insertCourseMaterialChunksDefiner(payload: {
+  materialId: string;
+  courseId: string;
+  chunks: Array<{
+    chunkIndex: number;
+    content: string;
+    tokenCount: number;
+    embedding: number[] | string;
+  }>;
+}): Promise<number> {
+  const normalized = {
+    ...payload,
+    chunks: payload.chunks.map((c) => ({
+      ...c,
+      embedding: Array.isArray(c.embedding)
+        ? `[${c.embedding.join(',')}]`
+        : c.embedding,
+    })),
+  };
+  const result = await db.execute(sql`
+    SELECT sol_insert_course_material_chunks(${JSON.stringify(normalized)}::jsonb) AS count
+  `);
+  return Number(rowsFromExecute<{ count: number }>(result)[0]?.count ?? 0);
+}
+
+export async function softDeleteCourseMaterialsDefiner(
+  materialIds: string[],
+): Promise<number> {
+  if (materialIds.length === 0) return 0;
+  const result = await db.execute(sql`
+    SELECT sol_soft_delete_course_materials(${asUuidArray(materialIds)}) AS count
+  `);
+  return Number(rowsFromExecute<{ count: number }>(result)[0]?.count ?? 0);
+}
+
+export async function setBookChaptersMaterialDefiner(
+  bookId: string,
+  materialId: string | null,
+): Promise<number> {
+  const result = await db.execute(sql`
+    SELECT sol_set_book_chapters_material(
+      ${bookId}::uuid,
+      ${materialId}::uuid
+    ) AS count
+  `);
+  return Number(rowsFromExecute<{ count: number }>(result)[0]?.count ?? 0);
+}
+
+export type BookChapterForRag = {
+  id: string;
+  title: string;
+  partTitle: string | null;
+  markdown: string;
+  materialId: string | null;
+  position: number;
+};
+
+export async function fetchBookChaptersForRagDefiner(
+  bookId: string,
+): Promise<BookChapterForRag[]> {
+  const result = await db.execute(sql`
+    SELECT sol_book_chapters_for_rag(${bookId}::uuid) AS rows
+  `);
+  const raw = parseJsonb<
+    Array<{
+      id: string;
+      title: string;
+      partTitle?: string | null;
+      markdown?: string | null;
+      materialId?: string | null;
+      position?: number | null;
+    }>
+  >(rowsFromExecute<{ rows: unknown }>(result)[0]?.rows);
+  if (!Array.isArray(raw)) return [];
+  return raw.map((ch) => ({
+    id: String(ch.id),
+    title: String(ch.title ?? ''),
+    partTitle: ch.partTitle ?? null,
+    markdown: String(ch.markdown ?? ''),
+    materialId: ch.materialId ? String(ch.materialId) : null,
+    position: Number(ch.position ?? 0),
+  }));
+}

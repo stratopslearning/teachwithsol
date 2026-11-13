@@ -645,6 +645,13 @@
       "when": 1786100000000,
       "tag": "0091_hosted_books_definers",
       "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1786200000000,
+      "tag": "0092_book_rag_material_definers",
+      "breakpoints": true
     }
   ]
 }

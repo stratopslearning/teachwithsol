@@ -1,13 +1,17 @@
-import { eq } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import { courseMaterialChunks, courseMaterials } from '@/app/db/schema';
 import { chunkText } from '@/lib/knowledge/chunk';
 import { embedTexts } from '@/lib/knowledge/embed';
+import {
+  createCourseMaterialDefiner,
+  insertCourseMaterialChunksDefiner,
+  setCourseMaterialStatusDefiner,
+} from '@/lib/db/knowledgeJobDefiners';
 
 /**
  * Create one Knowledge material + embedded chunks for an entire hosted book
  * (chapters live on book_chapters; this is for RAG only).
+ *
+ * Uses SECURITY DEFINER helpers — bare inserts omit tenant_id/offering_id and
+ * fail FORCE RLS WITH CHECK during book processing / Inngest workers.
  */
 export async function indexBookAsMaterial(opts: {
   courseId: string;
@@ -15,43 +19,38 @@ export async function indexBookAsMaterial(opts: {
   title: string;
   markdown: string;
 }): Promise<string> {
-  const [material] = await db
-    .insert(courseMaterials)
-    .values({
-      courseId: opts.courseId,
-      uploadedByUserId: opts.uploadedByUserId,
-      title: opts.title.slice(0, 200),
-      sourceType: 'UPLOAD',
-      mimeType: 'text/markdown',
-      byteSize: Buffer.byteLength(opts.markdown, 'utf8'),
-      status: 'PROCESSING',
-    })
-    .returning();
+  const material = await createCourseMaterialDefiner({
+    courseId: opts.courseId,
+    uploadedByUserId: opts.uploadedByUserId,
+    title: opts.title.slice(0, 200),
+    sourceType: 'UPLOAD',
+    mimeType: 'text/markdown',
+    byteSize: Buffer.byteLength(opts.markdown, 'utf8'),
+    status: 'PROCESSING',
+  });
 
   try {
     const text = opts.markdown.trim();
-    if (text.length < 20) {
+    // Title-only markdown is ~50 chars; require real chapter body.
+    if (text.length < 200) {
       throw new Error('Book content too short to index');
     }
     const chunks = chunkText(text);
     if (chunks.length === 0) throw new Error('Chunking produced no content');
 
     const embeddings = await embedTexts(chunks.map((c) => c.content));
-    await db.insert(courseMaterialChunks).values(
-      chunks.map((chunk, i) => ({
-        materialId: material.id,
-        courseId: opts.courseId,
+    await insertCourseMaterialChunksDefiner({
+      materialId: material.id,
+      courseId: opts.courseId,
+      chunks: chunks.map((chunk, i) => ({
         chunkIndex: chunk.index,
         content: chunk.content,
         tokenCount: chunk.tokenCount,
         embedding: embeddings[i]!,
       })),
-    );
+    });
 
-    await db
-      .update(courseMaterials)
-      .set({ status: 'READY', errorMessage: null, updatedAt: new Date() })
-      .where(eq(courseMaterials.id, material.id));
+    await setCourseMaterialStatusDefiner(material.id, 'READY', null);
 
     void (async () => {
       try {
@@ -71,14 +70,7 @@ export async function indexBookAsMaterial(opts: {
   } catch (err) {
     const message =
       err instanceof Error ? err.message.slice(0, 500) : 'Indexing failed';
-    await db
-      .update(courseMaterials)
-      .set({
-        status: 'FAILED',
-        errorMessage: message,
-        updatedAt: new Date(),
-      })
-      .where(eq(courseMaterials.id, material.id));
+    await setCourseMaterialStatusDefiner(material.id, 'FAILED', message);
     throw err;
   }
 }
