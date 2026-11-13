@@ -127,11 +127,19 @@ export const processBookFn = inngest.createFunction(
       { limit: 4 },
       { key: 'event.data.tenantId', limit: 2 },
     ],
+    timeouts: { finish: '15m' },
   },
   { event: 'books/book.process' },
   async ({ event, step }) => {
+    await ensureWorkerRuntimeRole();
     const bookId = event.data.bookId;
-    await step.run('process', async () => processBook(bookId));
+    const tenantId = event.data.tenantId ?? event.data.workspaceId;
+    await step.run('process', async () => {
+      if (tenantId) {
+        return withTenant(tenantId, null, async () => processBook(bookId));
+      }
+      return processBook(bookId);
+    });
     return { bookId, ok: true };
   },
 );

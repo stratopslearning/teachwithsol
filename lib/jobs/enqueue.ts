@@ -295,13 +295,14 @@ export async function enqueueBookProcess(
 ): Promise<void> {
   if (!bookId) return;
 
+  let inngestOk = false;
   if (jobsBackend() === 'inngest') {
     try {
       await inngest.send({
         name: 'books/book.process',
         data: { bookId, ...inngestTenantPayload(workspaceId) },
       });
-      return;
+      inngestOk = true;
     } catch (error) {
       console.warn('[jobs] inngest book send failed; using after()', {
         bookId,
@@ -310,13 +311,20 @@ export async function enqueueBookProcess(
     }
   }
 
+  // Always schedule after() as a best-effort path. processBook claims via
+  // onlyIfStatus=PENDING so Inngest and after() cannot double-process.
+  // Large EPUBs that exceed after() lifetime are drained by /api/cron/process-books.
   if (bookInFlight.has(bookId)) return;
   bookInFlight.add(bookId);
   runAfter(async () => {
     try {
       await processBook(bookId);
     } catch (error) {
-      console.error('[jobs/after] book error', { bookId, error });
+      console.error('[jobs/after] book error', {
+        bookId,
+        inngestOk,
+        error,
+      });
     } finally {
       bookInFlight.delete(bookId);
     }

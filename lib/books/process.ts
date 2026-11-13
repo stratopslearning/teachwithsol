@@ -1,4 +1,7 @@
-import type { hostedBooks } from '@/app/db/schema';
+import { and, eq, isNull, lt, or } from 'drizzle-orm';
+
+import { db } from '@/app/db';
+import { hostedBooks } from '@/app/db/schema';
 import { indexBookChaptersAsSingleMaterial } from '@/lib/books/bookKnowledge';
 import { crawlWebbook } from '@/lib/books/crawlWebbook';
 import { flattenParsedChapters } from '@/lib/books/hierarchy';
@@ -144,4 +147,38 @@ export async function processBookFromBuffer(
       errorMessage: message,
     });
   }
+}
+
+/**
+ * Cron helper: drain stuck PENDING books and stale PROCESSING rows.
+ * Mirrors processPendingMaterials — Inngest may miss events after deploy.
+ */
+export async function processPendingBooks(limit = 3): Promise<number> {
+  const staleBefore = new Date(Date.now() - 15 * 60_000);
+  const pending = await db.query.hostedBooks.findMany({
+    where: and(
+      isNull(hostedBooks.deletedAt),
+      or(
+        eq(hostedBooks.status, 'PENDING'),
+        and(
+          eq(hostedBooks.status, 'PROCESSING'),
+          lt(hostedBooks.updatedAt, staleBefore),
+        ),
+      ),
+    ),
+    limit,
+    orderBy: (t, { asc }) => [asc(t.createdAt)],
+  });
+
+  for (const row of pending) {
+    if (row.status === 'PROCESSING') {
+      await updateHostedBookDefiner({
+        bookId: row.id,
+        status: 'PENDING',
+        errorMessage: null,
+      });
+    }
+    await processBook(row.id);
+  }
+  return pending.length;
 }
