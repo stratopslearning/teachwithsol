@@ -62,6 +62,13 @@ export async function upsertStudentEnrollment(
   input: UpsertStudentEnrollmentOptions,
 ): Promise<UpsertStudentEnrollmentResult> {
   // FORCE RLS: bare student_sections / student_offerings writes flake on Neon.
+  // Definer must see the section under FORCE RLS — pass tenantId whenever known.
+  let tenantId = input.tenantId;
+  if (!tenantId) {
+    const { fetchSectionById } = await import('@/lib/db/entityScopedReads');
+    const section = await fetchSectionById(input.sectionId);
+    tenantId = section?.tenantId ?? section?.workspaceId ?? undefined;
+  }
   const { upsertStudentEnrollmentDefiner } = await import(
     '@/lib/db/facultyWriteDefiners'
   );
@@ -69,7 +76,7 @@ export async function upsertStudentEnrollment(
     studentId: input.studentId,
     sectionId: input.sectionId,
     source: input.source,
-    tenantId: input.tenantId,
+    tenantId,
     offeringId: input.offeringId,
     refuseCourseConflict: input.refuseCourseConflict,
     bestEffortOfferingSync: input.bestEffortOfferingSync,

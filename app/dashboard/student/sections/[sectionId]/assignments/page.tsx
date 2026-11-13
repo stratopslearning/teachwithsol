@@ -26,7 +26,7 @@ export default async function StudentSectionAssignmentsPage({
       sectionId={ctx.sectionId}
       sectionName={ctx.sectionName}
       courseTitle={ctx.courseTitle}
-      description="Quizzes, lessons, discussions, and interactives assigned to this section."
+      description="Quizzes, lessons, and interactives assigned to this section."
       activeTab="assignments"
       tools={lms.enabled ? lms.studentTools : undefined}
       user={user}

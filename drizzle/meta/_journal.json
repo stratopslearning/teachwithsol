@@ -722,6 +722,13 @@
       "when": 1787200000000,
       "tag": "0102_soft_delete_course_module",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1787300000000,
+      "tag": "0103_student_enroll_tenant_guc",
+      "breakpoints": true
     }
   ]
 }

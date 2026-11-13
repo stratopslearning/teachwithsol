@@ -67,8 +67,7 @@ export default function StudentEnrollForm({
           Join a section
         </h2>
         <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
-          Enter the code from your professor to unlock assignments, lessons, and
-          discussions.
+          Enter the code from your professor to unlock assignments and lessons.
         </p>
       </header>
       <form
