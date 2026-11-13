@@ -397,6 +397,15 @@ export async function deleteCourseMaterialChunksDefiner(
   return Number(rowsFromExecute<{ count: number }>(result)[0]?.count ?? 0);
 }
 
+export async function countCourseMaterialChunksDefiner(
+  materialId: string,
+): Promise<number> {
+  const result = await db.execute(sql`
+    SELECT sol_course_material_chunk_count(${materialId}::uuid) AS count
+  `);
+  return Number(rowsFromExecute<{ count: number }>(result)[0]?.count ?? 0);
+}
+
 export async function listPendingCourseMaterialsDefiner(
   limit: number,
   staleBefore: Date,

@@ -687,6 +687,13 @@
       "when": 1786700000000,
       "tag": "0097_force_rls_remaining_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1786800000000,
+      "tag": "0098_authoring_chunks_include_books",
+      "breakpoints": true
     }
   ]
 }
