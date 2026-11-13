@@ -85,28 +85,54 @@ export async function enrollInSection(
     throw ApiError.forbidden('Teaching access required to enroll in sections');
   }
 
-  const { resolveProfessorEnrollWorkspaceId } = await import('@/lib/workspace');
-  const { findSectionByProfessorCode } = await import(
-    '@/lib/sections/enrollmentLookup'
-  );
-  const scope = await resolveProfessorEnrollWorkspaceId(user.id, workspaceId);
-  if (!scope.ok) {
-    throw scope.status === 403
-      ? ApiError.forbidden(scope.error)
-      : ApiError.badRequest(scope.error);
-  }
+  const {
+    findSectionByProfessorCode,
+    findSectionByProfessorCodeGloballyUnique,
+  } = await import('@/lib/sections/enrollmentLookup');
 
-  const section = await findSectionByProfessorCode(
-    scope.workspaceId,
-    enrollmentCode,
-  );
-  if (!section) throw ApiError.notFound('Invalid enrollment code');
-  {
-    const { requireWorkspaceTeaching } = await import(
-      '@/lib/workspace/entitlement'
+  // Faculty codes are join invites across workspaces. Optional workspaceId only
+  // disambiguates when the caller already belongs to that workspace; otherwise
+  // resolve the code globally (same idea as student enroll).
+  let section: Awaited<ReturnType<typeof findSectionByProfessorCode>> | undefined;
+  const trimmedWorkspace = workspaceId?.trim();
+  if (trimmedWorkspace) {
+    const { resolveProfessorEnrollWorkspaceId } = await import(
+      '@/lib/workspace'
     );
-    await requireWorkspaceTeaching(scope.workspaceId, user);
+    const scope = await resolveProfessorEnrollWorkspaceId(
+      user.id,
+      trimmedWorkspace,
+    );
+    if (!scope.ok) {
+      throw scope.status === 403
+        ? ApiError.forbidden(scope.error)
+        : ApiError.badRequest(scope.error);
+    }
+    section = await findSectionByProfessorCode(
+      scope.workspaceId,
+      enrollmentCode,
+    );
   }
+  if (!section) {
+    const hit = await findSectionByProfessorCodeGloballyUnique(enrollmentCode);
+    section = hit?.section;
+  }
+  if (!section) throw ApiError.notFound('Invalid enrollment code');
+
+  const { ensureWorkspaceMembership, getCourseWorkspaceId } = await import(
+    '@/lib/workspace'
+  );
+  const { requireWorkspaceTeaching } = await import(
+    '@/lib/workspace/entitlement'
+  );
+  const courseWorkspaceId = await getCourseWorkspaceId(section.courseId);
+  const destinationWorkspaceId =
+    section.workspaceId ?? section.tenantId ?? courseWorkspaceId;
+  if (!destinationWorkspaceId) {
+    throw ApiError.notFound('Invalid enrollment code');
+  }
+  // Entitlement is on the section's workspace (not the joiner's active one).
+  await requireWorkspaceTeaching(destinationWorkspaceId, user);
 
   const {
     professorSectionEnrollmentDefiner,
@@ -131,23 +157,20 @@ export async function enrollInSection(
     throw err;
   }
 
-  // Mirror POST /api/professor/enroll: seat + co_instructor binding (authority).
-  const { ensureWorkspaceMembership, getCourseWorkspaceId } = await import(
-    '@/lib/workspace'
-  );
+  // Seat + co_instructor binding on the destination workspace.
   const { upsertRoleBinding } = await import('@/lib/authz/bindings');
-  const courseWorkspaceId = await getCourseWorkspaceId(section.courseId);
-  if (courseWorkspaceId) {
-    await ensureWorkspaceMembership({ workspaceId: courseWorkspaceId, userId: user.id });
-    await upsertRoleBinding({
-      tenantId: courseWorkspaceId,
-      userId: user.id,
-      scopeType: 'section',
-      scopeId: section.id,
-      role: 'co_instructor',
-      grantedBy: user.id,
-    });
-  }
+  await ensureWorkspaceMembership({
+    workspaceId: destinationWorkspaceId,
+    userId: user.id,
+  });
+  await upsertRoleBinding({
+    tenantId: destinationWorkspaceId,
+    userId: user.id,
+    scopeType: 'section',
+    scopeId: section.id,
+    role: 'co_instructor',
+    grantedBy: user.id,
+  });
 
   return { id: section.id, name: section.name, courseId: section.courseId };
 }

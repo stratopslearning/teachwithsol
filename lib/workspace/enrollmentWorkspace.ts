@@ -4,7 +4,11 @@ import { db } from '@/app/db';
 import { workspaceMemberships } from '@/app/db/schema';
 import { resolveFacultyWorkspaceId } from '@/lib/workspace/activeWorkspace';
 
-/** Workspace scope for professor enrollment by code. */
+/**
+ * Optional workspace disambiguation for professor enrollment by code.
+ * Cross-workspace joins do not require this — enrollInSection falls back to a
+ * global code lookup when workspaceId is omitted.
+ */
 export async function resolveProfessorEnrollWorkspaceId(
   userId: string,
   bodyWorkspaceId?: string | null,

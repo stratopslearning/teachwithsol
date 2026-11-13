@@ -194,7 +194,9 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         .string()
         .uuid()
         .optional()
-        .describe('Workspace when you belong to more than one'),
+        .describe(
+          'Optional: disambiguate when you already belong to that workspace. Faculty codes also resolve across workspaces without this.',
+        ),
     }),
     scope: 'sections:write',
     handler: (args, ctx) =>
