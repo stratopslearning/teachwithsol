@@ -14,7 +14,10 @@ import { apiUrl } from "@/lib/basePath";
 import type { OutlineDetail, OutlineItemSummary } from "@/lib/authoring";
 import { buildAuthoringFollowUps } from "@/lib/authoring/agent/followUps";
 import { buildOutlineInventory } from "@/lib/authoring/agent/inventory";
-import { buildChatProgressPlan } from "@/lib/authoring/intent";
+import {
+  buildChatProgressPlan,
+  looksLikeProposeOutlineRequest,
+} from "@/lib/authoring/intent";
 import type { OutlineItemBody } from "@/app/db/schema";
 import { AuthoringArtifactStage } from "./AuthoringArtifactStage";
 import { AuthoringChatPane } from "./AuthoringChatPane";
@@ -1111,6 +1114,15 @@ export default function AuthoringClient({
     // No outline yet → treat send as propose (brief = message)
     if (!outline) {
       await runGenerate({ briefOverride: message });
+      return;
+    }
+
+    // “Propose an outline for …” with an existing draft → rebuild, don’t clarify quizzes.
+    if (looksLikeProposeOutlineRequest(message)) {
+      await runGenerate({
+        briefOverride: message,
+        confirmReplace: true,
+      });
       return;
     }
 

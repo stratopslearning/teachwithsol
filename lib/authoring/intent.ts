@@ -53,6 +53,24 @@ export function looksLikeEnsureLessonsRequest(message: string): boolean {
   );
 }
 
+/**
+ * Fresh outline propose / regenerate — not an item refine.
+ * “Propose an outline for Intro to SCM” must not become “which quiz?”.
+ */
+export function looksLikeProposeOutlineRequest(message: string): boolean {
+  const m = message.toLowerCase().trim();
+  if (!m) return false;
+  if (looksLikeEnsureLessonsRequest(message)) return false;
+  return (
+    /\b(propose|generate|create|draft|build|make)\b.{0,48}\b(a |an |the |new |fresh )?(course )?outline\b/.test(
+      m,
+    ) ||
+    /\b(re-?propose|regenerate|rebuild|replace)\b.{0,24}\boutline\b/.test(m) ||
+    /\bnew outline\b/.test(m) ||
+    /\boutline from (my |the )?materials?\b/.test(m)
+  );
+}
+
 export function looksLikeRewriteRequest(message: string): boolean {
   const m = message.toLowerCase();
   if (looksLikeEnsureLessonsRequest(message)) return false;

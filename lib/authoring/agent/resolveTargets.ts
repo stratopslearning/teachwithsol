@@ -3,7 +3,10 @@ import type {
   OutlineInventory,
 } from '@/lib/authoring/agent/inventory';
 import type { ItemSelector } from '@/lib/authoring/agent/tools';
-import { parseQuantityLimit } from '@/lib/authoring/intent';
+import {
+  looksLikeProposeOutlineRequest,
+  parseQuantityLimit,
+} from '@/lib/authoring/intent';
 
 export type TargetResolution = {
   itemIds: string[];
@@ -22,6 +25,17 @@ export function resolveAuthoringTargets(
   const m = message.toLowerCase();
   const quantity = parseQuantityLimit(message);
   const types = typesFromMessage(m);
+
+  // Outline propose/regenerate is not an item-target question.
+  if (looksLikeProposeOutlineRequest(message)) {
+    return {
+      itemIds: [],
+      confidence: 0.2,
+      candidates: [],
+      question: null,
+      selector: { scope: 'all' },
+    };
+  }
 
   // Explicit title hits
   const scored = inventory.items

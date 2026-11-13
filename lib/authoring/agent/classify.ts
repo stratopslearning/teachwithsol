@@ -3,6 +3,7 @@ import type { AuthoringLastAction } from '@/lib/authoring/agent/lastAction';
 import {
   looksLikeEnsureLessonsRequest,
   looksLikeHelpOrCapabilitiesRequest,
+  looksLikeProposeOutlineRequest,
   looksLikePublishRequest,
   looksLikeReleaseRequest,
   looksLikeRewriteRequest,
@@ -16,6 +17,7 @@ export type AuthoringIntentKind =
   | 'help'
   | 'advise'
   | 'clarify'
+  | 'propose_outline'
   | 'out_of_scope'
   | 'repeat'
   | 'undo';
@@ -113,6 +115,15 @@ export function classifyAuthoringIntent(
 
   if (looksLikeHelpOrCapabilitiesRequest(raw)) {
     return { kind: 'help', confidence: 0.98, reason: 'capabilities' };
+  }
+
+  // Full outline propose/regenerate — never treat as refine/clarify-on-titles.
+  if (looksLikeProposeOutlineRequest(raw)) {
+    return {
+      kind: 'propose_outline',
+      confidence: 0.96,
+      reason: 'propose / regenerate outline',
+    };
   }
 
   // Interactive-lesson upgrade is supported — do not treat as add_item.

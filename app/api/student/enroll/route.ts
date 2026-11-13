@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-import { courseOfferings, courses } from '@/app/db/schema';
+import { courseOfferings } from '@/app/db/schema';
 import {
   isOfferingEnded,
   OFFERING_ENDED_MESSAGE,
@@ -214,9 +214,9 @@ export async function POST(req: NextRequest) {
       userAgent: meta.userAgent,
     });
 
-    const course = await db.query.courses.findFirst({
-      where: eq(courses.id, section.courseId),
-    });
+    // Bare courses SELECT flakes under FORCE RLS — use entity DEFINER.
+    const { fetchCourseById } = await import('@/lib/db/entityScopedReads');
+    const course = await fetchCourseById(section.courseId);
 
     return NextResponse.json({
       success: true,
@@ -236,6 +236,13 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Enrollment error:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('Section not found')) {
+      return NextResponse.json(
+        { error: 'Section not found. Try the code again or ask your professor.' },
+        { status: 404 },
+      );
+    }
     return NextResponse.json({ error: 'Failed to enroll' }, { status: 500 });
   }
 }

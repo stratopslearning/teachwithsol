@@ -10,7 +10,9 @@ export type AuthoringFollowUp = {
     | 'open_item'
     | 'preview_student'
     | 'approve_build'
-    | 'publish';
+    | 'publish'
+    | 're_propose'
+    | 'propose';
   prompt?: string;
   itemId?: string;
 };
@@ -283,6 +285,25 @@ export function buildAuthoringFollowUps(opts: {
         id: 'fu-oos-open',
         label: 'Open outline',
         action: 'open_outline',
+      });
+      break;
+
+    case 'propose_outline':
+      add({
+        id: 'fu-propose-rebuild',
+        label: 'Re-propose outline',
+        action: 're_propose',
+      });
+      add({
+        id: 'fu-propose-open',
+        label: 'Open outline',
+        action: 'open_outline',
+      });
+      add({
+        id: 'fu-propose-lessons',
+        label: 'Add interactive lessons per module',
+        action: 'prompt',
+        prompt: 'Add interactive lessons to each module',
       });
       break;
 

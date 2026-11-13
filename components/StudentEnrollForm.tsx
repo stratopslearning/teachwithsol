@@ -31,13 +31,28 @@ export default function StudentEnrollForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enrollmentCode: code.trim() }),
       });
-      const data = await res.json();
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        section?: {
+          id: string;
+          name: string;
+          course: { title: string } | null;
+        };
+      };
       if (res.ok) {
-        toast.success(`Joined ${data.section.name}`, {
-          description: `Course: ${data.section.course.title}`,
+        const sectionName = data.section?.name ?? "section";
+        const courseTitle = data.section?.course?.title;
+        toast.success(`Joined ${sectionName}`, {
+          description: courseTitle ? `Course: ${courseTitle}` : undefined,
         });
         setCode("");
-        if (onEnrolled) onEnrolled(data.section);
+        if (onEnrolled && data.section?.course) {
+          onEnrolled({
+            id: data.section.id,
+            name: data.section.name,
+            course: data.section.course,
+          });
+        }
         setTimeout(() => window.location.reload(), 800);
       } else {
         const errorMsg = data.error || "Failed to enroll";

@@ -231,6 +231,19 @@ export async function runAuthoringAgent(
     });
   }
 
+  if (intent.kind === 'propose_outline') {
+    return persistAndReturn({
+      assistantMessage: [
+        '### Rebuild the outline',
+        '',
+        'Chat edits items in the **current** outline — it doesn’t invent a new structure mid-thread.',
+        '',
+        'Use **Re-propose outline** to archive this draft and generate a fresh outline from your materials (I’ll use your message as the brief).',
+      ].join('\n'),
+      tools: ['answer_question'],
+    });
+  }
+
   if (intent.kind === 'clarify') {
     const targets = resolveAuthoringTargets(message, inventory, {
       preferFocus: Boolean(inventory.focus),
