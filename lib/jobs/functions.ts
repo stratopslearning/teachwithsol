@@ -25,9 +25,10 @@ export const gradeAttemptFn = inngest.createFunction(
   {
     id: 'grade-attempt',
     retries: 3,
+    // Inngest free/hobby plan caps concurrency at 5 — higher values fail app sync.
     concurrency: [
-      { limit: 20 },
-      { key: 'event.data.tenantId', limit: 10 },
+      { limit: 5 },
+      { key: 'event.data.tenantId', limit: 3 },
     ],
   },
   { event: 'grading/attempt.requested' },
@@ -88,8 +89,8 @@ export const processMaterialFn = inngest.createFunction(
     id: 'process-material',
     retries: 3,
     concurrency: [
-      { limit: 8 },
-      { key: 'event.data.tenantId', limit: 4 },
+      { limit: 5 },
+      { key: 'event.data.tenantId', limit: 3 },
     ],
   },
   { event: 'knowledge/material.process' },
@@ -149,7 +150,7 @@ export const processKnowledgeDocumentFn = inngest.createFunction(
     id: 'process-knowledge-document',
     retries: 2,
     concurrency: [
-      { limit: 6 },
+      { limit: 5 },
       { key: 'event.data.tenantId', limit: 3 },
     ],
   },
