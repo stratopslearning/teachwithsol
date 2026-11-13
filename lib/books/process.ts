@@ -18,6 +18,19 @@ async function persistParsedBook(
   book: typeof hostedBooks.$inferSelect,
   parsed: ParsedBook,
 ): Promise<void> {
+  // Collect prior RAG material ids BEFORE soft-deleting chapters, otherwise
+  // reprocess leaves orphan Ready uploads that show up as Focus "Upload" dupes.
+  const { fetchBookChaptersForRagDefiner } = await import(
+    '@/lib/db/knowledgeJobDefiners'
+  );
+  const priorMaterialIds = [
+    ...new Set(
+      (await fetchBookChaptersForRagDefiner(book.id))
+        .map((c) => c.materialId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
   await softDeleteBookChaptersDefiner(book.id);
 
   const bookTitle = (parsed.title || book.title).slice(0, 300);
@@ -35,6 +48,7 @@ async function persistParsedBook(
     uploadedByUserId: book.createdByUserId,
     bookTitle,
     chapters: flat,
+    priorMaterialIds,
   });
 
   const insertedIds: string[] = [];

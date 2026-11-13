@@ -173,12 +173,18 @@ export async function ensureBookKnowledgeIndexed(
 
 /**
  * Soft-delete Knowledge materials that only hang off soft-deleted book
- * chapters (no active chapter still points at them).
+ * chapters (no active chapter still points at them), plus title-matched
+ * uploads left behind when a reprocess dropped chapter→material links.
  */
 async function cleanupOrphanBookMaterials(courseId: string): Promise<number> {
-  const { fetchBookChapterMaterialLinksForCourseDefiner } = await import(
-    '@/lib/db/bookWriteDefiners'
+  const {
+    fetchBookChapterMaterialLinksForCourseDefiner,
+    fetchHostedBooksForCourseDefiner,
+  } = await import('@/lib/db/bookWriteDefiners');
+  const { fetchCourseMaterialsList } = await import(
+    '@/lib/db/entityScopedReads'
   );
+
   const allLinked =
     await fetchBookChapterMaterialLinksForCourseDefiner(courseId);
 
@@ -189,9 +195,29 @@ async function cleanupOrphanBookMaterials(courseId: string): Promise<number> {
     seen.add(row.materialId);
     if (row.deletedAt == null) active.add(row.materialId);
   }
-  const orphans = [...seen].filter((id) => !active.has(id));
-  await softDeleteLinkedMaterials(orphans);
-  return orphans.length;
+  const orphans = new Set([...seen].filter((id) => !active.has(id)));
+
+  // Reprocess used to soft-delete chapters before collecting prior material
+  // ids, so orphans can have zero chapter links. Retire any Ready material
+  // that shares a hosted book title but is not the active book corpus.
+  const books = (await fetchHostedBooksForCourseDefiner(courseId)).filter(
+    (b) => b.status === 'READY' && !b.deletedAt,
+  );
+  const bookTitles = new Set(
+    books.map((b) => b.title.trim().toLowerCase()).filter(Boolean),
+  );
+  if (bookTitles.size > 0) {
+    const materials = await fetchCourseMaterialsList(courseId);
+    for (const m of materials) {
+      if (!bookTitles.has(String(m.title ?? '').trim().toLowerCase())) continue;
+      if (active.has(m.id)) continue;
+      orphans.add(m.id);
+    }
+  }
+
+  const orphanIds = [...orphans];
+  await softDeleteLinkedMaterials(orphanIds);
+  return orphanIds.length;
 }
 
 /** Consolidate every READY book in a course that still has fragmented materials. */

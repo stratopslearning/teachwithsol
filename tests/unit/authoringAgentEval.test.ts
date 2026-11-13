@@ -128,6 +128,16 @@ const PROMPTS: Array<{
     requireTools: ['refine_items'],
   },
   {
+    message: 'make the outline better',
+    expectKind: 'act',
+    requireTools: ['refine_items'],
+  },
+  {
+    message: 'improve all quizzes',
+    expectKind: 'act',
+    requireTools: ['refine_items'],
+  },
+  {
     message: 'publish the first two quizzes then release them',
     expectKind: 'act',
   },

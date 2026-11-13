@@ -226,10 +226,48 @@ export async function runAuthoringAgent(
     const targets = resolveAuthoringTargets(message, inventory, {
       preferFocus: Boolean(inventory.focus),
     });
+
+    // Scope/title answers like "all of them" resolve cleanly — resume the prior
+    // refine instruction instead of asking a second clarifying question.
+    const priorRefineInstruction = findPriorRefineInstruction(history, message);
+    if (
+      priorRefineInstruction &&
+      targets.confidence >= 0.7 &&
+      (targets.itemIds.length > 0 || targets.selector?.scope === 'all')
+    ) {
+      const plan: PlannerPlan = {
+        tools: [
+          {
+            name: 'refine_items',
+            args: {
+              selector: targets.selector ?? { scope: 'all' },
+              instruction: priorRefineInstruction,
+            },
+          },
+        ],
+      };
+      return executePlanAndPersist({
+        plan,
+        user,
+        opts,
+        audit,
+        outlineRow,
+        detail,
+        inventory,
+        message: priorRefineInstruction,
+        materialsContext,
+        history,
+        applyOutlineBuildDefiner,
+        persistAndReturn,
+      });
+    }
+
     return persistAndReturn({
       assistantMessage: authoringClarifyReply(
         targets.question ??
-          'What should I change — name an assignment, or say publish / release / refine / schedule?',
+          (priorRefineInstruction
+            ? 'Which assignments should I refine — name them, or say “all of them”?'
+            : 'What should I change — name an assignment, or say publish / release / refine / schedule?'),
       ),
       tools: ['answer_question'],
     });
@@ -329,6 +367,38 @@ export async function runAuthoringAgent(
 
 function stripForClient(content: string): string {
   return stripLastActionMarker(content);
+}
+
+/** Recover a refine instruction from recent history when the user only names scope. */
+function findPriorRefineInstruction(
+  history: Array<{ role: string; content: string }>,
+  currentMessage: string,
+): string | null {
+  const current = currentMessage.trim().toLowerCase();
+  // Pure scope / deictic answers should not be treated as the refine instruction.
+  if (
+    /^(all( of them)?|every(thing)?|the whole (outline|course)|entire outline|those|these|both|all quizzes|all items)[!?.]*$/i.test(
+      current,
+    )
+  ) {
+    for (let i = history.length - 1; i >= 0; i -= 1) {
+      const row = history[i];
+      if (!row || row.role !== 'user') continue;
+      const text = stripForClient(row.content).trim();
+      if (!text || text.toLowerCase() === current) continue;
+      if (
+        looksLikeRewriteRequest(text) ||
+        /\b(make|improve|rewrite|fix|change|better|stronger|clearer)\b/i.test(
+          text,
+        )
+      ) {
+        return text;
+      }
+    }
+    return null;
+  }
+  if (looksLikeRewriteRequest(currentMessage)) return currentMessage;
+  return null;
 }
 
 function planFromLastAction(

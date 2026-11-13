@@ -32,8 +32,20 @@ export function looksLikeReleaseRequest(message: string): boolean {
 }
 
 export function looksLikeRewriteRequest(message: string): boolean {
-  return /rewrite|rephrase|harder|easier|new question|replace question|different question|regenerate quiz|redo the quiz|change the options|fix the stem/.test(
-    message.toLowerCase(),
+  const m = message.toLowerCase();
+  return (
+    /rewrite|rephrase|harder|easier|new question|replace question|different question|regenerate quiz|redo the quiz|change the options|fix the stem/.test(
+      m,
+    ) ||
+    /\b(make|improve|strengthen|clarify|polish|upgrade)\b.{0,60}\b(better|stronger|clearer|sharper)\b/.test(
+      m,
+    ) ||
+    /\b(make|improve)\b.{0,40}\b(outline|module|quiz(zes)?|discussion(s)?|assignment(s)?|item(s)?)\b.{0,20}\b(better|stronger|clearer)?/.test(
+      m,
+    ) ||
+    /\b(better|improve|strengthen)\b.{0,40}\b(outline|quiz(zes)?|discussion(s)?|assignment(s)?|module(s)?)\b/.test(
+      m,
+    )
   );
 }
 

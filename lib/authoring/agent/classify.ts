@@ -233,7 +233,7 @@ function looksLikeFocusedEdit(message: string): boolean {
 }
 
 function looksLikeContentEdit(message: string): boolean {
-  return /\b(make|rewrite|fix|update|change|improve|clarify|rephrase|harder|easier)\b.{0,80}\b(quiz|discussion|question|stem|option|prompt|assignment)\b/i.test(
+  return /\b(make|rewrite|fix|update|change|improve|clarify|rephrase|harder|easier|better|strengthen|polish)\b.{0,80}\b(quiz(zes)?|discussion(s)?|question(s)?|stem|option(s)?|prompt(s)?|assignment(s)?|outline|module(s)?|item(s)?)\b/i.test(
     message,
   );
 }

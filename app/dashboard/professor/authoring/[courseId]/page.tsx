@@ -46,6 +46,17 @@ export default async function ProfessorAuthoringPage({
   }
 
   const workspaceId = await getCourseWorkspaceId(courseId);
+
+  // Retire orphaned book RAG uploads before building Focus materials.
+  try {
+    const { consolidateCourseBookKnowledge } = await import(
+      '@/lib/books/bookKnowledge'
+    );
+    await consolidateCourseBookKnowledge(courseId);
+  } catch (err) {
+    console.warn('[authoring] consolidateCourseBookKnowledge failed', err);
+  }
+
   const [
     outline,
     sessions,
@@ -87,7 +98,9 @@ export default async function ProfessorAuthoringPage({
   // Prefer Knowledge links (where chunks live). Skip legacy uploads that were
   // mirrored into the library so focus IDs resolve to indexed documents.
   const linkedTitles = new Set(linkedDocuments.map((d) => d.title));
-  const unmirroredUploads = materials.filter((m) => !linkedTitles.has(m.title));
+  const bookTitles = new Set(
+    books.map((b) => b.title.trim().toLowerCase()).filter(Boolean),
+  );
 
   const { fetchCourseMaterialByIdDefiner } = await import(
     '@/lib/db/knowledgeJobDefiners'
@@ -127,6 +140,14 @@ export default async function ProfessorAuthoringPage({
       kind: 'book',
     });
   }
+
+  const unmirroredUploads = materials.filter((m) => {
+    if (linkedTitles.has(m.title)) return false;
+    if (seenMaterialIds.has(m.id)) return false;
+    // Hide orphaned book-index rows that share a hosted book title.
+    if (bookTitles.has(m.title.trim().toLowerCase())) return false;
+    return true;
+  });
 
   const corpusItems = [
     ...bookCorpusItems,
