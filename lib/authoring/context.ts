@@ -208,6 +208,18 @@ export async function buildAuthoringMaterialsContext(
     k,
     ...focus,
   });
+  if (!chunks.length && focus?.materialIds?.length) {
+    // Book RAG rows can be READY without embeddings / before DEFINER
+    // fallback includes course_material_chunks — use chapter markdown.
+    const bookText = await buildBookChapterContextForMaterialIds(
+      courseId,
+      focus.materialIds,
+      budget,
+    );
+    if (bookText.trim()) {
+      return { text: bookText, chunks: [], hasPriorCorpus: hasPrior };
+    }
+  }
   if (!chunks.length) {
     return { text: '', chunks: [], hasPriorCorpus: hasPrior };
   }
@@ -223,6 +235,54 @@ export async function buildAuthoringMaterialsContext(
     chunks: formatted.chunks,
     hasPriorCorpus: hasPrior,
   };
+}
+
+/** Chapter markdown for book-linked course_materials focus ids. */
+async function buildBookChapterContextForMaterialIds(
+  courseId: string,
+  materialIds: string[],
+  budget: number,
+): Promise<string> {
+  const focus = new Set(materialIds);
+  const { fetchBookLinkedMaterialIdsDefiner, fetchBookChaptersForRagDefiner } =
+    await import('@/lib/db/knowledgeJobDefiners');
+  const linked = await fetchBookLinkedMaterialIdsDefiner(courseId);
+  if (!linked.some((id) => focus.has(id))) return '';
+
+  const { fetchHostedBooksForCourseDefiner } = await import(
+    '@/lib/db/bookWriteDefiners'
+  );
+  const books = await fetchHostedBooksForCourseDefiner(courseId);
+  const bookIds = books.filter((b) => b.status === 'READY').map((b) => b.id);
+  if (bookIds.length === 0) return '';
+
+  const lines: string[] = [
+    'Focused hosted book excerpts for AUTHORING (faculty-selected):',
+  ];
+  let used = lines[0]!.length;
+  for (const bookId of bookIds) {
+    const chapters = await fetchBookChaptersForRagDefiner(bookId);
+    const matched = chapters.filter(
+      (c) => c.materialId && focus.has(c.materialId),
+    );
+    if (matched.length === 0) continue;
+    for (const ch of matched) {
+      const header = `\n---\n[chapter:${ch.title}]\n`;
+      const body = ch.markdown.trim().slice(0, 2_400);
+      const block = `${header}${body}`;
+      if (used + block.length > budget) {
+        const remaining = budget - used - header.length;
+        if (remaining < 200) break;
+        lines.push(`${header}${body.slice(0, remaining)}`);
+        used = budget;
+        break;
+      }
+      lines.push(block);
+      used += block.length;
+    }
+    if (used >= budget) break;
+  }
+  return lines.length <= 1 ? '' : lines.join('');
 }
 
 /** Search materials for MCP / agents: returns chunk payloads, not S3 bytes. */

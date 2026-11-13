@@ -625,7 +625,7 @@ export async function fetchCourseAuthoringChunks(
   const limit = Math.max(opts?.limit ?? 24, 1);
   const focusIds = (opts?.focusIds ?? []).filter(Boolean);
   const result = await db.execute(sql`
-    SELECT * FROM sol_course_authoring_chunks(
+    SELECT * FROM sol_course_authoring_chunks_v2(
       ${courseId}::uuid,
       ${limit}::integer,
       ${focusIds.length > 0 ? asUuidArray(focusIds) : sql`NULL::uuid[]`}
