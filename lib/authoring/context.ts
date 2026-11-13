@@ -160,14 +160,26 @@ export async function buildAuthoringMaterialsContext(
       corpus: opts.corpus,
       ...focus,
     });
-    const formatted = formatChunks(
-      `Course materials excerpts for AUTHORING (${opts.corpus}):`,
-      chunks,
+    if (chunks.length > 0) {
+      const formatted = formatChunks(
+        `Course materials excerpts for AUTHORING (${opts.corpus}):`,
+        chunks,
+        budget,
+      );
+      return {
+        text: formatted.text,
+        chunks: formatted.chunks,
+        hasPriorCorpus: hasPrior,
+      };
+    }
+    const bookText = await buildBookChapterContextFallback(
+      courseId,
+      focus?.materialIds,
       budget,
     );
     return {
-      text: formatted.text,
-      chunks: formatted.chunks,
+      text: bookText,
+      chunks: [],
       hasPriorCorpus: hasPrior,
     };
   }
@@ -197,78 +209,103 @@ export async function buildAuthoringMaterialsContext(
       termChunks,
       remaining > 200 ? remaining : Math.floor(budget * 0.3),
     );
-    return {
-      text: [prior.text, term.text].filter(Boolean).join(''),
-      chunks: [...prior.chunks, ...term.chunks],
-      hasPriorCorpus: true,
-    };
+    const text = [prior.text, term.text].filter(Boolean).join('');
+    if (text.trim()) {
+      return {
+        text,
+        chunks: [...prior.chunks, ...term.chunks],
+        hasPriorCorpus: true,
+      };
+    }
+    // Fall through — prior tags with no usable chunks (e.g. book-only course).
   }
 
   const chunks = await resolveChunks({
     k,
     ...focus,
   });
-  if (!chunks.length && focus?.materialIds?.length) {
-    // Book RAG rows can be READY without embeddings / before DEFINER
-    // fallback includes course_material_chunks — use chapter markdown.
-    const bookText = await buildBookChapterContextForMaterialIds(
-      courseId,
-      focus.materialIds,
+  if (chunks.length > 0) {
+    const formatted = formatChunks(
+      focus
+        ? 'Focused course materials excerpts for AUTHORING (faculty-selected):'
+        : 'Course materials excerpts for AUTHORING (faculty draft context):',
+      chunks,
       budget,
     );
-    if (bookText.trim()) {
-      return { text: bookText, chunks: [], hasPriorCorpus: hasPrior };
-    }
+    return {
+      text: formatted.text,
+      chunks: formatted.chunks,
+      hasPriorCorpus: hasPrior,
+    };
   }
-  if (!chunks.length) {
-    return { text: '', chunks: [], hasPriorCorpus: hasPrior };
-  }
-  const formatted = formatChunks(
-    focus
-      ? 'Focused course materials excerpts for AUTHORING (faculty-selected):'
-      : 'Course materials excerpts for AUTHORING (faculty draft context):',
-    chunks,
+
+  // Ready books can appear in the picker before RAG chunks/embeddings exist.
+  // Use hosted chapter markdown (same source as Outline-from-book).
+  const bookText = await buildBookChapterContextFallback(
+    courseId,
+    focus?.materialIds,
     budget,
   );
   return {
-    text: formatted.text,
-    chunks: formatted.chunks,
+    text: bookText,
+    chunks: [],
     hasPriorCorpus: hasPrior,
   };
 }
 
-/** Chapter markdown for book-linked course_materials focus ids. */
-async function buildBookChapterContextForMaterialIds(
+/**
+ * Hosted book chapter markdown for authoring when vector/DEFINER chunks are empty.
+ * If materialIds is set, only books linked to those materials; otherwise all Ready books.
+ */
+async function buildBookChapterContextFallback(
   courseId: string,
-  materialIds: string[],
+  materialIds: string[] | undefined,
   budget: number,
 ): Promise<string> {
-  const focus = new Set(materialIds);
-  const { fetchBookLinkedMaterialIdsDefiner, fetchBookChaptersForRagDefiner } =
-    await import('@/lib/db/knowledgeJobDefiners');
-  const linked = await fetchBookLinkedMaterialIdsDefiner(courseId);
-  if (!linked.some((id) => focus.has(id))) return '';
-
+  const { fetchBookChaptersForRagDefiner } = await import(
+    '@/lib/db/knowledgeJobDefiners'
+  );
   const { fetchHostedBooksForCourseDefiner } = await import(
     '@/lib/db/bookWriteDefiners'
   );
-  const books = await fetchHostedBooksForCourseDefiner(courseId);
-  const bookIds = books.filter((b) => b.status === 'READY').map((b) => b.id);
-  if (bookIds.length === 0) return '';
+  const books = (await fetchHostedBooksForCourseDefiner(courseId)).filter(
+    (b) => b.status === 'READY',
+  );
+  if (books.length === 0) return '';
+
+  const focus = materialIds?.length ? new Set(materialIds) : null;
+  if (focus) {
+    const { fetchBookLinkedMaterialIdsDefiner } = await import(
+      '@/lib/db/knowledgeJobDefiners'
+    );
+    const linked = await fetchBookLinkedMaterialIdsDefiner(courseId);
+    if (!linked.some((id) => focus.has(id))) return '';
+  }
 
   const lines: string[] = [
-    'Focused hosted book excerpts for AUTHORING (faculty-selected):',
+    focus
+      ? 'Focused hosted book excerpts for AUTHORING (faculty-selected):'
+      : 'Hosted book excerpts for AUTHORING (faculty draft context):',
   ];
   let used = lines[0]!.length;
-  for (const bookId of bookIds) {
-    const chapters = await fetchBookChaptersForRagDefiner(bookId);
-    const matched = chapters.filter(
-      (c) => c.materialId && focus.has(c.materialId),
-    );
+
+  for (const book of books) {
+    const chapters = await fetchBookChaptersForRagDefiner(book.id);
+    const matched = focus
+      ? chapters.filter((c) => c.materialId && focus.has(c.materialId))
+      : chapters;
     if (matched.length === 0) continue;
+
+    const bookHeader = `\n=== Book: ${book.title} ===`;
+    if (used + bookHeader.length < budget) {
+      lines.push(bookHeader);
+      used += bookHeader.length;
+    }
+
     for (const ch of matched) {
       const header = `\n---\n[chapter:${ch.title}]\n`;
       const body = ch.markdown.trim().slice(0, 2_400);
+      if (!body) continue;
       const block = `${header}${body}`;
       if (used + block.length > budget) {
         const remaining = budget - used - header.length;
@@ -282,6 +319,7 @@ async function buildBookChapterContextForMaterialIds(
     }
     if (used >= budget) break;
   }
+
   return lines.length <= 1 ? '' : lines.join('');
 }
 
