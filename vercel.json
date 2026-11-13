@@ -12,7 +12,7 @@
     },
     {
       "path": "/api/cron/process-books",
-      "schedule": "*/10 * * * *"
+      "schedule": "35 9 * * *"
     },
     {
       "path": "/api/cron/lti-roster",
