@@ -715,6 +715,13 @@
       "when": 1787100000000,
       "tag": "0101_interactive_chapters",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1787200000000,
+      "tag": "0102_soft_delete_course_module",
+      "breakpoints": true
     }
   ]
 }

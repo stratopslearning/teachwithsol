@@ -116,10 +116,10 @@ export function SectionHubShell({
                     <Link
                       href={href}
                       className={cn(
-                        'block rounded-md px-3 py-2 text-sm transition-colors',
+                        'block border-l-2 px-3 py-2 text-sm transition-colors',
                         isActive
-                          ? 'bg-surface font-medium text-ink'
-                          : 'text-ink-muted hover:bg-surface/60 hover:text-ink',
+                          ? 'border-brand bg-brand/5 font-semibold text-brand'
+                          : 'border-transparent text-ink hover:bg-surface/70 hover:text-ink',
                       )}
                     >
                       {tab.label}

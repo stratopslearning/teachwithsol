@@ -17,24 +17,16 @@ import {
 import { cn } from '@/lib/utils';
 
 /** Legacy tabs when LMS shell flag is off. */
-export type CourseHubTab =
-  | 'overview'
-  | 'sections'
-  | 'analytics'
-  | 'insights'
-  | CourseToolId;
+export type CourseHubTab = 'overview' | 'sections' | CourseToolId;
 
 const LEGACY_TABS: { id: CourseHubTab; label: string; suffix: string }[] = [
   { id: 'overview', label: 'Overview', suffix: '' },
   { id: 'sections', label: 'Sections', suffix: '/sections' },
-  { id: 'analytics', label: 'Analytics', suffix: '/analytics' },
-  { id: 'insights', label: 'Insights', suffix: '/insights' },
 ];
 
+/** Faculty-only extras kept in the course rail (not student-facing tools). */
 const FACULTY_EXTRA = [
   { id: 'sections' as const, label: 'Sections', suffix: '/sections' },
-  { id: 'analytics' as const, label: 'Analytics', suffix: '/analytics' },
-  { id: 'insights' as const, label: 'Insights', suffix: '/insights' },
 ];
 
 export function CourseHubShell({
@@ -171,10 +163,10 @@ export function CourseHubShell({
                     <Link
                       href={href}
                       className={cn(
-                        'flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+                        'relative flex items-center justify-between gap-2 border-l-2 px-3 py-2 text-sm transition-colors',
                         isActive
-                          ? 'bg-surface font-medium text-ink'
-                          : 'text-ink-muted hover:bg-surface/60 hover:text-ink',
+                          ? 'border-brand bg-brand/5 font-semibold text-brand'
+                          : 'border-transparent text-ink hover:bg-surface/70 hover:text-ink',
                       )}
                     >
                       <span>{tab.label}</span>

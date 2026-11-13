@@ -13,6 +13,7 @@ import {
   GripVertical,
   Lock,
   Plus,
+  Trash2,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -199,6 +200,27 @@ export function ModulesEditorClient({
     startTransition(() => router.refresh());
   }
 
+  async function removeModule(moduleId: string, title: string) {
+    if (
+      !confirm(
+        `Delete module “${title}”? Its items will be removed from the course modules list.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    const res = await fetch(
+      `/api/lms/courses/${courseId}/modules/${moduleId}`,
+      { method: 'DELETE' },
+    );
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(body.error ?? 'Failed to delete module');
+      return;
+    }
+    startTransition(() => router.refresh());
+  }
+
   async function setRequirement(
     moduleId: string,
     itemId: string,
@@ -361,6 +383,16 @@ export function ModulesEditorClient({
                         title="Add item"
                       >
                         <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-ink-muted hover:text-destructive"
+                        disabled={pending}
+                        onClick={() => void removeModule(m.id, m.title)}
+                        title="Delete module"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : m.published ? (

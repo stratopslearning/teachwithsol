@@ -8,6 +8,7 @@ import {
   listCourseModulesDefiner,
   listModuleItemProgressDefiner,
   listModuleItemsDefiner,
+  softDeleteCourseModuleDefiner,
   type CourseModuleRow,
   type ModuleItemRow,
   upsertCourseModuleDefiner,
@@ -71,6 +72,18 @@ export async function updateModule(
   });
   if (!mod) throw ApiError.notFound('Module not found');
   return mod;
+}
+
+export async function deleteModule(courseId: string, moduleId: string) {
+  try {
+    return await softDeleteCourseModuleDefiner(courseId, moduleId);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/module_not_found/i.test(msg)) {
+      throw ApiError.notFound('Module not found');
+    }
+    throw err;
+  }
 }
 
 export async function addModuleItem(

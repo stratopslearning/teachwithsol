@@ -286,14 +286,6 @@ export default async function ProfessorCourseHubPage({
           <SectionHeading
             eyebrow="Activity"
             title="Recent submissions"
-            actions={
-              <Link
-                href={appPath(`${base}/analytics`)}
-                className="text-sm text-ink-muted underline-offset-2 hover:text-ink hover:underline"
-              >
-                Analytics
-              </Link>
-            }
           />
           {recentAttemptRows.length > 0 ? (
             <ul className="divide-y divide-rule overflow-hidden rounded-xl border border-rule bg-surface paper-shadow">
@@ -373,10 +365,7 @@ export default async function ProfessorCourseHubPage({
                 : 'Start drafting from materials'}
             </span>
           </Link>
-          <Link
-            href={appPath(`${base}/analytics`)}
-            className="group flex flex-col gap-2 rounded-xl border border-rule bg-surface px-4 py-4 paper-shadow transition-colors hover:border-rule-strong"
-          >
+          <div className="flex flex-col gap-2 rounded-xl border border-rule bg-surface px-4 py-4 paper-shadow">
             <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
               <TrendingUp className="h-3.5 w-3.5" />
               Tag coverage
@@ -386,11 +375,8 @@ export default async function ProfessorCourseHubPage({
               {analytics.tagCoverage.taggedQuestions}/
               {analytics.tagCoverage.totalQuestions} questions tagged
             </span>
-          </Link>
-          <Link
-            href={appPath(`${base}/analytics`)}
-            className="group flex flex-col gap-2 rounded-xl border border-rule bg-surface px-4 py-4 paper-shadow transition-colors hover:border-rule-strong"
-          >
+          </div>
+          <div className="flex flex-col gap-2 rounded-xl border border-rule bg-surface px-4 py-4 paper-shadow">
             <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
               <AlertTriangle className="h-3.5 w-3.5" />
               Concept gaps
@@ -401,11 +387,8 @@ export default async function ProfessorCourseHubPage({
                 ? 'No low-success concepts'
                 : 'Below success threshold'}
             </span>
-          </Link>
-          <Link
-            href={appPath(`${base}/analytics`)}
-            className="group flex flex-col gap-2 rounded-xl border border-rule bg-surface px-4 py-4 paper-shadow transition-colors hover:border-rule-strong"
-          >
+          </div>
+          <div className="flex flex-col gap-2 rounded-xl border border-rule bg-surface px-4 py-4 paper-shadow">
             <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
               <Layers className="h-3.5 w-3.5" />
               Lessons
@@ -416,7 +399,7 @@ export default async function ProfessorCourseHubPage({
             <span className="text-xs text-ink-muted">
               Avg completion across released lessons
             </span>
-          </Link>
+          </div>
         </div>
       </section>
 

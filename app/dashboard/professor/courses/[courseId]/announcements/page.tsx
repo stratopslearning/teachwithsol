@@ -1,9 +1,9 @@
+import { AnnouncementsPanel } from '@/components/lms/AnnouncementsPanel';
 import { CourseHubShell } from '@/components/professor/CourseHubShell';
 import {
   facultyActiveTool,
   requireFacultyCourse,
 } from '@/lib/lms/facultyCourseContext';
-import { CreateAnnouncementForm } from '@/components/lms/CreateForms';
 import { listCourseAnnouncementsDefiner } from '@/lib/db/lmsDefiners';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export default async function Page({
 }) {
   const { courseId } = await params;
   const studentView = (await searchParams).as === 'student';
-  const { user, course, lms } = await requireFacultyCourse(courseId);
+  const { course, lms } = await requireFacultyCourse(courseId);
   const announcements = await listCourseAnnouncementsDefiner(courseId);
   return (
     <CourseHubShell
@@ -27,23 +27,18 @@ export default async function Page({
       tools={lms.enabled ? lms.facultyTools : undefined}
       nav={lms.nav}
       studentView={studentView}
-      description="Announcements"
     >
-      <CreateAnnouncementForm courseId={courseId} />
-      <ul className="mt-6 space-y-3">
-        {announcements.length === 0 ? (
-          <li className="text-sm text-ink-muted">No announcements yet.</li>
-        ) : (
-          announcements.map((a) => (
-            <li key={String(a.id)} className="rounded border border-rule/60 p-3">
-              <div className="font-medium">{String(a.title)}</div>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-ink-muted">
-                {String(a.bodyMarkdown ?? '')}
-              </p>
-            </li>
-          ))
-        )}
-      </ul>
+      <AnnouncementsPanel
+        courseId={courseId}
+        studentPreview={studentView}
+        announcements={announcements.map((a) => ({
+          id: String(a.id),
+          title: String(a.title),
+          bodyMarkdown: String(a.bodyMarkdown ?? ''),
+          createdAt: (a as { createdAt?: Date | string | null }).createdAt ?? null,
+          published: Boolean((a as { published?: boolean }).published),
+        }))}
+      />
     </CourseHubShell>
   );
 }

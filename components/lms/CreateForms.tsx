@@ -33,8 +33,42 @@ function useCreate(courseId: string, path: string) {
   return { pending, title, setTitle, extra, setExtra, error, submit };
 }
 
-export function CreateAnnouncementForm({ courseId }: { courseId: string }) {
+export function CreateAnnouncementForm({
+  courseId,
+  compact = false,
+}: {
+  courseId: string;
+  compact?: boolean;
+}) {
   const f = useCreate(courseId, 'announcements');
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Announcement title"
+          value={f.title}
+          onChange={(e) => f.setTitle(e.target.value)}
+          className="h-10 w-44"
+        />
+        <Button
+          className="h-10"
+          disabled={f.pending || !f.title.trim()}
+          onClick={() =>
+            void f.submit({
+              title: f.title,
+              bodyMarkdown: f.extra || f.title,
+              publish: true,
+            })
+          }
+        >
+          + Add announcement
+        </Button>
+        {f.error ? (
+          <span className="text-sm text-destructive">{f.error}</span>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div className="flex flex-wrap items-end gap-2">
       <Input
@@ -171,10 +205,45 @@ export function CreateRubricForm({ courseId }: { courseId: string }) {
   );
 }
 
-export function CreateAssignmentGroupForm({ courseId }: { courseId: string }) {
+export function CreateAssignmentGroupForm({
+  courseId,
+  compact = false,
+}: {
+  courseId: string;
+  compact?: boolean;
+}) {
   const f = useCreate(courseId, 'assignment-groups');
   const [weight, setWeight] = useState('20');
   const [dropLowest, setDropLowest] = useState('0');
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Group name"
+          value={f.title}
+          onChange={(e) => f.setTitle(e.target.value)}
+          className="h-10 w-40"
+        />
+        <Button
+          variant="outline"
+          className="h-10"
+          disabled={f.pending || !f.title.trim()}
+          onClick={() =>
+            void f.submit({
+              name: f.title,
+              weight: Number(weight) || 0,
+              dropLowest: Number(dropLowest) || 0,
+            })
+          }
+        >
+          + Group
+        </Button>
+        {f.error ? (
+          <span className="text-sm text-destructive">{f.error}</span>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div className="flex flex-wrap items-end gap-2">
       <Input

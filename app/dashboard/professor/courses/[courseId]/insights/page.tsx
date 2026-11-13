@@ -1,143 +1,15 @@
-import { notFound } from 'next/navigation';
-import { requireTeachingAccess } from '@/lib/authz/gates';
-import { Lightbulb } from '@/components/icons';
-import { and, desc, eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
 
-import { analyticsRollups, courseOfferings } from '@/app/db/schema';
-import { CourseHubShell } from '@/components/professor/CourseHubShell';
-import { SectionHeading } from '@/components/layout/SectionHeading';
-import { EmptyState } from '@/components/patterns/EmptyState';
-import { Button } from '@/components/ui/button';
-import {
-  computeRollupsForCourse,
-  type WhatToChangeSuggestion,
-} from '@/lib/analytics/computeRollups';
 import { withBasePath } from '@/lib/basePath';
-import { withTenant } from '@/lib/db/tenantContext';
-import { assertCanManageCourse } from '@/lib/knowledge/access';
-import { getCourseWorkspaceId } from '@/lib/workspace';
-import { loadCourseNav } from '@/lib/lms/loadCourseNav';
 
 export const dynamic = 'force-dynamic';
 
-function suggestionsFromPayload(payload: unknown): WhatToChangeSuggestion[] {
-  if (!payload || typeof payload !== 'object') return [];
-  const s = (payload as { suggestions?: unknown }).suggestions;
-  return Array.isArray(s) ? (s as WhatToChangeSuggestion[]) : [];
-}
-
-export default async function CourseInsightsPage({
+/** Insights removed from product nav. */
+export default async function Page({
   params,
-  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ as?: string }>;
 }) {
-  const user = await requireTeachingAccess();
-
   const { courseId } = await params;
-  const studentView = (await searchParams).as === 'student';
-  const lms = await loadCourseNav(courseId);
-  let course: { id: string; title: string };
-  try {
-    course = await assertCanManageCourse(user, courseId);
-  } catch {
-    notFound();
-  }
-
-  const tenantId = await getCourseWorkspaceId(courseId);
-
-  let suggestions: WhatToChangeSuggestion[] = [];
-
-  if (tenantId) {
-    try {
-      const offering = await withTenant(tenantId, user.id, async (tx) =>
-        tx.query.courseOfferings.findFirst({
-          where: and(
-            eq(courseOfferings.courseId, courseId),
-            eq(courseOfferings.termLabel, 'default'),
-          ),
-        }),
-      );
-
-      const rollup = offering
-        ? await withTenant(tenantId, user.id, async (tx) =>
-            tx.query.analyticsRollups.findFirst({
-              where: and(
-                eq(analyticsRollups.tenantId, tenantId),
-                eq(analyticsRollups.kind, 'criterion_miss_rates'),
-                eq(analyticsRollups.offeringId, offering.id),
-              ),
-              orderBy: [desc(analyticsRollups.computedAt)],
-            }),
-          )
-        : null;
-
-      if (!rollup) {
-        const computed = await computeRollupsForCourse({
-          tenantId,
-          courseId,
-          offeringId: offering?.id ?? null,
-        });
-        suggestions = computed.suggestions;
-      } else {
-        suggestions = suggestionsFromPayload(rollup.payload);
-      }
-    } catch (err) {
-      console.error('insights rollup failed', err);
-      suggestions = [];
-    }
-  }
-
-  return (
-    <CourseHubShell
-      courseId={courseId}
-      courseTitle={course.title}
-      activeTab="insights"
-      tools={lms.enabled ? lms.facultyTools : undefined}
-      nav={lms.nav}
-      studentView={studentView}
-    >
-      <SectionHeading
-        title="What to change"
-        description="Suggestions from criterion miss rates on submitted attempts. Accepting creates an authoring revision when an outline exists."
-      />
-
-      {suggestions.length === 0 ? (
-        <EmptyState
-          icon={<Lightbulb className="h-8 w-8" aria-hidden />}
-          title="No suggestions yet"
-          description="Rollups run nightly or via cron once enough graded short-answer attempts exist."
-        />
-      ) : (
-        <ul className="mt-6 space-y-4">
-          {suggestions.map((s) => (
-            <li
-              key={s.id}
-              className="rounded-lg border border-border bg-card p-4 text-sm"
-            >
-              <p className="font-medium">{s.title}</p>
-              <p className="mt-1 text-muted-foreground">
-                Miss rate {(s.missRate * 100).toFixed(0)}% over {s.evaluated}{' '}
-                evaluations · {s.description}
-              </p>
-              <form
-                className="mt-3"
-                action={withBasePath(
-                  `/api/professor/courses/${courseId}/insights/accept`,
-                )}
-                method="post"
-              >
-                <input type="hidden" name="suggestionId" value={s.id} />
-                <input type="hidden" name="title" value={s.title} />
-                <Button type="submit" size="sm" variant="secondary">
-                  Accept into authoring
-                </Button>
-              </form>
-            </li>
-          ))}
-        </ul>
-      )}
-    </CourseHubShell>
-  );
+  redirect(withBasePath(`/dashboard/professor/courses/${courseId}`));
 }
