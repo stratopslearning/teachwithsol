@@ -652,6 +652,13 @@
       "when": 1786200000000,
       "tag": "0092_book_rag_material_definers",
       "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1786300000000,
+      "tag": "0093_course_material_status_owner",
+      "breakpoints": true
     }
   ]
 }
