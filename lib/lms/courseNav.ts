@@ -3,7 +3,8 @@
  * Stored on courses.lms_navigation; Settings can hide/reorder.
  *
  * Product nav intentionally omits Discussions, Outcomes, People,
- * Insights, and Analytics (see CourseHubShell extras).
+ * Quizzes, Pages, Insights, and Analytics (see CourseHubShell extras).
+ * Quizzes/lessons live under Assignments; gradebook is inline on Grades.
  */
 
 export const COURSE_TOOL_IDS = [
@@ -11,8 +12,6 @@ export const COURSE_TOOL_IDS = [
   'announcements',
   'modules',
   'assignments',
-  'quizzes',
-  'pages',
   'files',
   'grades',
   'syllabus',
@@ -27,6 +26,8 @@ const REMOVED_COURSE_TOOL_IDS = new Set([
   'discussions',
   'outcomes',
   'people',
+  'quizzes',
+  'pages',
 ]);
 
 export type CourseNavEntry = {
@@ -43,8 +44,6 @@ export const COURSE_TOOL_LABELS: Record<CourseToolId, string> = {
   announcements: 'Announcements',
   modules: 'Modules',
   assignments: 'Assignments',
-  quizzes: 'Quizzes',
-  pages: 'Pages',
   files: 'Files',
   grades: 'Grades',
   syllabus: 'Syllabus',

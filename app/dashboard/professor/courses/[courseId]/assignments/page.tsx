@@ -1,5 +1,6 @@
 import { AssignmentsPanel } from '@/components/lms/AssignmentsPanel';
 import { CourseHubShell } from '@/components/professor/CourseHubShell';
+import { listCourseActivities } from '@/lib/assignments';
 import {
   facultyActiveTool,
   requireFacultyCourse,
@@ -18,7 +19,10 @@ export default async function Page({
   const { courseId } = await params;
   const studentView = (await searchParams).as === 'student';
   const { course, lms } = await requireFacultyCourse(courseId);
-  const groups = await listAssignmentGroupsDefiner(courseId);
+  const [groups, activities] = await Promise.all([
+    listAssignmentGroupsDefiner(courseId),
+    listCourseActivities({ courseId }),
+  ]);
   return (
     <CourseHubShell
       courseId={courseId}
@@ -31,6 +35,7 @@ export default async function Page({
       <AssignmentsPanel
         courseId={courseId}
         studentPreview={studentView}
+        items={activities}
         groups={groups.map((g) => ({
           id: String(g.id),
           name: String(g.name),
