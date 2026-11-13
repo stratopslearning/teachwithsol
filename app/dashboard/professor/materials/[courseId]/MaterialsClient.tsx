@@ -945,19 +945,12 @@ export default function MaterialsClient({
     deletingChapterId != null ||
     bulkDeleting;
 
-  return (
-    <div className="mt-8 flex flex-col gap-8">
-      <MaterialPreviewDialog
-        target={previewTarget}
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-      />
-      <section className="rounded-2xl border border-border bg-card/40 p-5 sm:p-6">
-        <div className="mb-5 max-w-2xl">
-          <h2 className="text-sm font-medium text-foreground">Add materials</h2>
-          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            Upload files, paste a public link, or import a book for the student
-            reader. Indexed content grounds the tutor and authoring.
+  const addSection = (
+      <section className="rounded-xl border border-border bg-card/40 p-4 sm:p-5">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className="text-sm font-medium text-foreground">Add</h2>
+          <p className="text-xs text-muted-foreground">
+            File · link · book · max 50 MB
           </p>
         </div>
 
@@ -978,11 +971,10 @@ export default function MaterialsClient({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="file" className="mt-5 outline-none">
-            <form onSubmit={onUpload} className="flex flex-col gap-4">
+          <TabsContent value="file" className="mt-3 outline-none">
+            <form onSubmit={onUpload} className="flex flex-col gap-3">
               <p className="text-xs text-muted-foreground">
-                PDF, DOCX, TXT, or Markdown · max 50 MB. Or a zip pack (up to 50
-                MB) — folders become title prefixes for authoring.
+                PDF, DOCX, TXT, MD, or ZIP (folders → title prefixes).
               </p>
 
               <input
@@ -1037,23 +1029,20 @@ export default function MaterialsClient({
                     acceptFile(e.dataTransfer.files?.[0]);
                   }}
                   className={cn(
-                    "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-8 text-center transition-colors",
+                    "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed px-3 py-5 text-center transition-colors",
                     dragging
                       ? "border-foreground/40 bg-muted/60"
                       : "border-border bg-background/50 hover:border-foreground/25 hover:bg-muted/40",
                   )}
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground">
-                    <Upload className="h-4 w-4" aria-hidden />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
+                    <Upload className="h-3.5 w-3.5" aria-hidden />
                   </span>
                   <span className="text-sm text-foreground">
-                    Drop a file here, or{" "}
+                    Drop or{" "}
                     <span className="font-medium underline underline-offset-2">
                       browse
                     </span>
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    PDF · DOCX · TXT · MD · ZIP
                   </span>
                 </label>
               )}
@@ -1103,10 +1092,10 @@ export default function MaterialsClient({
             </form>
           </TabsContent>
 
-          <TabsContent value="link" className="mt-5 outline-none">
-            <form onSubmit={onAddUrl} className="flex flex-col gap-4">
+          <TabsContent value="link" className="mt-3 outline-none">
+            <form onSubmit={onAddUrl} className="flex flex-col gap-3">
               <p className="text-xs text-muted-foreground">
-                Public http(s) URL to a document or page.
+                Public http(s) URL.
               </p>
               <Input
                 value={url}
@@ -1140,11 +1129,9 @@ export default function MaterialsClient({
             </form>
           </TabsContent>
 
-          <TabsContent value="book" className="mt-5 outline-none">
-            <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
-              Pull in chapters for the reader. Use a{" "}
-              <span className="text-foreground/80">public</span> Pressbooks URL,
-              or upload an EPUB, Pressbooks XML, or PDF if the book is private.
+          <TabsContent value="book" className="mt-3 outline-none">
+            <p className="mb-3 text-xs text-muted-foreground">
+              EPUB, Pressbooks XML/PDF, or a public Pressbooks URL.
             </p>
 
             <Tabs
@@ -1247,7 +1234,7 @@ export default function MaterialsClient({
                     <label
                       htmlFor={bookFileInputId}
                       className={cn(
-                        "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background/50 px-4 py-8 text-center transition-colors hover:border-rule-strong hover:bg-muted/30",
+                        "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-background/50 px-3 py-5 text-center transition-colors hover:border-rule-strong hover:bg-muted/30",
                         busy && "pointer-events-none opacity-60",
                       )}
                     >
@@ -1286,16 +1273,25 @@ export default function MaterialsClient({
           </TabsContent>
         </Tabs>
       </section>
+  );
+
+  return (
+    <div className="mt-4 flex flex-col gap-5">
+      <MaterialPreviewDialog
+        target={previewTarget}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
 
       {books.length > 0 ? (
-        <section className="rounded-2xl border border-border bg-card/40 p-5 sm:p-6">
-          <div className="mb-4">
+        <section className="rounded-xl border border-border bg-card/40 p-4 sm:p-5">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-muted-foreground" aria-hidden />
               <h2 className="text-sm font-medium text-foreground">Books</h2>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Imported titles for the student reader and outline design.
+            <p className="text-xs text-muted-foreground">
+              Student reader · outline design
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -1409,62 +1405,72 @@ export default function MaterialsClient({
                           ) : null}
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {b.status === "READY" ? (
-                          <>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => onCreateOutline(b.id)}
-                            >
-                              Design course outline
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => void onReprocessBook(b.id)}
-                            >
-                              <RefreshCw />
-                              Reprocess
-                            </Button>
-                            {!b.isReleased ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                disabled={busy}
-                                onClick={() => onReleaseBook(b.id)}
-                              >
-                                Release to students
-                              </Button>
-                            ) : null}
-                          </>
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        {b.status === "READY" && !b.isReleased ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => onReleaseBook(b.id)}
+                          >
+                            Release
+                          </Button>
                         ) : null}
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={busy}
-                          className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => onDeleteBook(b)}
-                        >
-                          {bookBusy ? (
-                            <Loader2 className="animate-spin" />
-                          ) : (
-                            <Trash2 />
-                          )}
-                          Delete book
-                        </Button>
+                        {b.status === "READY" ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => onCreateOutline(b.id)}
+                          >
+                            Outline
+                          </Button>
+                        ) : null}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              aria-label={`More actions for ${b.title}`}
+                            >
+                              {bookBusy ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <MoreHorizontal />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {b.status === "READY" ? (
+                              <DropdownMenuItem
+                                disabled={busy}
+                                onSelect={() => void onReprocessBook(b.id)}
+                              >
+                                <RefreshCw />
+                                Reprocess
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              disabled={busy}
+                              className="text-destructive focus:text-destructive"
+                              onSelect={() => onDeleteBook(b)}
+                            >
+                              <Trash2 />
+                              Delete book
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
 
                     {n > 0 ? (
                       <details
                         className="group border-t border-border pt-2"
-                        open={n <= 12 || selectedInBook > 0}
+                        open={selectedInBook > 0}
                       >
                         <summary className="cursor-pointer list-none text-xs font-medium text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
                           <span className="inline-flex items-center gap-1.5">
@@ -1474,7 +1480,7 @@ export default function MaterialsClient({
                             >
                               ▸
                             </span>
-                            {n} chapter{n === 1 ? "" : "s"}
+                            Show chapters
                             {selectedInBook > 0
                               ? ` · ${selectedInBook} selected`
                               : ""}
@@ -1619,7 +1625,7 @@ export default function MaterialsClient({
       ) : null}
 
 
-      <section>
+      <section className="rounded-xl border border-border bg-card/40 p-4 sm:p-5">
         {(() => {
           type MaterialRow =
             | { kind: "linked"; id: string; doc: KnowledgeDocumentSummary }
@@ -1722,12 +1728,12 @@ export default function MaterialsClient({
               <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="text-sm font-medium text-foreground">
-                    Materials
+                    Uploads & library
                   </h2>
                   <p className="text-xs text-muted-foreground">
                     {rows.length === 0
-                      ? "Nothing attached yet"
-                      : `${rows.length} item${rows.length === 1 ? "" : "s"} for tutor + authoring`}
+                      ? "None attached"
+                      : `${rows.length} for tutor + authoring`}
                     {workspaceId ? (
                       <>
                         {" "}
@@ -1736,7 +1742,7 @@ export default function MaterialsClient({
                           className="underline underline-offset-2"
                           href={withBasePath("/dashboard/workspace/knowledge")}
                         >
-                          Knowledge library
+                          Knowledge
                         </a>
                       </>
                     ) : null}
@@ -1824,18 +1830,12 @@ export default function MaterialsClient({
               ) : null}
 
               {rows.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border px-5 py-10 text-center">
-                  <p className="text-sm text-foreground">No materials yet</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Upload a file or link above, or attach something from the
-                    Knowledge library.
-                  </p>
+                <div className="rounded-lg border border-dashed border-border px-4 py-5 text-center text-xs text-muted-foreground">
+                  No uploads yet — use Add below, or attach from Knowledge.
                 </div>
               ) : filtered.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border px-5 py-8 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Nothing in this filter
-                  </p>
+                <div className="rounded-lg border border-dashed border-border px-4 py-4 text-center text-xs text-muted-foreground">
+                  Nothing in this filter
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
@@ -2217,6 +2217,8 @@ export default function MaterialsClient({
           );
         })()}
       </section>
+
+      {addSection}
     </div>
   );
 }

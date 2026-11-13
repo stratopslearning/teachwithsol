@@ -66,7 +66,7 @@ export default async function ProfessorMaterialsPage({
       toolHref="/dashboard/professor/materials"
       courseId={courseId}
       courseTitle={course.title}
-      description="Attach workspace Knowledge docs, upload files or links, or import books. Indexed content grounds the tutor and authoring."
+      description="Files, links, and books for this course — grounds the tutor and authoring."
       teachable={teachable}
       hrefTemplate="/dashboard/professor/materials/{courseId}"
     >
