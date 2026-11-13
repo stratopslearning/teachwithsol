@@ -33,7 +33,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiUrl } from "@/lib/basePath";
+import Link from "next/link";
+
+import { apiUrl, appPath } from "@/lib/basePath";
+import type { BookWithChapters } from "@/lib/books";
 import { uploadCourseBookFile } from "@/lib/books/clientUpload";
 import type {
   ConnectorSummary,
@@ -162,6 +165,7 @@ export default function KnowledgeClient({
   activeCourseId = null,
   activeCourseTitle = null,
   initialDocuments,
+  initialBooks = [],
   initialConnectors,
   initialProviders,
   initialTab = "library",
@@ -172,6 +176,8 @@ export default function KnowledgeClient({
   activeCourseId?: string | null;
   activeCourseTitle?: string | null;
   initialDocuments: KnowledgeDocumentSummary[];
+  /** Hosted books for the active course (imported via Book tab). */
+  initialBooks?: BookWithChapters[];
   initialConnectors: ConnectorSummary[];
   initialProviders: ConnectorProviderStatus[];
   initialTab?: "library" | "connections";
@@ -185,6 +191,7 @@ export default function KnowledgeClient({
   const bookFileRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [documents, setDocuments] = useState(initialDocuments);
+  const [books, setBooks] = useState(initialBooks);
   const [connectors, setConnectors] = useState(initialConnectors);
   const [providers, setProviders] = useState(initialProviders);
   const [tab, setTab] = useState(initialTab);
@@ -234,13 +241,37 @@ export default function KnowledgeClient({
     setDocuments(initialDocuments);
   }, [initialDocuments]);
   useEffect(() => {
+    setBooks(initialBooks);
+  }, [initialBooks]);
+  useEffect(() => {
     setConnectors(initialConnectors);
   }, [initialConnectors]);
   useEffect(() => {
     setProviders(initialProviders);
   }, [initialProviders]);
 
+  async function loadBooks() {
+    if (!activeCourseId) {
+      setBooks([]);
+      return;
+    }
+    try {
+      const res = await fetch(
+        apiUrl(
+          `/api/professor/books?courseId=${encodeURIComponent(activeCourseId)}`,
+        ),
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(data.books)) {
+        setBooks(data.books as BookWithChapters[]);
+      }
+    } catch {
+      /* keep prior list */
+    }
+  }
+
   function refresh() {
+    void loadBooks();
     startTransition(() => router.refresh());
   }
 
@@ -483,6 +514,18 @@ export default function KnowledgeClient({
       );
       clearBookFile();
       setBookTitle("");
+      if (result.book) {
+        setBooks((prev) => {
+          const next = prev.filter((b) => b.id !== result.book!.id);
+          return [
+            {
+              ...result.book!,
+              chapters: [],
+            } as BookWithChapters,
+            ...next,
+          ];
+        });
+      }
       refresh();
     } catch {
       toast.error("Could not upload book");
@@ -1407,10 +1450,88 @@ export default function KnowledgeClient({
               </Button>
             </div>
 
+            {books.length > 0 ? (
+              <div className="mb-4 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-medium text-foreground">
+                    Course books
+                    {activeCourseTitle ? (
+                      <span className="font-normal text-muted-foreground">
+                        {" "}
+                        · {activeCourseTitle}
+                      </span>
+                    ) : null}
+                  </h3>
+                  {activeCourseId ? (
+                    <Button asChild variant="ghost" size="sm">
+                      <Link
+                        href={appPath(
+                          `/dashboard/professor/materials/${activeCourseId}`,
+                        )}
+                      >
+                        Manage
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+                <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                  {books.map((b) => (
+                    <li
+                      key={b.id}
+                      className="flex flex-wrap items-center justify-between gap-3 bg-card/20 px-4 py-3"
+                    >
+                      <div className="min-w-0 flex items-start gap-3">
+                        <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <div className="truncate font-medium text-foreground">
+                            {b.title}
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span
+                              className={cn(
+                                "inline-flex rounded-full border px-2 py-0.5",
+                                statusClass(b.status),
+                              )}
+                            >
+                              {statusLabel(b.status)}
+                            </span>
+                            <span>
+                              {b.sourceKind.replace(/_/g, " ")}
+                              {b.chapterCount > 0
+                                ? ` · ${b.chapterCount} chapter${b.chapterCount === 1 ? "" : "s"}`
+                                : ""}
+                            </span>
+                          </div>
+                          {b.errorMessage ? (
+                            <p className="mt-1 text-xs text-destructive">
+                              {b.errorMessage}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      {activeCourseId ? (
+                        <Button asChild size="sm" variant="outline">
+                          <Link
+                            href={appPath(
+                              `/dashboard/professor/materials/${activeCourseId}`,
+                            )}
+                          >
+                            Open
+                          </Link>
+                        </Button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
             {visibleDocuments.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
-                No materials yet. Upload a file, add a URL, import a book, or
-                sync a connection.
+                {books.length > 0
+                  ? "No uploaded files yet. Books for this course are listed above."
+                  : "No materials yet. Upload a file, add a URL, import a book, or sync a connection."}
               </div>
             ) : (
               <>

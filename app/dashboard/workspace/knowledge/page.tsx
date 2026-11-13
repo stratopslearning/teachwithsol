@@ -8,6 +8,7 @@ import { CourseSwitcher } from '@/components/professor/CourseSwitcher';
 import { Button } from '@/components/ui/button';
 import { withBasePath, appPath } from '@/lib/basePath';
 import { requireTeachingAccess } from '@/lib/authz/gates';
+import { listCourseBooks } from '@/lib/books';
 import {
   listConnectorProviderStatus,
   listTeachableCourses,
@@ -92,7 +93,7 @@ export default async function WorkspaceKnowledgePage({
       />
     ) : null;
 
-  const [documents, connectors, entitlement] = await Promise.all([
+  const [documents, connectors, books, entitlement] = await Promise.all([
     listWorkspaceDocuments(user, workspaceId).catch((err) => {
       console.warn('[knowledge] workspace documents list failed', err);
       return [];
@@ -101,6 +102,12 @@ export default async function WorkspaceKnowledgePage({
       console.warn('[knowledge] workspace connectors list failed', err);
       return [];
     }),
+    activeCourseId
+      ? listCourseBooks(user, activeCourseId).catch((err) => {
+          console.warn('[knowledge] course books list failed', err);
+          return [];
+        })
+      : Promise.resolve([]),
     assertWorkspaceAllowsTeaching(workspaceId),
   ]);
   const teachingBlocked =
@@ -182,6 +189,7 @@ export default async function WorkspaceKnowledgePage({
         activeCourseId={activeCourseId}
         activeCourseTitle={activeCourse?.title ?? null}
         initialDocuments={documents}
+        initialBooks={books}
         initialConnectors={connectors}
         initialProviders={providers}
         initialTab={initialTab}
