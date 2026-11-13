@@ -42,6 +42,7 @@ import {
 import type { AuthoringIntent } from '@/lib/authoring/agent/classify';
 import { resolveAuthoringTargets } from '@/lib/authoring/agent/resolveTargets';
 import {
+  looksLikeEnsureLessonsRequest,
   looksLikeHelpOrCapabilitiesRequest,
   looksLikePublishRequest,
   looksLikeReleaseRequest,
@@ -50,6 +51,9 @@ import {
   looksLikeSubmitRequest,
   parseQuantityLimit,
 } from '@/lib/authoring/intent';
+import {
+  ensureInteractiveLessonsForOutline,
+} from '@/lib/authoring/ensureLessons';
 import {
   getOutlineDetail,
   type OutlineDetail,
@@ -151,13 +155,16 @@ export async function runAuthoringAgent(
     publishedItemIds?: string[];
     releasedItemIds?: string[];
     publishFailed?: AuthoringAgentResult['publishFailed'];
+    /** When ensure_lessons archives+replaces the outline. */
+    outlineOverride?: OutlineDetail;
   }): Promise<AuthoringAgentResult> {
+    const outlineId = optsPersist.outlineOverride?.id ?? opts.outlineId;
     const assistantMessage = withLastActionMarker(
       optsPersist.assistantMessage,
       optsPersist.lastAction ?? null,
     );
     await insertAuthoringMessagesDefiner({
-      outlineId: opts.outlineId,
+      outlineId,
       tenantId: outlineRow.tenantId!,
       messages: [
         { role: 'user', content: message },
@@ -169,7 +176,7 @@ export async function runAuthoringAgent(
       actorClerkId: user.clerkId,
       action: 'professor.authoring.refine',
       targetType: 'course_outline',
-      targetId: opts.outlineId,
+      targetId: outlineId,
       tenantId: outlineRow.tenantId,
       metadata: {
         agentHarness: true,
@@ -183,9 +190,11 @@ export async function runAuthoringAgent(
       ip: audit?.ip ?? null,
       userAgent: audit?.userAgent ?? null,
     });
-    const updated = await getOutlineDetail(user, opts.outlineId);
+    const updated =
+      optsPersist.outlineOverride ??
+      (await getOutlineDetail(user, outlineId));
     void logAiSpan('authoring.agent', 'authoring', {
-      outlineId: hashId(opts.outlineId),
+      outlineId: hashId(outlineId),
       intent: intent.kind,
       tools: optsPersist.tools,
       patchedCount: optsPersist.patchedItemIds?.length ?? 0,
@@ -556,6 +565,7 @@ async function executePlanAndPersist(ctx: {
     publishedItemIds?: string[];
     releasedItemIds?: string[];
     publishFailed?: AuthoringAgentResult['publishFailed'];
+    outlineOverride?: OutlineDetail;
   }) => Promise<AuthoringAgentResult>;
 }): Promise<AuthoringAgentResult> {
   let { detail, inventory } = ctx;
@@ -566,23 +576,64 @@ async function executePlanAndPersist(ctx: {
   const publishFailed: NonNullable<AuthoringAgentResult['publishFailed']> = [];
   let refineInstruction: string | undefined;
 
+  let outlineOverride: OutlineDetail | undefined;
+
   for (const call of ctx.plan.tools) {
     if (
       call.name === 'release_items' ||
       call.name === 'publish_items' ||
       call.name === 'schedule_items' ||
       call.name === 'refine_items' ||
-      call.name === 'restore_revision'
+      call.name === 'restore_revision' ||
+      call.name === 'ensure_interactive_lessons'
     ) {
-      detail = await getOutlineDetail(ctx.user, ctx.opts.outlineId);
+      const activeId = outlineOverride?.id ?? ctx.opts.outlineId;
+      detail = await getOutlineDetail(ctx.user, activeId);
       inventory = buildOutlineInventory(detail, ctx.opts.focusItemId);
+    }
+
+    if (call.name === 'ensure_interactive_lessons') {
+      try {
+        const ensured = await ensureInteractiveLessonsForOutline(
+          ctx.user,
+          outlineOverride?.id ?? ctx.opts.outlineId,
+          ctx.audit,
+        );
+        outlineOverride = ensured.outline;
+        detail = ensured.outline;
+        inventory = buildOutlineInventory(detail, ctx.opts.focusItemId);
+        const lessonItems = detail.modules.flatMap((mod) =>
+          mod.items.filter((i) => i.type === 'LESSON'),
+        );
+        results.push({
+          name: 'ensure_interactive_lessons',
+          ok: true,
+          lessonsAdded: ensured.lessonsAdded,
+          lessonsBuilt: ensured.lessonsBuilt,
+          alreadyComplete: ensured.alreadyComplete,
+          outlineId: detail.id,
+          patched: lessonItems.map((i) => ({ id: i.id, title: i.title })),
+        });
+        patchedItemIds.push(...lessonItems.map((i) => i.id));
+      } catch (err) {
+        console.error('[authoring agent] ensure_interactive_lessons failed', err);
+        results.push({
+          name: 'ensure_interactive_lessons',
+          ok: false,
+          error:
+            err instanceof Error
+              ? err.message
+              : 'Couldn’t add interactive lessons',
+        });
+      }
+      continue;
     }
 
     if (call.name === 'refine_items') {
       refineInstruction = call.args.instruction;
       const refineResult = await runContentRefineTool({
         user: ctx.user,
-        outlineId: ctx.opts.outlineId,
+        outlineId: outlineOverride?.id ?? ctx.opts.outlineId,
         detail,
         inventory,
         call,
@@ -685,6 +736,7 @@ async function executePlanAndPersist(ctx: {
     publishedItemIds,
     releasedItemIds,
     publishFailed: publishFailed.length > 0 ? publishFailed : undefined,
+    outlineOverride,
   });
 }
 
@@ -816,6 +868,8 @@ function planFromIntentVerbs(
           instruction: message,
         },
       });
+    } else if (verb === 'ensure_lessons') {
+      tools.push({ name: 'ensure_interactive_lessons', args: {} });
     } else if (verb === 'restore') {
       tools.push({ name: 'restore_revision', args: { latest: true } });
     }
@@ -930,6 +984,18 @@ export function fallbackPlan(
         },
       ],
     };
+  }
+
+  if (looksLikeEnsureLessonsRequest(message)) {
+    return { tools: [{ name: 'ensure_interactive_lessons', args: {} }] };
+  }
+
+  if (
+    (inventory.counts.byType.LESSON ?? 0) === 0 &&
+    inventory.counts.total > 0 &&
+    /\b(make|improve)\b.{0,40}\boutline\b/i.test(message)
+  ) {
+    return { tools: [{ name: 'ensure_interactive_lessons', args: {} }] };
   }
 
   if (looksLikeRewriteRequest(message)) {

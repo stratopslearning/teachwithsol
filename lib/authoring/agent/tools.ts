@@ -21,6 +21,7 @@ export const TOOL_NAMES = [
   'release_items',
   'schedule_items',
   'refine_items',
+  'ensure_interactive_lessons',
   'answer_question',
   'restore_revision',
 ] as const;
@@ -85,6 +86,10 @@ export const toolCallSchema = z.discriminatedUnion('name', [
     }),
   }),
   z.object({
+    name: z.literal('ensure_interactive_lessons'),
+    args: z.object({}).default({}),
+  }),
+  z.object({
     name: z.literal('answer_question'),
     args: z.object({
       question: z.string().min(1).max(2000),
@@ -142,6 +147,15 @@ export type ToolResult =
       patched: Array<{ id: string; title: string }>;
       resolvedIds: string[];
       assistantNote?: string;
+    }
+  | {
+      name: 'ensure_interactive_lessons';
+      ok: true;
+      lessonsAdded: number;
+      lessonsBuilt: number;
+      alreadyComplete: boolean;
+      outlineId: string;
+      patched: Array<{ id: string; title: string }>;
     }
   | {
       name: 'answer_question';
@@ -343,6 +357,38 @@ export function formatToolResultsReply(results: ToolResult[]): string {
               r.patched.length > 8
                 ? `\n- … +${r.patched.length - 8} more`
                 : '',
+            ]
+              .filter(Boolean)
+              .join('\n'),
+          );
+        }
+        break;
+      }
+      case 'ensure_interactive_lessons': {
+        if (r.alreadyComplete) {
+          parts.push(
+            '### Interactive lessons ready\n\nEvery module already starts with a Shah-style interactive chapter.',
+          );
+        } else {
+          const bullets = r.patched
+            .slice(0, 8)
+            .map((p) => `- ${p.title}`)
+            .join('\n');
+          parts.push(
+            [
+              '### Added interactive lessons',
+              '',
+              `Prepended **${r.lessonsAdded}** Shah-style LESSON chapter${
+                r.lessonsAdded === 1 ? '' : 's'
+              } and built **${r.lessonsBuilt}** interactive bod${
+                r.lessonsBuilt === 1 ? 'y' : 'ies'
+              }.`,
+              bullets ? `\n${bullets}` : '',
+              r.patched.length > 8
+                ? `\n- … +${r.patched.length - 8} more`
+                : '',
+              '',
+              'Each module now opens with an interactive chapter (reading + practice checks), then the graded work.',
             ]
               .filter(Boolean)
               .join('\n'),

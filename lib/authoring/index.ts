@@ -20,6 +20,10 @@ export {
   approveAndBuildOutline,
 } from '@/lib/authoring/propose';
 export {
+  ensureInteractiveLessonsForOutline,
+  outlineNeedsInteractiveLessons,
+} from '@/lib/authoring/ensureLessons';
+export {
   createAuthoringRevision,
   listAuthoringRevisions,
   restoreAuthoringRevision,

@@ -31,8 +31,31 @@ export function looksLikeReleaseRequest(message: string): boolean {
   );
 }
 
+/**
+ * Add / upgrade Shah-style interactive LESSON chapters on each module.
+ * Checked before add_item out-of-scope and before plain refine.
+ */
+export function looksLikeEnsureLessonsRequest(message: string): boolean {
+  const m = message.toLowerCase().trim();
+  if (!m) return false;
+  return (
+    /\b(interactive\s+(chapter|lesson)|shah[-\s]?style|lesson[-\s]?first)\b/.test(
+      m,
+    ) ||
+    /\b(add|create|insert|ensure|upgrade|include|build)\b.{0,48}\b(interactive\s+)?lessons?\b/.test(
+      m,
+    ) ||
+    /\blessons?\b.{0,40}\b(each|every|per)\s+module\b/.test(m) ||
+    /\b(make|turn)\b.{0,40}\b(modules?|outline)\b.{0,40}\b(interactive\s+)?lessons?\b/.test(
+      m,
+    ) ||
+    /\binteractive\s+lessons?\b.{0,24}\b(modules?|outline|course)\b/.test(m)
+  );
+}
+
 export function looksLikeRewriteRequest(message: string): boolean {
   const m = message.toLowerCase();
+  if (looksLikeEnsureLessonsRequest(message)) return false;
   return (
     /rewrite|rephrase|harder|easier|new question|replace question|different question|regenerate quiz|redo the quiz|change the options|fix the stem/.test(
       m,

@@ -171,6 +171,18 @@ export function buildAuthoringFollowUps(opts: {
     return out;
   }
 
+  const missingLessons =
+    (opts.inventory.counts.byType.LESSON ?? 0) === 0 &&
+    opts.inventory.counts.total > 0;
+  if (missingLessons) {
+    add({
+      id: 'fu-ensure-lessons',
+      label: 'Add interactive lessons per module',
+      action: 'prompt',
+      prompt: 'Add interactive lessons to each module',
+    });
+  }
+
   switch (intent.kind) {
     case 'help':
       add({

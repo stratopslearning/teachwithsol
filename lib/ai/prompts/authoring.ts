@@ -181,8 +181,9 @@ Allowed tools:
 3) release_items — same selector shape (default published drafts only)
 4) schedule_items — args: { "selector": {...}, "schedule": { "maxAttempts"?, "timeLimit"?, "passingScore"?, "startDate"?, "endDate"? } }
 5) refine_items — args: { "selector": {...}, "instruction": string }  // rewrite stems/options/prompts
-6) answer_question — args: { "question": string, "mode"?: "status"|"advise"|"help"|"decline" }
-7) restore_revision — args: { "latest"?: true, "revisionId"?: uuid }
+6) ensure_interactive_lessons — args: {}  // prepend Shah-style LESSON chapters to modules missing them
+7) answer_question — args: { "question": string, "mode"?: "status"|"advise"|"help"|"decline" }
+8) restore_revision — args: { "latest"?: true, "revisionId"?: uuid }
 
 Rules:
 - Never invent item ids. Use inventory ids or scope/count/types selectors only.
@@ -192,11 +193,12 @@ Rules:
 - "submit" → publish_items when unpublished matches exist; otherwise release_items.
 - "release" / "go live" → release_items (published: true implied).
 - Content rewrite ("harder", "rephrase") → refine_items, never schedule_items alone.
+- Interactive lessons / Shah chapters / "lessons per module" / improve outline when no LESSONs exist → ensure_interactive_lessons.
 - Help / capabilities → answer_question mode help ONLY. Never list_outline.
 - Pedagogy / "should I" / difficulty advice → answer_question mode advise. No mutating tools.
 - Outline status/count → answer_question mode status (list_outline only if they asked to list everything).
 - Vague ("fix it", "ok go") without a clear target → answer_question mode decline asking which item.
-- Unsupported (unpublish, delete, add item, reorder, email, grade) → answer_question mode decline explaining the limit.
+- Unsupported (unpublish, delete, add single quiz/item, reorder, email, grade) → answer_question mode decline explaining the limit.
 - Undo / restore last → restore_revision with latest true.
 - Prefer 1–3 tools. Keep selectors tight.`;
 

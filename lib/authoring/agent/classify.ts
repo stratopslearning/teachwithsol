@@ -1,6 +1,7 @@
 import type { OutlineInventory } from '@/lib/authoring/agent/inventory';
 import type { AuthoringLastAction } from '@/lib/authoring/agent/lastAction';
 import {
+  looksLikeEnsureLessonsRequest,
   looksLikeHelpOrCapabilitiesRequest,
   looksLikePublishRequest,
   looksLikeReleaseRequest,
@@ -36,7 +37,14 @@ export type AuthoringIntent = {
   reason: string;
   outOfScope?: OutOfScopeAction;
   /** For act: which verbs were detected */
-  verbs?: Array<'publish' | 'release' | 'schedule' | 'refine' | 'restore'>;
+  verbs?: Array<
+    | 'publish'
+    | 'release'
+    | 'schedule'
+    | 'refine'
+    | 'restore'
+    | 'ensure_lessons'
+  >;
 };
 
 const OUT_OF_SCOPE_PATTERNS: Array<{
@@ -107,6 +115,34 @@ export function classifyAuthoringIntent(
     return { kind: 'help', confidence: 0.98, reason: 'capabilities' };
   }
 
+  // Interactive-lesson upgrade is supported — do not treat as add_item.
+  if (looksLikeEnsureLessonsRequest(raw)) {
+    return {
+      kind: 'act',
+      confidence: 0.95,
+      reason: 'ensure interactive lessons',
+      verbs: ['ensure_lessons'],
+    };
+  }
+
+  // Outline-wide improve on a quiz-only skeleton → add Shah lessons first.
+  const missingLessons =
+    (opts?.inventory?.counts.byType.LESSON ?? 0) === 0 &&
+    (opts?.inventory?.counts.total ?? 0) > 0;
+  if (
+    missingLessons &&
+    /\b(make|improve)\b.{0,40}\boutline\b.{0,20}\b(better|stronger|clearer)?/.test(
+      m,
+    )
+  ) {
+    return {
+      kind: 'act',
+      confidence: 0.9,
+      reason: 'outline improve without lessons',
+      verbs: ['ensure_lessons'],
+    };
+  }
+
   for (const { action, re } of OUT_OF_SCOPE_PATTERNS) {
     if (re.test(raw)) {
       // "create drafts" is publish language, not add_item
@@ -142,6 +178,7 @@ export function classifyAuthoringIntent(
     verbs.push('schedule');
   }
   if (looksLikeRewriteRequest(raw)) verbs.push('refine');
+  if (looksLikeEnsureLessonsRequest(raw)) verbs.push('ensure_lessons');
   if (/\b(restore|rollback)\b.{0,24}\brevision\b/i.test(m)) {
     verbs.push('restore');
   }
