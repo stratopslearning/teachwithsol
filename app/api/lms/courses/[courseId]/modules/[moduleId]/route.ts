@@ -4,7 +4,11 @@ import { apiErrorResponse } from '@/lib/api/errors';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import { requireTeachingAccess } from '@/lib/authz/gates';
 import { assertCanManageCourse } from '@/lib/knowledge';
-import { deleteModule, updateModule } from '@/lib/lms/modules';
+import {
+  deleteModule,
+  setModulePublished,
+  updateModule,
+} from '@/lib/lms/modules';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +27,30 @@ export async function PATCH(
       unlockAt?: string | null;
       prerequisiteModuleIds?: string[];
     };
+    if (typeof body.published === 'boolean') {
+      const { published, title, position, unlockAt, prerequisiteModuleIds } =
+        body;
+      if (
+        title !== undefined ||
+        position !== undefined ||
+        unlockAt !== undefined ||
+        prerequisiteModuleIds !== undefined
+      ) {
+        await updateModule(courseId, moduleId, {
+          title,
+          position,
+          unlockAt,
+          prerequisiteModuleIds,
+        });
+      }
+      const result = await setModulePublished(
+        user,
+        courseId,
+        moduleId,
+        published,
+      );
+      return NextResponse.json(result);
+    }
     const mod = await updateModule(courseId, moduleId, body);
     return NextResponse.json({ module: mod });
   } catch (error) {

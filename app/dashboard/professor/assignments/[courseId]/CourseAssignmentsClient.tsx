@@ -166,6 +166,15 @@ export function CourseAssignmentsClient({
             body: JSON.stringify({ isActive: next }),
           },
         );
+      } else if (item.type === "LESSON" && item.lessonId) {
+        res = await fetch(
+          apiUrl(`/api/professor/lesson/${item.lessonId}/visibility`),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ isActive: next }),
+          },
+        );
       } else {
         toast.error("Release isn’t available for this type yet");
         return;

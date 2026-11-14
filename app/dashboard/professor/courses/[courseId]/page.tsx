@@ -203,7 +203,7 @@ export default async function ProfessorCourseHubPage({
               : `${quizCount} quiz${quizCount === 1 ? '' : 'zes'} · ${discussionCount} discussion${discussionCount === 1 ? '' : 's'}`
           }
           icon={<ClipboardList className="h-4 w-4" />}
-          href={appPath(`/dashboard/professor/assignments/${courseId}`)}
+          href={appPath(`/dashboard/professor/courses/${courseId}/assignments`)}
         />
         <StatCard
           label="Attention"

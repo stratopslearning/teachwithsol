@@ -55,13 +55,15 @@ export default async function CreateQuizPage({
   if (courseId) {
     enrolledSections = enrolledSections.filter((s) => s.courseId === courseId);
     defaultSectionIds = enrolledSections.map((s) => s.id);
-    successHref = withBasePath(`/dashboard/professor/assignments/${courseId}`);
+    successHref = withBasePath(
+      `/dashboard/professor/courses/${courseId}/assignments`,
+    );
   }
 
   return (
     <AppShell
       role="professor"
-      active="assignments"
+      active="courses"
       topbarTitle="New quiz"
       maxWidth="narrow"
     >
@@ -69,9 +71,19 @@ export default async function CreateQuizPage({
         breadcrumbs={[
           { label: "Dashboard", href: withBasePath("/dashboard/professor") },
           {
-            label: "Assignments",
-            href: withBasePath("/dashboard/professor/assignments"),
+            label: "Courses",
+            href: withBasePath("/dashboard/professor/courses"),
           },
+          ...(courseId
+            ? [
+                {
+                  label: "Assignments",
+                  href: withBasePath(
+                    `/dashboard/professor/courses/${courseId}/assignments`,
+                  ),
+                },
+              ]
+            : []),
           { label: "New quiz" },
         ]}
         eyebrow="Quiz"

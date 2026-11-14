@@ -42,6 +42,7 @@ function hrefFor(row: {
 
 function professorHrefFor(row: {
   type: string;
+  courseId?: string | null;
   quizId: string | null;
   lessonId: string | null;
   chatbotId: string | null;
@@ -51,7 +52,16 @@ function professorHrefFor(row: {
     case 'QUIZ':
       return withBasePath(`/dashboard/professor/quiz/${row.quizId}/edit`);
     case 'LESSON':
-      return withBasePath(`/dashboard/professor/assignments?type=LESSON`);
+      if (row.courseId && row.lessonId) {
+        return withBasePath(
+          `/dashboard/professor/courses/${row.courseId}/lessons/${row.lessonId}`,
+        );
+      }
+      return row.courseId
+        ? withBasePath(
+            `/dashboard/professor/courses/${row.courseId}/assignments`,
+          )
+        : withBasePath('/dashboard/professor/courses');
     case 'DISCUSSION':
       return withBasePath(`/dashboard/professor/discussions/${row.chatbotId}`);
     case 'INTERACTIVE':
@@ -59,7 +69,11 @@ function professorHrefFor(row: {
         `/dashboard/professor/interactive/${row.interactiveId}/edit`,
       );
     default:
-      return withBasePath('/dashboard/professor/assignments');
+      return row.courseId
+        ? withBasePath(
+            `/dashboard/professor/courses/${row.courseId}/assignments`,
+          )
+        : withBasePath('/dashboard/professor/courses');
   }
 }
 

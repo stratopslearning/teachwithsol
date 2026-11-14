@@ -1,11 +1,14 @@
 import { AssignmentsPanel } from '@/components/lms/AssignmentsPanel';
 import { CourseHubShell } from '@/components/professor/CourseHubShell';
 import { listCourseActivities } from '@/lib/assignments';
+import { listTeachableSectionIdsForCourse } from '@/lib/authoring/access';
 import {
   facultyActiveTool,
   requireFacultyCourse,
 } from '@/lib/lms/facultyCourseContext';
 import { listAssignmentGroupsDefiner } from '@/lib/db/lmsDefiners';
+import { fetchSectionsByIds } from '@/lib/db/entityScopedReads';
+import { assertWorkspaceAllowsTeaching } from '@/lib/workspace';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +21,27 @@ export default async function Page({
 }) {
   const { courseId } = await params;
   const studentView = (await searchParams).as === 'student';
-  const { course, lms } = await requireFacultyCourse(courseId);
-  const [groups, activities] = await Promise.all([
+  const { course, lms, user } = await requireFacultyCourse(courseId);
+  const teachingEntitlement = course.workspaceId
+    ? await assertWorkspaceAllowsTeaching(course.workspaceId)
+    : { ok: true as const };
+  const teachingBlocked =
+    !teachingEntitlement.ok &&
+    teachingEntitlement.code === 'billing_required';
+
+  const [groups, activities, teachableSectionIds] = await Promise.all([
     listAssignmentGroupsDefiner(courseId),
     listCourseActivities({ courseId }),
+    listTeachableSectionIdsForCourse(user, courseId),
   ]);
+  const sectionRows = teachableSectionIds.length
+    ? await fetchSectionsByIds(teachableSectionIds)
+    : [];
+  const sectionOptions = sectionRows.map((s) => ({
+    id: s.id,
+    title: s.name,
+  }));
+
   return (
     <CourseHubShell
       courseId={courseId}
@@ -35,7 +54,9 @@ export default async function Page({
       <AssignmentsPanel
         courseId={courseId}
         studentPreview={studentView}
+        teachingBlocked={teachingBlocked}
         items={activities}
+        sectionOptions={sectionOptions}
         groups={groups.map((g) => ({
           id: String(g.id),
           name: String(g.name),

@@ -56,7 +56,6 @@ const FACULTY_TEACHING_KEYS = new Set([
   "dashboard",
   "knowledge",
   "authoring",
-  "assignments",
   "courses",
 ]);
 const FACULTY_CONTENT_KEYS = new Set<string>();

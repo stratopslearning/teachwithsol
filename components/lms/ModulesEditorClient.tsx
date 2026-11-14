@@ -17,6 +17,11 @@ import {
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { withBasePath } from '@/lib/basePath';
 import { cn } from '@/lib/utils';
 
@@ -91,6 +96,21 @@ function itemHref(courseId: string, item: Item): string | null {
   return null;
 }
 
+function IconTip({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactElement;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function ModulesEditorClient({
   courseId,
   initialModules,
@@ -140,13 +160,20 @@ export function ModulesEditorClient({
   }
 
   async function togglePublish(moduleId: string, published: boolean) {
+    const next = !published;
+    if (next) {
+      const ok = confirm(
+        'Publish this module and release its assignments to students?',
+      );
+      if (!ok) return;
+    }
     setError(null);
     const res = await fetch(
       `/api/lms/courses/${courseId}/modules/${moduleId}`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ published: !published }),
+        body: JSON.stringify({ published: next }),
       },
     );
     if (!res.ok) {
@@ -158,9 +185,14 @@ export function ModulesEditorClient({
   }
 
   async function publishAll() {
+    const unpublished = initialModules.filter((m) => !m.published);
+    if (unpublished.length === 0) return;
+    const ok = confirm(
+      `Publish ${unpublished.length} module${unpublished.length === 1 ? '' : 's'} and release their assignments to students?`,
+    );
+    if (!ok) return;
     setError(null);
-    for (const m of initialModules) {
-      if (m.published) continue;
+    for (const m of unpublished) {
       const res = await fetch(
         `/api/lms/courses/${courseId}/modules/${m.id}`,
         {
@@ -174,6 +206,28 @@ export function ModulesEditorClient({
         setError(body.error ?? 'Publish all failed');
         return;
       }
+    }
+    startTransition(() => router.refresh());
+  }
+
+  async function toggleItemPublish(
+    moduleId: string,
+    itemId: string,
+    published: boolean,
+  ) {
+    setError(null);
+    const res = await fetch(
+      `/api/lms/courses/${courseId}/modules/${moduleId}/items/${itemId}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ published: !published }),
+      },
+    );
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(body.error ?? 'Failed to update item');
+      return;
     }
     startTransition(() => router.refresh());
   }
@@ -200,10 +254,10 @@ export function ModulesEditorClient({
     startTransition(() => router.refresh());
   }
 
-  async function removeModule(moduleId: string, title: string) {
+  async function removeModule(moduleId: string, moduleTitle: string) {
     if (
       !confirm(
-        `Delete module “${title}”? Its items will be removed from the course modules list.`,
+        `Delete module “${moduleTitle}”? Its items will be removed from the course modules list.`,
       )
     ) {
       return;
@@ -280,6 +334,7 @@ export function ModulesEditorClient({
               size="sm"
               disabled={pending || initialModules.every((m) => m.published)}
               onClick={() => void publishAll()}
+              title="Publish every module and release its assignments"
             >
               Publish all
             </Button>
@@ -328,18 +383,20 @@ export function ModulesEditorClient({
                 className="overflow-hidden rounded-md border border-rule/80 bg-surface"
               >
                 <div className="flex items-center gap-2 bg-muted/40 px-3 py-2.5">
-                  <button
-                    type="button"
-                    className="rounded p-0.5 text-ink-muted hover:text-ink"
-                    onClick={() => toggleCollapse(m.id)}
-                    aria-label={isCollapsed ? 'Expand' : 'Collapse'}
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </button>
+                  <IconTip label={isCollapsed ? 'Expand module' : 'Collapse module'}>
+                    <button
+                      type="button"
+                      className="rounded p-0.5 text-ink-muted hover:text-ink"
+                      onClick={() => toggleCollapse(m.id)}
+                      aria-label={isCollapsed ? 'Expand' : 'Collapse'}
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                  </IconTip>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold text-ink">
                       {m.title}
@@ -360,40 +417,56 @@ export function ModulesEditorClient({
                   </div>
                   {!studentPreview ? (
                     <div className="flex shrink-0 items-center gap-1">
-                      <button
-                        type="button"
-                        title={m.published ? 'Published' : 'Unpublished'}
-                        className={cn(
-                          'rounded p-1',
+                      <IconTip
+                        label={
                           m.published
-                            ? 'text-success'
-                            : 'text-ink-faint hover:text-ink-muted',
-                        )}
-                        disabled={pending}
-                        onClick={() => void togglePublish(m.id, m.published)}
+                            ? 'Unpublish module (assignments stay released)'
+                            : 'Publish module and release its assignments'
+                        }
                       >
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        disabled={pending}
-                        onClick={() => void addHeader(m.id)}
-                        title="Add item"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-ink-muted hover:text-destructive"
-                        disabled={pending}
-                        onClick={() => void removeModule(m.id, m.title)}
-                        title="Delete module"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <button
+                          type="button"
+                          className={cn(
+                            'rounded p-1',
+                            m.published
+                              ? 'text-success'
+                              : 'text-ink-faint hover:text-ink-muted',
+                          )}
+                          disabled={pending}
+                          aria-label={
+                            m.published
+                              ? 'Unpublish module'
+                              : 'Publish module and release assignments'
+                          }
+                          onClick={() => void togglePublish(m.id, m.published)}
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                      </IconTip>
+                      <IconTip label="Add text header">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          disabled={pending}
+                          onClick={() => void addHeader(m.id)}
+                          aria-label="Add text header"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </IconTip>
+                      <IconTip label="Delete module">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-ink-muted hover:text-destructive"
+                          disabled={pending}
+                          onClick={() => void removeModule(m.id, m.title)}
+                          aria-label="Delete module"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </IconTip>
                     </div>
                   ) : m.published ? (
                     <Check className="h-4 w-4 shrink-0 text-success" />
@@ -444,6 +517,13 @@ export function ModulesEditorClient({
                                 ) : (
                                   item.title
                                 )}
+                                {!studentPreview &&
+                                !item.isHeader &&
+                                !item.published ? (
+                                  <span className="ml-1 text-ink-faint">
+                                    (draft)
+                                  </span>
+                                ) : null}
                               </div>
                               {kind || label ? (
                                 <div className="text-xs text-ink-muted">
@@ -473,18 +553,39 @@ export function ModulesEditorClient({
                                 <option value="score_at_least">Score ≥ 70%</option>
                               </select>
                             ) : null}
-                            {!studentPreview ? (
-                              <span
-                                className={cn(
-                                  'shrink-0',
+                            {!studentPreview && !item.isHeader ? (
+                              <IconTip
+                                label={
                                   item.published
-                                    ? 'text-success'
-                                    : 'text-ink-faint',
-                                )}
-                                title={item.published ? 'Published' : 'Draft'}
+                                    ? 'Hide from student modules (does not unrelease assignment)'
+                                    : 'Show in student modules only (does not release assignment)'
+                                }
                               >
-                                <Check className="h-3.5 w-3.5" />
-                              </span>
+                                <button
+                                  type="button"
+                                  className={cn(
+                                    'shrink-0 rounded p-1',
+                                    item.published
+                                      ? 'text-success'
+                                      : 'text-ink-faint hover:text-ink-muted',
+                                  )}
+                                  disabled={pending}
+                                  aria-label={
+                                    item.published
+                                      ? 'Unpublish module item'
+                                      : 'Publish module item'
+                                  }
+                                  onClick={() =>
+                                    void toggleItemPublish(
+                                      m.id,
+                                      item.id,
+                                      item.published,
+                                    )
+                                  }
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </button>
+                              </IconTip>
                             ) : null}
                           </li>
                         );

@@ -74,6 +74,63 @@ export async function updateModule(
   return mod;
 }
 
+type TeachingUser = {
+  id: string;
+  clerkId: string;
+  platformStaff?: boolean | null;
+};
+
+/**
+ * Publish a whole module: mark the module + its items published, and release
+ * linked QUIZ / LESSON / DISCUSSION / INTERACTIVE activities to students.
+ * Unpublish only flips the module flag (does not unrelease activities).
+ * Individual item publish must not call this — use updateModuleItem instead.
+ */
+export async function setModulePublished(
+  user: TeachingUser,
+  courseId: string,
+  moduleId: string,
+  published: boolean,
+) {
+  const mod = await updateModule(courseId, moduleId, { published });
+  if (!published) return { module: mod, released: 0 };
+
+  const items = await listModuleItemsDefiner(moduleId);
+  const {
+    setQuizVisibility,
+    updateDiscussion,
+  } = await import('@/lib/professor/mutations');
+  const { setLessonVisibility } = await import('@/lib/learning/lessons');
+  const { setInteractiveVisibility } = await import(
+    '@/lib/interactives/mutations'
+  );
+
+  let released = 0;
+  for (const item of items) {
+    if (item.isHeader) continue;
+    if (!item.published) {
+      await updateModuleItem(moduleId, item.id, { published: true });
+    }
+    if (item.quizId) {
+      await setQuizVisibility(user, item.quizId, true);
+      released += 1;
+    }
+    if (item.chatbotId) {
+      await updateDiscussion(user, item.chatbotId, { isActive: true });
+      released += 1;
+    }
+    if (item.lessonId) {
+      await setLessonVisibility(user, item.lessonId, true);
+      released += 1;
+    }
+    if (item.interactiveId) {
+      await setInteractiveVisibility(user, item.interactiveId, true);
+      released += 1;
+    }
+  }
+  return { module: mod, released };
+}
+
 export async function deleteModule(courseId: string, moduleId: string) {
   try {
     return await softDeleteCourseModuleDefiner(courseId, moduleId);

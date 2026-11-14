@@ -6,7 +6,6 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
-  ClipboardList,
   KeyRound,
   LayoutDashboard,
   Layers,
@@ -107,12 +106,6 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
         label: "Authoring",
         icon: PenLine,
         key: "authoring",
-      },
-      {
-        href: withBasePath("/dashboard/professor/assignments"),
-        label: "Assignments",
-        icon: ClipboardList,
-        key: "assignments",
       },
       {
         href: withBasePath("/dashboard/professor/courses"),

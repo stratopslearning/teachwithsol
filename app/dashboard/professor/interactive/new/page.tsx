@@ -41,13 +41,13 @@ export default async function NewInteractivePage({
     courseId: ps.section.courseId,
   }));
 
-  let backHref = withBasePath("/dashboard/professor/assignments");
-  let backLabel = "Assignments";
+  let backHref = withBasePath("/dashboard/professor/courses");
+  let backLabel = "Courses";
 
   if (courseId) {
     sections = sections.filter((s) => s.courseId === courseId);
     backHref = withBasePath(
-      `/dashboard/professor/assignments/${courseId}`,
+      `/dashboard/professor/courses/${courseId}/assignments`,
     );
     backLabel = "Course assignments";
   }

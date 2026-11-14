@@ -136,9 +136,9 @@ export default async function ProfessorDashboard() {
       icon: BookOpen,
     },
     {
-      href: appPath('/dashboard/professor/assignments'),
-      label: 'Assignments',
-      hint: 'Quizzes & discussions',
+      href: appPath('/dashboard/professor/courses'),
+      label: 'Courses',
+      hint: 'Modules & assignments',
       icon: Plus,
     },
     {

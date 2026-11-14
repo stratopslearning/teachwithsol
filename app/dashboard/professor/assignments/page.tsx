@@ -1,25 +1,22 @@
-import { ProfessorToolLanding } from '@/components/professor/ProfessorToolLanding';
+import { redirect } from 'next/navigation';
+
+import { appPath } from '@/lib/basePath';
 import { requireTeachingAccess } from '@/lib/authz/gates';
 
 export const dynamic = 'force-dynamic';
 
+/** Global Assignments hub removed — manage assignments inside each course. */
 export default async function ProfessorAssignmentsLandingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ courseId?: string }>;
+  searchParams: Promise<{ courseId?: string; type?: string }>;
 }) {
-  const user = await requireTeachingAccess();
+  await requireTeachingAccess();
   const params = await searchParams;
-
-  return (
-    <ProfessorToolLanding
-      user={user}
-      active="assignments"
-      toolLabel="Assignments"
-      title="Assignments"
-      description="Pick a course to create quizzes, discussions, and interactives — by hand or from Authoring."
-      hrefTemplate="/dashboard/professor/assignments/{courseId}"
-      courseIdParam={params.courseId}
-    />
-  );
+  if (params.courseId) {
+    redirect(
+      appPath(`/dashboard/professor/courses/${params.courseId}/assignments`),
+    );
+  }
+  redirect(appPath('/dashboard/professor/courses'));
 }

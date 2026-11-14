@@ -1,9 +1,9 @@
 'use client';
 
+import { CourseAssignmentsClient } from '@/app/dashboard/professor/assignments/[courseId]/CourseAssignmentsClient';
 import { AssignmentsTableClient } from '@/components/assignments/AssignmentsTableClient';
 import { CreateAssignmentGroupForm } from '@/components/lms/CreateForms';
-import { Button } from '@/components/ui/button';
-import { withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 import type { ActivityListItem } from '@/lib/assignments/types';
 
 type GroupRow = {
@@ -13,16 +13,22 @@ type GroupRow = {
   dropLowest: number;
 };
 
+type SectionOption = { id: string; title: string };
+
 export function AssignmentsPanel({
   courseId,
   items,
   groups,
+  sectionOptions = [],
   studentPreview = false,
+  teachingBlocked = false,
 }: {
   courseId: string;
   items: ActivityListItem[];
   groups: GroupRow[];
+  sectionOptions?: SectionOption[];
   studentPreview?: boolean;
+  teachingBlocked?: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -38,25 +44,45 @@ export function AssignmentsPanel({
           </p>
         </div>
         {!studentPreview ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <CreateAssignmentGroupForm courseId={courseId} compact />
-            <Button asChild size="sm" className="h-10">
-              <a
-                href={withBasePath(
-                  `/dashboard/professor/assignments/${courseId}`,
-                )}
-              >
-                + Assignment
-              </a>
-            </Button>
-          </div>
+          <CreateAssignmentGroupForm courseId={courseId} compact />
         ) : null}
       </div>
 
-      <AssignmentsTableClient
-        items={items}
-        role={studentPreview ? 'student' : 'professor'}
-      />
+      {studentPreview ? (
+        <AssignmentsTableClient items={items} role="student" />
+      ) : (
+        <CourseAssignmentsClient
+          activities={items}
+          sectionOptions={sectionOptions}
+          createQuizHref={
+            teachingBlocked
+              ? undefined
+              : appPath(`/dashboard/professor/quiz/new?courseId=${courseId}`)
+          }
+          importQuizHref={
+            teachingBlocked
+              ? undefined
+              : appPath(
+                  `/dashboard/professor/quiz/new?courseId=${courseId}&import=csv`,
+                )
+          }
+          createDiscussionHref={
+            teachingBlocked
+              ? undefined
+              : appPath(
+                  `/dashboard/professor/discussions/new?courseId=${courseId}`,
+                )
+          }
+          createInteractiveHref={
+            teachingBlocked
+              ? undefined
+              : appPath(
+                  `/dashboard/professor/interactive/new?courseId=${courseId}`,
+                )
+          }
+          authoringHref={appPath(`/dashboard/professor/authoring/${courseId}`)}
+        />
+      )}
     </div>
   );
 }

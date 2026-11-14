@@ -43,15 +43,15 @@ export default async function NewDiscussionPage(props: PageProps) {
     courseId: ps.section.courseId,
   }));
 
-  let backHref = withBasePath('/dashboard/professor/assignments');
-  let backLabel = 'Assignments';
+  let backHref = withBasePath('/dashboard/professor/courses');
+  let backLabel = 'Courses';
   let defaultSectionIds: string[] | undefined;
 
   if (courseId) {
     enrolledSections = enrolledSections.filter((s) => s.courseId === courseId);
     defaultSectionIds = enrolledSections.map((s) => s.id);
     backHref = withBasePath(
-      `/dashboard/professor/assignments/${courseId}`,
+      `/dashboard/professor/courses/${courseId}/assignments`,
     );
     backLabel = 'Course assignments';
   }
