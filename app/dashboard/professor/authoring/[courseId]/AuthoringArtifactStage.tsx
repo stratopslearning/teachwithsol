@@ -1015,6 +1015,9 @@ function plannedAssignmentCopy(item: OutlineItemSummary) {
       ? `Approve & build writes this ${kind} practice activity.`
       : "Approve & build writes the practice activity for this slot.";
   }
+  if (item.type === "LESSON") {
+    return "Interactive chapters need reading + practice checks. Use chat (“add interactive lessons”) or Approve & build to write the body.";
+  }
   return "Approve & build writes this assignment.";
 }
 

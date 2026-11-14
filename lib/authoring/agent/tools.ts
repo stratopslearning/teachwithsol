@@ -369,6 +369,20 @@ export function formatToolResultsReply(results: ToolResult[]): string {
           parts.push(
             '### Interactive lessons ready\n\nEvery module already starts with a Shah-style interactive chapter.',
           );
+        } else if (r.lessonsBuilt === 0) {
+          parts.push(
+            [
+              '### Interactive lessons incomplete',
+              '',
+              r.lessonsAdded > 0
+                ? `Prepended **${r.lessonsAdded}** LESSON slot${
+                    r.lessonsAdded === 1 ? '' : 's'
+                  }, but chapter bodies were not written.`
+                : 'LESSON slots are present, but chapter bodies still need to be written.',
+              '',
+              'Say **add interactive lessons to each module** again to build the reading + practice checks.',
+            ].join('\n'),
+          );
         } else {
           const bullets = r.patched
             .slice(0, 8)

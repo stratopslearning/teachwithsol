@@ -30,7 +30,7 @@ import {
 import { applyOutlineBuildDefiner } from '@/lib/db/entityScopedReads';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import type { UserData } from '@/lib/getOrCreateUser';
-import { isInteractiveChapterBody } from '@/lib/lms/interactiveChapter';
+import { isInteractiveChapterReady } from '@/lib/lms/interactiveChapter';
 
 type AuthUser = Pick<UserData, 'id' | 'clerkId'> & {
   platformStaff?: boolean | null;
@@ -41,7 +41,7 @@ export function moduleNeedsInteractiveLesson(mod: {
 }): boolean {
   const first = mod.items[0];
   if (!first || first.type !== 'LESSON') return true;
-  return !isInteractiveChapterBody(first.body?.chapter);
+  return !isInteractiveChapterReady(first.body?.chapter);
 }
 
 export function outlineNeedsInteractiveLessons(detail: OutlineDetail): boolean {
@@ -188,7 +188,7 @@ async function buildLessonBodies(
       .filter(
         (item) =>
           item.type === 'LESSON' &&
-          !isInteractiveChapterBody(item.body?.chapter),
+          !isInteractiveChapterReady(item.body?.chapter),
       )
       .map((item) => ({
         moduleTitle: mod.title,

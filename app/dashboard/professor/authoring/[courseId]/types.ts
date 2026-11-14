@@ -133,7 +133,28 @@ export function itemBodyIsStub(item: OutlineItemSummary) {
       !body.interactiveBody || Object.keys(body.interactiveBody).length === 0
     );
   }
-  if (item.type === "LESSON") return !body.markdown?.trim();
+  if (item.type === "LESSON") {
+    // Shah chapters live on body.chapter; legacy lessons use body.markdown.
+    const chapter = body.chapter;
+    if (
+      chapter &&
+      typeof chapter === "object" &&
+      (chapter as { kind?: string }).kind === "interactive_chapter"
+    ) {
+      const sections = (chapter as { sections?: unknown[] }).sections;
+      const objectives = (chapter as { learningObjectives?: unknown[] })
+        .learningObjectives;
+      if (!Array.isArray(sections) || sections.length === 0) return true;
+      if (!Array.isArray(objectives) || objectives.length === 0) return true;
+      const hasReading = sections.some((s) => {
+        if (!s || typeof s !== "object") return false;
+        const md = (s as { markdown?: string }).markdown;
+        return Boolean(md?.trim());
+      });
+      return !hasReading;
+    }
+    return !body.markdown?.trim();
+  }
   return true;
 }
 

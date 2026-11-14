@@ -43,6 +43,23 @@ export function isInteractiveChapterBody(
   );
 }
 
+/**
+ * True when a chapter has real reading + practice (not an empty ensure-lessons stub).
+ * Structural `isInteractiveChapterBody` alone is too weak — hollow shells skip the build step.
+ */
+export function isInteractiveChapterReady(
+  value: unknown,
+): value is InteractiveChapterBody {
+  if (!isInteractiveChapterBody(value)) return false;
+  if ((value.learningObjectives?.length ?? 0) < 1) return false;
+  try {
+    assertValidChapter(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Flatten chapter sections into markdown for legacy lesson readers / search. */
 export function chapterToMarkdown(chapter: InteractiveChapterBody): string {
   const parts: string[] = [];

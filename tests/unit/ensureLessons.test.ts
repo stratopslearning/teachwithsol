@@ -24,6 +24,7 @@ describe('ensureLessons helpers', () => {
         items: [{ type: 'QUIZ', body: {} }],
       }),
     ).toBe(true);
+    // Hollow ensure-lessons stub must still need a build.
     expect(
       moduleNeedsInteractiveLesson({
         items: [
@@ -32,15 +33,53 @@ describe('ensureLessons helpers', () => {
             body: {
               chapter: {
                 kind: 'interactive_chapter',
-                learningObjectives: ['a'],
+                learningObjectives: [],
+                sections: [
+                  {
+                    id: 's1',
+                    title: 'Introduction',
+                    markdown: '',
+                    checkBank: [],
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      moduleNeedsInteractiveLesson({
+        items: [
+          {
+            type: 'LESSON',
+            body: {
+              chapter: {
+                kind: 'interactive_chapter',
+                learningObjectives: ['Explain SCM'],
                 sections: [
                   {
                     id: 's1',
                     title: 'Intro',
-                    markdown: 'Hi',
+                    markdown: 'Supply chains move goods.',
                     checkBank: [
                       {
-                        question: 'Q?',
+                        question: 'Q1?',
+                        options: ['A', 'B'],
+                        correctAnswer: 'A',
+                      },
+                      {
+                        question: 'Q2?',
+                        options: ['A', 'B'],
+                        correctAnswer: 'A',
+                      },
+                      {
+                        question: 'Q3?',
+                        options: ['A', 'B'],
+                        correctAnswer: 'A',
+                      },
+                      {
+                        question: 'Q4?',
                         options: ['A', 'B'],
                         correctAnswer: 'A',
                       },
