@@ -1,13 +1,10 @@
-import { and, eq, isNotNull, isNull } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import {
+import { loadExamContextDefiner } from '@/lib/db/studentWriteDefiners';
+import type {
   assignments,
   attempts,
   quizSections,
   quizzes,
 } from '@/app/db/schema';
-import { activeOnly } from '@/lib/db/filters';
 
 export type ExamAssignment = typeof assignments.$inferSelect;
 export type ExamQuiz = typeof quizzes.$inferSelect;
@@ -23,10 +20,8 @@ export type ExamContext = {
 };
 
 /**
- * Exam rows in two waves so a missing assignment/quiz does not also check
- * out attempt and section connections. Callers must still apply checks in
- * the original order (assignment → quiz → section → window) so the
- * winning error does not change.
+ * Exam rows via SECURITY DEFINER (FORCE RLS safe). Callers must still apply
+ * checks in order (assignment → quiz → section → window).
  */
 export async function loadExamContext(args: {
   quizId: string;
@@ -43,66 +38,23 @@ export async function loadExamContext(args: {
     includeSubmittedAttempts = true,
   } = args;
 
-  const [assignment, quiz] = await Promise.all([
-    db.query.assignments.findFirst({
-      where: and(
-        eq(assignments.id, assignmentId),
-        eq(assignments.quizId, quizId),
-        eq(assignments.studentId, studentId),
-      ),
-    }),
-    db.query.quizzes.findFirst({
-      where: and(eq(quizzes.id, quizId), activeOnly(quizzes.deletedAt)),
-    }),
-  ]);
-
-  if (!assignment || !quiz) {
-    return {
-      assignment,
-      quiz,
-      inProgressAttempt: undefined,
-      submittedCount: 0,
-      quizSectionLinks: [],
-    };
-  }
-
-  const [inProgressAttempt, submittedAttempts, quizSectionLinks] =
-    await Promise.all([
-      db.query.attempts.findFirst({
-        where: and(
-          eq(attempts.assignmentId, assignmentId),
-          eq(attempts.studentId, studentId),
-          isNull(attempts.submittedAt),
-        ),
-      }),
-      includeSubmittedAttempts
-        ? db.query.attempts.findMany({
-            where: and(
-              eq(attempts.assignmentId, assignmentId),
-              eq(attempts.studentId, studentId),
-              isNotNull(attempts.submittedAt),
-            ),
-            columns: { id: true },
-          })
-        : Promise.resolve([] as { id: string }[]),
-      includeSections
-        ? db.query.quizSections.findMany({
-            where: eq(quizSections.quizId, quizId),
-          })
-        : Promise.resolve([] as ExamQuizSection[]),
-    ]);
+  const ctx = await loadExamContextDefiner({
+    quizId,
+    assignmentId,
+    studentId,
+  });
 
   return {
-    assignment,
-    quiz,
-    inProgressAttempt: inProgressAttempt ?? undefined,
-    submittedCount: submittedAttempts.length,
-    quizSectionLinks,
+    assignment: ctx.assignment,
+    quiz: ctx.quiz,
+    inProgressAttempt: ctx.inProgressAttempt,
+    submittedCount: includeSubmittedAttempts ? ctx.submittedCount : 0,
+    quizSectionLinks: includeSections ? ctx.quizSectionLinks : [],
   };
 }
 
 /**
- * Which required row is missing. Assignment wins when both are absent : 
+ * Which required row is missing. Assignment wins when both are absent —
  * the same order start/submit used before parallel fetch.
  */
 export function missingExamResource(

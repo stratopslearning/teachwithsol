@@ -47,7 +47,7 @@ type ModuleRow = {
 function itemHref(sectionId: string, item: Item): string | null {
   if (item.externalUrl) return item.externalUrl;
   if (item.quizId) {
-    return withBasePath(`/quiz/${item.quizId}`);
+    return withBasePath(`/dashboard/student/quiz/${item.quizId}`);
   }
   if (item.lessonId) {
     return withBasePath(`/dashboard/student/lessons/${item.lessonId}`);

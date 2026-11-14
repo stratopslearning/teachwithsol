@@ -9,6 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { QuizUnavailable } from "@/components/quiz/QuizUnavailable";
 import { QuizTimer } from "@/components/quiz/QuizTimer";
@@ -65,6 +75,8 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
   const [timerInitialSeconds, setTimerInitialSeconds] = useState<number | null>(null);
   const [showResumeWarning, setShowResumeWarning] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [startBlock, setStartBlock] = useState<QuizBlockCode | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -84,77 +96,88 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
     userRole,
   );
 
-  // Start quiz when component mounts
-  useEffect(() => {
-    const startQuiz = async () => {
-      if (quizStarted) return;
-      try {
-        const res = await fetch(apiUrl(`/api/quiz/${quiz.id}/start`), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assignmentId }),
-        });
-        if (res.ok) {
-          const data = await res.json();
+  const startQuiz = useCallback(async () => {
+    if (quizStarted || starting) return;
+    setStarting(true);
+    try {
+      const res = await fetch(apiUrl(`/api/quiz/${quiz.id}/start`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignmentId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
 
-          if (data.serverAutoSubmitted && data.attemptId) {
-            router.push(
-              `/quiz/${quiz.id}/results?attemptId=${data.attemptId}`,
-            );
-            return;
+        if (data.serverAutoSubmitted && data.attemptId) {
+          router.push(
+            withBasePath(`/quiz/${quiz.id}/results?attemptId=${data.attemptId}`),
+          );
+          return;
+        }
+
+        setStartedAt(data.startedAt);
+
+        const restored =
+          data.answers && typeof data.answers === "object"
+            ? (data.answers as AnswerMap)
+            : {};
+        if (Object.keys(restored).length > 0) {
+          setAnswers(restored);
+          answersRef.current = restored;
+        }
+        skipNextAutosaveRef.current = true;
+
+        let remaining: number | null = null;
+        if (typeof data.remainingSeconds === "number") {
+          remaining = data.remainingSeconds;
+        } else if (quiz.timeLimit && data.startedAt) {
+          remaining =
+            getRemainingSeconds(quiz.timeLimit, new Date(data.startedAt)) ??
+            null;
+        }
+
+        if (quiz.timeLimit && remaining != null) {
+          setTimerInitialSeconds(remaining);
+          if (data.resumed && remaining < 120) {
+            setShowResumeWarning(true);
           }
-
-          setStartedAt(data.startedAt);
-
-          const restored =
-            data.answers && typeof data.answers === "object"
-              ? (data.answers as AnswerMap)
-              : {};
-          if (Object.keys(restored).length > 0) {
-            setAnswers(restored);
-            answersRef.current = restored;
-          }
-          skipNextAutosaveRef.current = true;
-
-          let remaining: number | null = null;
-          if (typeof data.remainingSeconds === "number") {
-            remaining = data.remainingSeconds;
-          } else if (quiz.timeLimit && data.startedAt) {
-            remaining =
-              getRemainingSeconds(quiz.timeLimit, new Date(data.startedAt)) ?? null;
-          }
-
-          if (quiz.timeLimit && remaining != null) {
-            setTimerInitialSeconds(remaining);
-            if (data.resumed && remaining < 120) {
-              setShowResumeWarning(true);
-            }
-            if (remaining <= 0 || data.forceAutoSubmit) {
-              setTimeUp(true);
-            }
-          } else if (data.forceAutoSubmit) {
+          if (remaining <= 0 || data.forceAutoSubmit) {
             setTimeUp(true);
           }
-
-          setQuizStarted(true);
-        } else {
-          const error = await res.json();
-          const block = startApiErrorToBlockCode(error);
-          if (block) {
-            setStartBlock(block);
-            return;
-          }
-          toast.error("Failed to start quiz", {
-            description: error.error || "Please try again in a moment.",
-          });
+        } else if (data.forceAutoSubmit) {
+          setTimeUp(true);
         }
-      } catch (err) {
-        console.error('Error starting quiz:', err);
-        toast.error("Failed to start quiz", { description: (err as Error).message });
+
+        setQuizStarted(true);
+        setConfirmOpen(false);
+      } else {
+        const error = await res.json();
+        const block = startApiErrorToBlockCode(error);
+        if (block) {
+          setStartBlock(block);
+          setConfirmOpen(false);
+          return;
+        }
+        toast.error("Failed to start quiz", {
+          description: error.error || "Please try again in a moment.",
+        });
       }
-    };
-    startQuiz();
-  }, [quiz.id, assignmentId, quizStarted, router, quiz.timeLimit]);
+    } catch (err) {
+      console.error("Error starting quiz:", err);
+      toast.error("Failed to start quiz", {
+        description: (err as Error).message,
+      });
+    } finally {
+      setStarting(false);
+    }
+  }, [
+    quizStarted,
+    starting,
+    quiz.id,
+    quiz.timeLimit,
+    assignmentId,
+    router,
+  ]);
 
   // Auto-submit when the quiz due date passes while the tab is open.
   useEffect(() => {
@@ -380,6 +403,88 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
             closedAt={quiz.endDate}
           />
         </div>
+      </div>
+    );
+  }
+
+  if (!quizStarted) {
+    return (
+      <div className="bg-paper text-ink min-h-screen flex items-center justify-center px-4 py-12">
+        <section className="paper paper-shadow w-full max-w-lg p-6 md:p-8 space-y-6">
+          <header className="space-y-2">
+            <span className="eyebrow text-ink-faint">Quiz</span>
+            <h1 className="font-display text-3xl text-ink leading-tight">
+              {quiz.title}
+            </h1>
+            {quiz.description ? (
+              <p className="text-sm text-ink-muted">
+                {cleanQuizDescription(quiz.description)}
+              </p>
+            ) : null}
+          </header>
+
+          <ul className="space-y-2 text-sm text-ink-muted">
+            <li>
+              <span className="text-ink">{quiz.totalQuestions}</span> question
+              {quiz.totalQuestions === 1 ? "" : "s"}
+            </li>
+            {quiz.timeLimit ? (
+              <li>
+                Timed attempt:{" "}
+                <span className="text-ink">{quiz.timeLimit} minutes</span>
+              </li>
+            ) : (
+              <li>No time limit</li>
+            )}
+            {quiz.endDate ? (
+              <li>
+                Due <LocalDateTime value={quiz.endDate} />
+              </li>
+            ) : null}
+          </ul>
+
+          <p className="text-sm text-ink-muted">
+            Starting uses one attempt. The timer begins when you confirm.
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              disabled={starting}
+            >
+              Start quiz
+            </Button>
+            <Button asChild type="button" variant="outline">
+              <a href={withBasePath("/dashboard/student")}>Cancel</a>
+            </Button>
+          </div>
+        </section>
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Start this quiz?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {quiz.timeLimit
+                  ? `You will have ${quiz.timeLimit} minutes once you begin. Leave this tab open until you submit.`
+                  : "Your attempt begins when you confirm. Leave this tab open until you submit."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={starting}>Not yet</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={starting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void startQuiz();
+                }}
+              >
+                {starting ? "Starting…" : "Begin attempt"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }

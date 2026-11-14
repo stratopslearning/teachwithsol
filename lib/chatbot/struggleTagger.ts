@@ -2,11 +2,9 @@
  * Post-session struggle topic tagger (async). Heuristic tags remain the
  * fallback when OPENAI_API_KEY is missing.
  */
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { chatbotSessions, type ChatbotMessage } from '@/app/db/schema';
+import type { ChatbotMessage } from '@/app/db/schema';
 import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
 import {
   defaultCoursePromptContext,
@@ -20,6 +18,10 @@ import {
 import { completeJsonSchema } from '@/lib/ai/structured';
 import { hashId, logAiSpan } from '@/lib/ai/tracing';
 import { extractStruggleTopics } from '@/lib/chatbot/assessmentLock';
+import {
+  fetchChatbotSessionByIdDefiner,
+  updateChatbotSessionDefiner,
+} from '@/lib/db/studentWriteDefiners';
 
 const struggleZod = z.object({
   topics: z.array(z.string().min(1).max(80)).max(20),
@@ -51,19 +53,15 @@ function transcriptFromMessages(messages: ChatbotMessage[]): string {
  */
 export async function tagSessionStruggles(opts: {
   sessionId: string;
+  studentId: string;
   courseId?: string | null;
   courseTopics?: string[];
 }): Promise<{ topics: string[]; escalated: boolean } | null> {
   try {
-    const session = await db.query.chatbotSessions.findFirst({
-      where: eq(chatbotSessions.id, opts.sessionId),
-      columns: {
-        id: true,
-        messages: true,
-        struggleTopics: true,
-        sessionMetadata: true,
-      },
-    });
+    const session = await fetchChatbotSessionByIdDefiner(
+      opts.sessionId,
+      opts.studentId,
+    );
     if (!session) return null;
 
     const messages = (session.messages ?? []) as ChatbotMessage[];
@@ -122,21 +120,20 @@ export async function tagSessionStruggles(opts: {
       : [];
     const merged = [...new Set([...prior, ...topics])].slice(0, 40);
 
-    await db
-      .update(chatbotSessions)
-      .set({
-        struggleTopics: merged,
-        sessionMetadata: {
-          ...((session.sessionMetadata as Record<string, unknown>) ?? {}),
-          struggleTagger: {
-            promptVersion: STRUGGLE_TAGGER_PROMPT_VERSION,
-            escalated,
-            notCovered,
-            taggedAt: new Date().toISOString(),
-          },
+    await updateChatbotSessionDefiner({
+      sessionId: opts.sessionId,
+      studentId: opts.studentId,
+      struggleTopics: merged,
+      sessionMetadata: {
+        ...((session.sessionMetadata as Record<string, unknown>) ?? {}),
+        struggleTagger: {
+          promptVersion: STRUGGLE_TAGGER_PROMPT_VERSION,
+          escalated,
+          notCovered,
+          taggedAt: new Date().toISOString(),
         },
-      })
-      .where(eq(chatbotSessions.id, opts.sessionId));
+      },
+    });
 
     void logAiSpan('insights.struggle_tagger', 'insights', {
       sessionId: hashId(opts.sessionId),

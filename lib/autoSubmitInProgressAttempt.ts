@@ -1,11 +1,8 @@
-import { eq, isNull } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import { attempts } from '@/app/db/schema';
 import {
   executeQuizSubmit,
   MaxAttemptsExceededError,
 } from '@/lib/executeQuizSubmit';
+import { fetchAttemptWithQuizAssignmentDefiner } from '@/lib/db/studentWriteDefiners';
 import { shouldForceAutoSubmitInProgress } from '@/lib/shouldForceAutoSubmit';
 
 export type AutoSubmitAttemptResult =
@@ -19,14 +16,8 @@ export async function autoSubmitInProgressAttempt(
   attemptId: string,
   now: Date = new Date(),
 ): Promise<AutoSubmitAttemptResult> {
-  const row = await db.query.attempts.findFirst({
-    where: eq(attempts.id, attemptId),
-    with: {
-      assignment: true,
-      quiz: true,
-    },
-  });
-
+  const packed = await fetchAttemptWithQuizAssignmentDefiner(attemptId);
+  const row = packed?.attempt;
   if (!row || row.submittedAt) {
     return {
       submitted: false,
@@ -34,8 +25,8 @@ export async function autoSubmitInProgressAttempt(
     };
   }
 
-  const quiz = row.quiz;
-  const assignment = row.assignment;
+  const quiz = packed?.quiz;
+  const assignment = packed?.assignment;
   if (!quiz || !assignment) {
     return { submitted: false, reason: 'not_found' };
   }
@@ -85,42 +76,48 @@ const SWEEP_BATCH = 40;
 
 /**
  * Server-side safety net: finalize in-progress attempts past timer or due date.
+ * Sweep still uses a limited DEFINER-backed fetch per candidate via autoSubmit.
  */
 export async function sweepStaleInProgressAttempts(
   now: Date = new Date(),
 ): Promise<{ scanned: number; submitted: number; results: AutoSubmitAttemptResult[] }> {
-  const candidates = await db.query.attempts.findMany({
-    where: isNull(attempts.submittedAt),
-    with: {
-      assignment: true,
-      quiz: true,
-    },
-    limit: SWEEP_BATCH * 3,
-    orderBy: (cols, { asc }) => [asc(cols.startedAt)],
-  });
+  const { db } = await import('@/app/db');
+  const { sql } = await import('drizzle-orm');
+  const result = await db.execute(sql`
+    SELECT sol_list_open_attempt_ids(${SWEEP_BATCH * 3}::int) AS ids
+  `);
+  const raw =
+    (result as { rows?: Array<{ ids: unknown }> }).rows?.[0]?.ids ??
+    (Array.isArray(result)
+      ? (result as Array<{ ids: unknown }>)[0]?.ids
+      : null);
+  const ids = Array.isArray(raw) ? raw.map((id) => String(id)) : [];
 
   const results: AutoSubmitAttemptResult[] = [];
   let submitted = 0;
 
-  for (const row of candidates) {
+  for (const id of ids) {
     if (results.length >= SWEEP_BATCH) break;
-    if (!row.quiz || !row.assignment) continue;
-    if (row.quiz.deletedAt) continue;
+    const packed = await fetchAttemptWithQuizAssignmentDefiner(id);
+    if (!packed?.attempt || !packed.quiz || !packed.assignment) continue;
+    if (packed.quiz.deletedAt) continue;
 
     const startedAt =
-      row.startedAt instanceof Date ? row.startedAt : new Date(row.startedAt);
+      packed.attempt.startedAt instanceof Date
+        ? packed.attempt.startedAt
+        : new Date(packed.attempt.startedAt);
     const { force } = shouldForceAutoSubmitInProgress({
-      quiz: row.quiz,
-      assignment: row.assignment,
+      quiz: packed.quiz,
+      assignment: packed.assignment,
       startedAt,
       now,
     });
     if (!force) continue;
 
-    const outcome = await autoSubmitInProgressAttempt(row.id, now);
+    const outcome = await autoSubmitInProgressAttempt(id, now);
     results.push(outcome);
     if (outcome.submitted) submitted += 1;
   }
 
-  return { scanned: candidates.length, submitted, results };
+  return { scanned: ids.length, submitted, results };
 }

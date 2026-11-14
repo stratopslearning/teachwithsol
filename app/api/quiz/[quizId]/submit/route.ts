@@ -1,9 +1,6 @@
-import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { assignments } from '@/app/db/schema';
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { tenantRateLimitKey } from '@/lib/rateLimit';
@@ -13,6 +10,7 @@ import {
 } from '@/lib/api/readJsonBody';
 import { sanitizeAnswerRecord } from '@/lib/api/sanitizeStoredText';
 import { logQuizAttemptAudit } from '@/lib/audit';
+import { loadExamContext } from '@/lib/examContext';
 import {
   executeQuizSubmit,
   MaxAttemptsExceededError,
@@ -53,12 +51,15 @@ export async function POST(
     }
     const { assignmentId, answers, autoSubmitted } = parseResult.data;
 
-    const assignmentRow = await db.query.assignments.findFirst({
-      where: eq(assignments.id, assignmentId),
-      columns: { tenantId: true },
+    const examCtx = await loadExamContext({
+      quizId,
+      assignmentId,
+      studentId: user.id,
+      includeSections: false,
+      includeSubmittedAttempts: false,
     });
     const limited = await enforceRateLimit({
-      key: tenantRateLimitKey(assignmentRow?.tenantId, user.id, 'submit'),
+      key: tenantRateLimitKey(examCtx.assignment?.tenantId, user.id, 'submit'),
       limit: 30,
       windowMs: 5 * 60_000,
       prefix: 'rl',

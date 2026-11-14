@@ -1,9 +1,6 @@
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
 import { BookOpen } from "@/components/icons";
 
-import { db } from "@/app/db";
-import { studentSections } from "@/app/db/schema";
 import { AssignmentsTableClient } from "@/components/assignments/AssignmentsTableClient";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -11,18 +8,13 @@ import { listStudentActivities } from "@/lib/assignments";
 import { requireStudent } from "@/lib/auth";
 import { withBasePath } from "@/lib/basePath";
 import { listStudentBooks } from "@/lib/books";
+import { fetchUserEnrollmentsDetail } from "@/lib/db/facultyStudentReads";
 import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
 
 export default async function StudentAssignmentsPage() {
   const user = await requireStudent();
 
-  const enrollments = await db.query.studentSections.findMany({
-    where: and(
-      eq(studentSections.studentId, user.id),
-      eq(studentSections.status, "ACTIVE"),
-    ),
-    with: { section: true },
-  });
+  const enrollments = await fetchUserEnrollmentsDetail(user.id);
   const { active } = partitionEnrollmentsByConclusion(enrollments);
   const sectionIds = active.map((e) => e.sectionId);
 

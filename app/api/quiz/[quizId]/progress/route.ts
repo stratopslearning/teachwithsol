@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { attempts } from '@/app/db/schema';
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import {
@@ -11,6 +8,7 @@ import {
   readJsonBody,
 } from '@/lib/api/readJsonBody';
 import { sanitizeAnswerRecord } from '@/lib/api/sanitizeStoredText';
+import { updateAttemptAnswersDefiner } from '@/lib/db/studentWriteDefiners';
 import { loadExamContext, missingExamResource } from '@/lib/examContext';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { isStudentEntitled } from '@/lib/featureFlags';
@@ -93,10 +91,16 @@ export async function PATCH(
       });
     }
 
-    await db
-      .update(attempts)
-      .set({ answers: sanitizedAnswers })
-      .where(eq(attempts.id, inProgressAttempt.id));
+    const saved = await updateAttemptAnswersDefiner(
+      inProgressAttempt.id,
+      user.id,
+      sanitizedAnswers,
+    );
+    if (!saved) {
+      throw ApiError.notFound(
+        'No in-progress attempt found. Please start the quiz first.',
+      );
+    }
 
     return NextResponse.json({ success: true, savedAt: now.toISOString() });
   } catch (error) {

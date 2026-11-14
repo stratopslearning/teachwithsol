@@ -31,7 +31,7 @@ type CheckResult = {
 
 function Markdown({ children }: { children: string }) {
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-table:text-sm">
+    <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-li:my-0.5 prose-table:text-sm">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
     </div>
   );
@@ -47,7 +47,6 @@ function stripBankForClient(
       checkBank: s.checkBank.map((q) => ({
         question: q.question,
         options: q.options,
-        // Keep for client draw; grading is server-side against bank.
         correctAnswer: q.correctAnswer,
         explanation: q.explanation,
       })),
@@ -97,6 +96,9 @@ export function InteractiveChapterPlayer({
     1,
     (sectionProg?.attempts ?? 0) + (results ? 0 : 1),
   );
+  const progressPct = chapter.sections.length
+    ? Math.round((passedCount / chapter.sections.length) * 100)
+    : 0;
 
   useEffect(() => {
     if (!section) return;
@@ -111,6 +113,9 @@ export function InteractiveChapterPlayer({
 
   function goToSection(idx: number) {
     setActiveIdx(idx);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   async function submitCheck() {
@@ -228,78 +233,105 @@ export function InteractiveChapterPlayer({
     pickCheckQuestions(section.checkBank, CHAPTER_QUESTIONS_PER_ATTEMPT);
 
   return (
-    <div className="space-y-6">
-      <header className="rounded-lg border border-rule/70 bg-surface px-5 py-6 sm:px-8">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">
-          {courseTitle
-            ? `${courseTitle} · Interactive chapter`
-            : 'Interactive chapter'}
-        </p>
-        <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">
-          {title}
-        </h1>
-        {chapter.subtitle ? (
-          <p className="mt-2 text-lg text-ink-muted">{chapter.subtitle}</p>
-        ) : null}
-        <div className="mt-4 flex flex-wrap gap-3 text-xs text-ink-muted">
-          <span>{chapter.sections.length} sections</span>
-          <span>Practice checks</span>
+    <div className="space-y-8">
+      <header className="space-y-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">
+            {courseTitle
+              ? `${courseTitle} · Interactive chapter`
+              : 'Interactive chapter'}
+          </p>
+          <h1 className="mt-2 font-display text-3xl leading-tight text-ink sm:text-4xl">
+            {title}
+          </h1>
+          {chapter.subtitle ? (
+            <p className="mt-2 max-w-3xl text-base text-ink-muted">
+              {chapter.subtitle}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
+          <span>
+            {passedCount} of {chapter.sections.length} checks done
+          </span>
+          <span aria-hidden>·</span>
+          <span>Practice only · not graded</span>
+          <span aria-hidden>·</span>
           <span>{CHAPTER_QUESTIONS_PER_ATTEMPT} questions per attempt</span>
         </div>
+
+        <div
+          className="h-1.5 overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuenow={progressPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Chapter check progress"
+        >
+          <div
+            className="h-full rounded-full bg-brand/70 transition-[width] duration-300"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+
         {chapter.learningObjectives?.length ? (
-          <div className="mt-5 border-t border-rule/60 pt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">
-              Learning objectives
-            </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink">
+          <details className="group rounded-lg border border-rule/60 bg-surface/40 px-4 py-3">
+            <summary className="cursor-pointer list-none text-sm font-medium text-ink marker:content-none [&::-webkit-details-marker]:hidden">
+              <span className="inline-flex items-center gap-2">
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+                Learning objectives
+              </span>
+            </summary>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-ink-muted">
               {chapter.learningObjectives.map((o) => (
-                <li key={o}>{o}</li>
+                <li key={o} className="text-ink">
+                  {o}
+                </li>
               ))}
             </ul>
-          </div>
+          </details>
         ) : null}
+
         {preview ? (
-          <p className="mt-4 text-xs text-ink-muted">
+          <p className="text-xs text-ink-muted">
             Preview mode — checks are not saved.
           </p>
         ) : null}
       </header>
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:items-start">
         <nav
-          className="w-full shrink-0 lg:w-56"
+          className="lg:sticky lg:top-20 lg:self-start"
           aria-label="Explore the chapter"
         >
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
-            Explore the chapter
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">
+            Sections
           </p>
-          <p className="mb-3 text-xs text-ink-muted">
-            {passedCount} of {chapter.sections.length} section checks submitted
-          </p>
-          <ol className="flex flex-row flex-wrap gap-1 lg:flex-col">
+          <ol className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
             {chapter.sections.map((s, i) => {
               const done = progress.some(
                 (p) => p.sectionId === s.id && p.passed,
               );
               return (
-                <li key={s.id}>
+                <li key={s.id} className="shrink-0 lg:w-full">
                   <button
                     type="button"
                     onClick={() => goToSection(i)}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors',
+                      'flex max-w-[14rem] items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors lg:max-w-none lg:w-full',
                       i === activeIdx
-                        ? 'bg-surface font-medium text-ink ring-1 ring-rule'
-                        : 'text-ink-muted hover:bg-surface/60 hover:text-ink',
+                        ? 'bg-surface text-ink ring-1 ring-rule'
+                        : 'text-ink-muted hover:bg-surface/70 hover:text-ink',
                     )}
                   >
                     <span
                       className={cn(
                         'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs',
-                        i === activeIdx
-                          ? 'bg-brand/20 text-ink'
-                          : done
-                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                        done
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                          : i === activeIdx
+                            ? 'bg-brand/15 text-ink'
                             : 'bg-muted text-ink-faint',
                       )}
                     >
@@ -313,12 +345,19 @@ export function InteractiveChapterPlayer({
           </ol>
         </nav>
 
-        <div className="min-w-0 flex-1 space-y-6">
-          <article className="rounded-lg border border-rule/70 bg-surface px-5 py-5 sm:px-6">
-            <h2 className="font-serif text-2xl text-ink">{section.title}</h2>
+        <div className="min-w-0 space-y-8">
+          <article className="space-y-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">
+                Section {activeIdx + 1} of {chapter.sections.length}
+              </p>
+              <h2 className="mt-1 font-display text-2xl text-ink">
+                {section.title}
+              </h2>
+            </div>
 
             {section.subsections && section.subsections.length > 0 ? (
-              <div className="mt-3">
+              <div>
                 <button
                   type="button"
                   className="flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink"
@@ -348,11 +387,9 @@ export function InteractiveChapterPlayer({
               </div>
             ) : null}
 
-            <div className="mt-4">
-              <Markdown>{section.markdown}</Markdown>
-            </div>
+            <Markdown>{section.markdown}</Markdown>
 
-            <p className="mt-6">
+            <p>
               <a
                 href="#knowledge-check"
                 className="text-sm font-medium text-brand hover:underline"
@@ -364,21 +401,22 @@ export function InteractiveChapterPlayer({
 
           <section
             id="knowledge-check"
-            className="rounded-lg border border-rule/70 bg-surface px-5 py-5 sm:px-6"
+            className="scroll-mt-24 space-y-4 border-t border-rule/70 pt-8"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-base font-semibold text-ink">
+              <h3 className="font-display text-xl text-ink">
                 Check your understanding
               </h3>
               <span className="text-xs text-ink-muted">
-                Attempt {displayAttempt} · practice (not graded)
+                Attempt {displayAttempt} · practice
               </span>
             </div>
-            <p className="mt-1 text-sm text-ink-muted">
-              Choose one answer. Both questions are required.
+            <p className="text-sm text-ink-muted">
+              Choose one answer for each question. This does not count toward
+              your grade.
             </p>
 
-            <ul className="mt-4 space-y-5">
+            <ul className="space-y-6">
               {drawn.map((q, qi) => {
                 const result = results?.find((r) => r.question === q.question);
                 return (
@@ -387,20 +425,20 @@ export function InteractiveChapterPlayer({
                       <legend className="text-sm font-medium text-ink">
                         {qi + 1}. {q.question}
                       </legend>
-                      <div className="mt-2 space-y-1.5">
+                      <div className="mt-3 space-y-2">
                         {q.options.map((opt) => (
                           <label
                             key={opt}
                             className={cn(
-                              'flex cursor-pointer items-start gap-2 rounded-md border border-rule/50 px-3 py-2 text-sm transition-colors',
+                              'flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors',
                               answers[q.question] === opt
-                                ? 'border-brand/40 bg-brand/5'
-                                : 'hover:bg-muted/40',
+                                ? 'border-brand/50 bg-brand/5'
+                                : 'border-rule/50 hover:border-rule hover:bg-muted/30',
                             )}
                           >
                             <input
                               type="radio"
-                              className="mt-0.5"
+                              className="mt-1"
                               name={`q-${qi}`}
                               checked={answers[q.question] === opt}
                               onChange={() =>
@@ -439,17 +477,17 @@ export function InteractiveChapterPlayer({
             </ul>
 
             {error ? (
-              <p className="mt-3 text-sm text-destructive" role="alert">
+              <p className="text-sm text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
             {feedback ? (
-              <p className="mt-3 text-sm text-ink" role="status">
+              <p className="text-sm text-ink" role="status">
                 {feedback}
               </p>
             ) : null}
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 pt-1">
               {!results ? (
                 <Button
                   size="sm"
@@ -468,43 +506,40 @@ export function InteractiveChapterPlayer({
 
           {activeIdx === chapter.sections.length - 1 &&
           (chapter.wrapUpMarkdown || chapter.capstoneMarkdown) ? (
-            <div className="space-y-4">
+            <div className="space-y-6 border-t border-rule/70 pt-8">
               {chapter.wrapUpMarkdown ? (
-                <article className="rounded-lg border border-rule/70 bg-surface px-5 py-5">
-                  <h3 className="font-serif text-xl text-ink">Chapter wrap-up</h3>
-                  <div className="mt-3">
-                    <Markdown>{chapter.wrapUpMarkdown}</Markdown>
-                  </div>
+                <article className="space-y-3">
+                  <h3 className="font-display text-xl text-ink">
+                    Chapter wrap-up
+                  </h3>
+                  <Markdown>{chapter.wrapUpMarkdown}</Markdown>
                 </article>
               ) : null}
               {chapter.capstoneMarkdown ? (
-                <article className="rounded-lg border border-rule/70 bg-surface px-5 py-5">
-                  <h3 className="font-serif text-xl text-ink">
+                <article className="space-y-3">
+                  <h3 className="font-display text-xl text-ink">
                     Putting it together
                   </h3>
-                  <p className="mt-1 text-xs text-ink-muted">
+                  <p className="text-xs text-ink-muted">
                     Practice synthesis — not submitted for a grade
                   </p>
-                  <div className="mt-3">
-                    <Markdown>{chapter.capstoneMarkdown}</Markdown>
-                  </div>
+                  <Markdown>{chapter.capstoneMarkdown}</Markdown>
                 </article>
               ) : null}
             </div>
           ) : null}
 
-          <div className="flex flex-wrap justify-between gap-2">
+          <div className="flex flex-wrap justify-between gap-2 border-t border-rule/50 pt-6">
             <Button
               variant="outline"
               size="sm"
               disabled={activeIdx === 0}
               onClick={() => goToSection(activeIdx - 1)}
             >
-              ← Previous section
+              ← Previous
             </Button>
             {activeIdx < chapter.sections.length - 1 ? (
               <Button
-                variant="outline"
                 size="sm"
                 onClick={() => goToSection(activeIdx + 1)}
               >

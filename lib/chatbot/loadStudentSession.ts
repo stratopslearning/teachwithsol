@@ -1,16 +1,10 @@
-import { and, desc, eq } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import {
-  chatbotAssignments,
-  chatbotSessions,
-  type ChatbotMessage,
-} from '@/app/db/schema';
+import type { ChatbotMessage } from '@/app/db/schema';
 import {
   getStudentAccessSectionIds,
   studentCanAccessChatbot,
 } from '@/lib/chatbot/access';
 import { fetchChatbotByIdDefiner } from '@/lib/db/studentReadDefiners';
+import { loadOrCreateChatbotSessionDefiner } from '@/lib/db/studentWriteDefiners';
 
 export type StudentChatbotPageData = {
   session: {
@@ -53,89 +47,34 @@ export async function loadStudentChatbotPageData(opts: {
   const canAccess = await studentHasChatbotAccess(opts.studentId, opts.chatbotId);
   if (!canAccess) return null;
 
-  let assignment = await db.query.chatbotAssignments.findFirst({
-    where: and(
-      eq(chatbotAssignments.chatbotId, opts.chatbotId),
-      eq(chatbotAssignments.studentId, opts.studentId),
-    ),
+  let sectionId: string | null = null;
+  if (!opts.sessionId) {
+    const accessSections = await getStudentAccessSectionIds(
+      opts.studentId,
+      opts.chatbotId,
+    );
+    sectionId = accessSections[0] ?? null;
+  }
+
+  const loaded = await loadOrCreateChatbotSessionDefiner({
+    chatbotId: opts.chatbotId,
+    studentId: opts.studentId,
+    sessionId: opts.sessionId ?? null,
+    sectionId,
   });
+  if (!loaded?.assignment || !loaded.session) return null;
 
-  if (!assignment) {
-    const [created] = await db
-      .insert(chatbotAssignments)
-      .values({
-        chatbotId: opts.chatbotId,
-        studentId: opts.studentId,
-      })
-      .returning();
-    assignment = created;
-  }
-
-  let session = null as
-    | typeof chatbotSessions.$inferSelect
-    | null
-    | undefined;
-
-  if (opts.sessionId) {
-    session = await db.query.chatbotSessions.findFirst({
-      where: and(
-        eq(chatbotSessions.id, opts.sessionId),
-        eq(chatbotSessions.chatbotId, opts.chatbotId),
-        eq(chatbotSessions.studentId, opts.studentId),
-      ),
-    });
-    if (!session) return null;
-  } else {
-    session = await db.query.chatbotSessions.findFirst({
-      where: and(
-        eq(chatbotSessions.assignmentId, assignment.id),
-        eq(chatbotSessions.status, 'in_progress'),
-      ),
-    });
-
-    if (!session && assignment.isCompleted) {
-      session = await db.query.chatbotSessions.findFirst({
-        where: and(
-          eq(chatbotSessions.assignmentId, assignment.id),
-          eq(chatbotSessions.status, 'completed'),
-        ),
-        orderBy: [desc(chatbotSessions.completedAt)],
-      });
-    }
-
-    if (!session) {
-      const accessSections = await getStudentAccessSectionIds(
-        opts.studentId,
-        opts.chatbotId,
-      );
-      const sectionId = accessSections[0];
-      if (!sectionId) return null;
-
-      const [created] = await db
-        .insert(chatbotSessions)
-        .values({
-          assignmentId: assignment.id,
-          studentId: opts.studentId,
-          chatbotId: opts.chatbotId,
-          sectionId,
-          messages: [] as ChatbotMessage[],
-          status: 'in_progress',
-        })
-        .returning();
-      session = created;
-    }
-  }
-
-  const messages = Array.isArray(session.messages)
-    ? (session.messages as ChatbotMessage[])
+  const messages = Array.isArray(loaded.session.messages)
+    ? (loaded.session.messages as ChatbotMessage[])
     : [];
 
   return {
     session: {
-      id: session.id,
-      status: session.status as 'in_progress' | 'completed',
+      id: loaded.session.id,
+      status: loaded.session.status as 'in_progress' | 'completed',
       messages,
-      isCompleted: assignment.isCompleted || session.status === 'completed',
+      isCompleted:
+        loaded.assignment.isCompleted || loaded.session.status === 'completed',
     },
     chatbot: {
       id: bot.id,

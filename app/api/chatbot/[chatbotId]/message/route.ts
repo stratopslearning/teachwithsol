@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import {
-  chatbotSessions,
-  courses,
-  sections,
-  type ChatbotMessage,
-} from '@/app/db/schema';
+import type { ChatbotMessage } from '@/app/db/schema';
 import {
   countRecentStuckSignals,
   INSTRUCTOR_ESCALATION_OFFER,
@@ -21,6 +14,11 @@ import {
   loadSafeQuizForChatbot,
   studentCanAccessChatbot,
 } from '@/lib/chatbot/access';
+import { fetchSectionById } from '@/lib/db/entityScopedReads';
+import {
+  fetchChatbotSessionByIdDefiner,
+  updateChatbotSessionDefiner,
+} from '@/lib/db/studentWriteDefiners';
 import {
   extractStruggleTopics,
   NOT_IN_MATERIALS_REPLY,
@@ -89,13 +87,11 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const session = await db.query.chatbotSessions.findFirst({
-      where: and(
-        eq(chatbotSessions.id, body.sessionId),
-        eq(chatbotSessions.chatbotId, chatbotId),
-        eq(chatbotSessions.studentId, user.id),
-      ),
-    });
+    const session = await fetchChatbotSessionByIdDefiner(
+      body.sessionId,
+      user.id,
+      chatbotId,
+    );
 
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
@@ -146,10 +142,7 @@ export async function POST(
     let lessonsContext = '';
     let hadRetrievalHits = false;
     try {
-      const section = await db.query.sections.findFirst({
-        where: eq(sections.id, session.sectionId),
-        columns: { courseId: true, tenantId: true, workspaceId: true, offeringId: true },
-      });
+      const section = await fetchSectionById(session.sectionId);
       if (section?.courseId) {
         const tenantId = section.tenantId ?? section.workspaceId;
         if (!tenantId) throw new Error('section missing tenant');
@@ -182,16 +175,13 @@ export async function POST(
     const forceNotInMaterials = !hadRetrievalHits && !lessonsContext.trim();
 
     let tutorWorkspaceId: string | null = null;
+    const sessionSection = await fetchSectionById(session.sectionId);
     try {
-      const section = await db.query.sections.findFirst({
-        where: eq(sections.id, session.sectionId),
-        columns: { courseId: true },
-      });
-      if (section?.courseId) {
+      if (sessionSection?.courseId) {
         const { getCourseWorkspaceId, checkAiBandAvailable } = await import(
           '@/lib/workspace'
         );
-        tutorWorkspaceId = await getCourseWorkspaceId(section.courseId);
+        tutorWorkspaceId = await getCourseWorkspaceId(sessionSection.courseId);
         const cap = await checkAiBandAvailable(tutorWorkspaceId);
         if (!cap.ok) {
           return NextResponse.json(
@@ -216,24 +206,17 @@ export async function POST(
       ReturnType<typeof import('@/lib/ai/prompts/courseContext').loadCoursePromptContext>
     > | undefined;
     try {
-      const section = await db.query.sections.findFirst({
-        where: eq(sections.id, session.sectionId),
-        columns: { courseId: true },
-      });
-      if (section?.courseId) {
+      if (sessionSection?.courseId) {
         const { loadCoursePromptContext } = await import(
           '@/lib/ai/prompts/courseContext'
         );
-        courseCtx = await loadCoursePromptContext(section.courseId);
+        const { fetchCourseById } = await import('@/lib/db/entityScopedReads');
+        courseCtx = await loadCoursePromptContext(sessionSection.courseId);
+        const course = await fetchCourseById(sessionSection.courseId);
         tutorPolicyRules = tutorPolicySystemRules(
           resolveTutorAiPolicy({
             chatbotPolicy: bot.aiPolicy,
-            coursePolicy: (
-              await db.query.courses.findFirst({
-                where: eq(courses.id, section.courseId),
-                columns: { aiPolicy: true },
-              })
-            )?.aiPolicy,
+            coursePolicy: course?.aiPolicy,
           }),
         );
       }
@@ -265,20 +248,19 @@ export async function POST(
       const mergedTopics = [
         ...new Set([...priorTopics, ...struggleTopics]),
       ].slice(0, 40);
-      await db
-        .update(chatbotSessions)
-        .set({
-          messages: nextMessages,
-          struggleTopics: mergedTopics,
-          sessionMetadata: {
-            ...((session.sessionMetadata as Record<string, unknown>) ?? {}),
-            citationStatus: 'not_in_materials',
-            promptVersion: TUTOR_PROMPT_VERSION,
-            modelVersion: tutorModel,
-            assessmentLocked,
-          },
-        })
-        .where(eq(chatbotSessions.id, session.id));
+      await updateChatbotSessionDefiner({
+        sessionId: session.id,
+        studentId: user.id,
+        messages: nextMessages,
+        struggleTopics: mergedTopics,
+        sessionMetadata: {
+          ...((session.sessionMetadata as Record<string, unknown>) ?? {}),
+          citationStatus: 'not_in_materials',
+          promptVersion: TUTOR_PROMPT_VERSION,
+          modelVersion: tutorModel,
+          assessmentLocked,
+        },
+      });
 
       const encoder = new TextEncoder();
       const readable = new ReadableStream<Uint8Array>({
@@ -323,15 +305,11 @@ export async function POST(
 
     void (async () => {
       try {
-        const section = await db.query.sections.findFirst({
-          where: eq(sections.id, session.sectionId),
-          columns: { courseId: true },
-        });
-        if (!section?.courseId) return;
+        if (!sessionSection?.courseId) return;
         const { getCourseWorkspaceId, recordAiUsage } = await import(
           '@/lib/workspace'
         );
-        const workspaceId = await getCourseWorkspaceId(section.courseId);
+        const workspaceId = await getCourseWorkspaceId(sessionSection.courseId);
         if (workspaceId) await recordAiUsage(workspaceId, 'tutor', 1);
       } catch (err) {
         console.warn('[chatbot/message] usage meter failed', err);
@@ -406,14 +384,13 @@ export async function POST(
             ...new Set([...priorTopics, ...struggleTopics]),
           ].slice(0, 40);
 
-          await db
-            .update(chatbotSessions)
-            .set({
-              messages: nextMessages,
-              sessionMetadata,
-              struggleTopics: mergedTopics,
-            })
-            .where(eq(chatbotSessions.id, sessionId));
+          await updateChatbotSessionDefiner({
+            sessionId,
+            studentId: user.id,
+            messages: nextMessages,
+            sessionMetadata,
+            struggleTopics: mergedTopics,
+          });
 
           controller.enqueue(
             encoder.encode(
