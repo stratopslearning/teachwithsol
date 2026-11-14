@@ -86,11 +86,10 @@ export async function sweepStaleInProgressAttempts(
   const result = await db.execute(sql`
     SELECT sol_list_open_attempt_ids(${SWEEP_BATCH * 3}::int) AS ids
   `);
-  const raw =
-    (result as { rows?: Array<{ ids: unknown }> }).rows?.[0]?.ids ??
-    (Array.isArray(result)
-      ? (result as Array<{ ids: unknown }>)[0]?.ids
-      : null);
+  const rows =
+    (result as unknown as { rows?: Array<{ ids: unknown }> }).rows ??
+    (Array.isArray(result) ? (result as Array<{ ids: unknown }>) : []);
+  const raw = rows[0]?.ids ?? null;
   const ids = Array.isArray(raw) ? raw.map((id) => String(id)) : [];
 
   const results: AutoSubmitAttemptResult[] = [];

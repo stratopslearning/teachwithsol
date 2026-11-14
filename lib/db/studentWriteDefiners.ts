@@ -7,6 +7,7 @@ import { db } from '@/app/db';
 import type {
   assignments,
   attempts,
+  ChatbotMessage,
   chatbotAssignments,
   chatbotSessions,
   interactiveProgress,
@@ -595,7 +596,7 @@ function mapChatbotSession(
     sectionId: String(pick(raw, 'section_id', 'sectionId')),
     tenantId: pick<string | null>(raw, 'tenant_id', 'tenantId') ?? null,
     offeringId: pick<string | null>(raw, 'offering_id', 'offeringId') ?? null,
-    messages: (pick(raw, 'messages', 'messages') as unknown[]) ?? [],
+    messages: (pick(raw, 'messages', 'messages') as ChatbotMessage[]) ?? [],
     sessionMetadata:
       (pick(raw, 'session_metadata', 'sessionMetadata') as Record<
         string,
