@@ -37,7 +37,7 @@ export default async function StudentLessonDetailPage({
       topbarTitle={lesson.title}
     >
       {isChapter ? (
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto w-full max-w-6xl px-1 pb-16 sm:px-2">
           <InteractiveChapterPlayer
             lessonId={lesson.id}
             title={lesson.title}

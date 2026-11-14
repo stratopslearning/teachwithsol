@@ -1,7 +1,3 @@
-import { and, eq, isNull } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import { questions, quizzes } from '@/app/db/schema';
 import { authorize, userHasAnyBinding } from '@/lib/authz/authorize';
 import { authorizeOnSection } from '@/lib/authz/courseAccess';
 import { TEACHING_ROLES } from '@/lib/authz/permissions';
@@ -123,20 +119,14 @@ export async function loadSafeQuizForChatbot(
 ): Promise<SafeQuizInput | null> {
   if (!relatedQuizId) return null;
 
-  const quiz = await db.query.quizzes.findFirst({
-    where: and(eq(quizzes.id, relatedQuizId), isNull(quizzes.deletedAt)),
-  });
+  const { fetchQuizById } = await import('@/lib/db/entityScopedReads');
+  const { fetchQuizQuestionsSafeDefiner } = await import(
+    '@/lib/db/studentWriteDefiners'
+  );
+  const quiz = await fetchQuizById(relatedQuizId);
   if (!quiz) return null;
 
-  const qs = await db
-    .select({
-      order: questions.order,
-      type: questions.type,
-      question: questions.question,
-      options: questions.options,
-    })
-    .from(questions)
-    .where(eq(questions.quizId, quiz.id));
+  const qs = await fetchQuizQuestionsSafeDefiner(relatedQuizId);
 
   return {
     title: quiz.title,

@@ -28,7 +28,7 @@ function hrefFor(row: {
 }): string {
   switch (row.type) {
     case 'QUIZ':
-      return withBasePath(`/quiz/${row.quizId}`);
+      return withBasePath(`/dashboard/student/quiz/${row.quizId}`);
     case 'LESSON':
       return withBasePath(`/dashboard/student/lessons/${row.lessonId}`);
     case 'DISCUSSION':
@@ -277,170 +277,45 @@ export async function listStudentActivities(opts: {
   const { studentId, sectionIds, type = 'ALL' } = opts;
   if (sectionIds.length === 0) return [];
 
-  const [qs, ls, cs, is] = await Promise.all([
-    db.query.quizSections.findMany({
-      where: inArray(quizSections.sectionId, sectionIds),
-      columns: { quizId: true, sectionId: true },
-    }),
-    db.query.lessonSections.findMany({
-      where: inArray(lessonSections.sectionId, sectionIds),
-      columns: { lessonId: true, sectionId: true },
-    }),
-    db.query.chatbotSections.findMany({
-      where: inArray(chatbotSections.sectionId, sectionIds),
-      columns: { chatbotId: true, sectionId: true },
-    }),
-    db.query.interactiveSections.findMany({
-      where: inArray(interactiveSections.sectionId, sectionIds),
-      columns: { interactiveId: true, sectionId: true },
-    }),
-  ]);
-
-  const quizIds = [...new Set(qs.map((r) => r.quizId))];
-  const lessonIds = [...new Set(ls.map((r) => r.lessonId))];
-  const chatbotIds = [...new Set(cs.map((r) => r.chatbotId))];
-  const interactiveIds = [...new Set(is.map((r) => r.interactiveId))];
-
-  const entityFilters = [
-    quizIds.length ? inArray(courseActivities.quizId, quizIds) : undefined,
-    lessonIds.length ? inArray(courseActivities.lessonId, lessonIds) : undefined,
-    chatbotIds.length
-      ? inArray(courseActivities.chatbotId, chatbotIds)
-      : undefined,
-    interactiveIds.length
-      ? inArray(courseActivities.interactiveId, interactiveIds)
-      : undefined,
-  ].filter((x): x is NonNullable<typeof x> => x != null);
-
-  if (entityFilters.length === 0) return [];
-
-  const rows = await db.query.courseActivities.findMany({
-    where: and(
-      isNull(courseActivities.deletedAt),
-      eq(courseActivities.isActive, true),
-      type !== 'ALL' ? eq(courseActivities.type, type) : undefined,
-      or(...entityFilters),
-    ),
-    with: {
-      course: true,
-      interactive: true,
-      quiz: {
-        columns: {
-          id: true,
-          maxAttempts: true,
-          startDate: true,
-          endDate: true,
-        },
-      },
-    },
-    orderBy: (t, { desc }) => desc(t.updatedAt),
-  });
-
-  const sectionsByEntity = await sectionMapForActivities(rows);
-
-  const [quizAttempts, lessonProg, chatAssign, interactiveProg] =
-    await Promise.all([
-      quizIds.length
-        ? db.query.attempts.findMany({
-            where: and(
-              eq(attempts.studentId, studentId),
-              inArray(attempts.quizId, quizIds),
-              isNotNull(attempts.submittedAt),
-            ),
-            columns: {
-              quizId: true,
-              percentage: true,
-              score: true,
-              maxScore: true,
-            },
-          })
-        : Promise.resolve([]),
-      lessonIds.length
-        ? db.query.lessonProgress.findMany({
-            where: and(
-              eq(lessonProgress.studentId, studentId),
-              inArray(lessonProgress.lessonId, lessonIds),
-            ),
-          })
-        : Promise.resolve([]),
-      chatbotIds.length
-        ? db.query.chatbotAssignments.findMany({
-            where: and(
-              eq(chatbotAssignments.studentId, studentId),
-              inArray(chatbotAssignments.chatbotId, chatbotIds),
-            ),
-          })
-        : Promise.resolve([]),
-      interactiveIds.length
-        ? db.query.interactiveProgress.findMany({
-            where: and(
-              eq(interactiveProgress.studentId, studentId),
-              inArray(interactiveProgress.interactiveId, interactiveIds),
-            ),
-          })
-        : Promise.resolve([]),
-    ]);
-
-  const bestQuiz = new Map<string, number>();
-  const attemptCounts = new Map<string, number>();
-  for (const a of quizAttempts) {
-    attemptCounts.set(a.quizId, (attemptCounts.get(a.quizId) ?? 0) + 1);
-    const pct =
-      a.percentage ??
-      (a.maxScore ? Math.round(((a.score ?? 0) / a.maxScore) * 100) : 0);
-    const prev = bestQuiz.get(a.quizId);
-    if (prev == null || pct > prev) bestQuiz.set(a.quizId, pct);
-  }
-  const lessonStatus = new Map(lessonProg.map((p) => [p.lessonId, p.status]));
-  const chatStatus = new Map(
-    chatAssign.map((p) => [p.chatbotId, p.isCompleted]),
+  const { fetchStudentActivitiesBundleDefiner } = await import(
+    '@/lib/db/studentWriteDefiners'
   );
-  const interactiveStatus = new Map(
-    interactiveProg.map((p) => [p.interactiveId, p.status]),
+  const rows = await fetchStudentActivitiesBundleDefiner(
+    studentId,
+    sectionIds,
+    type === 'ALL' ? null : type,
   );
 
   return rows.map((row) => {
-    const secs = sectionsByEntity.get(entityKey(row)) ?? {
-      ids: [],
-      names: [],
-    };
     let completionStatus: ActivityCompletionStatus = 'NOT_STARTED';
     let bestPercentage: number | null = null;
     let attemptCount: number | null = null;
     let maxAttempts: number | null = null;
 
-    const quizStart = row.quiz?.startDate
-      ? new Date(row.quiz.startDate).toISOString()
+    const quizStart = row.quizStartDate
+      ? row.quizStartDate.toISOString()
       : null;
-    const quizEnd = row.quiz?.endDate
-      ? new Date(row.quiz.endDate).toISOString()
-      : null;
-    const startDate = row.startDate
-      ? new Date(row.startDate).toISOString()
-      : quizStart;
-    const endDate = row.endDate
-      ? new Date(row.endDate).toISOString()
-      : quizEnd;
+    const quizEnd = row.quizEndDate ? row.quizEndDate.toISOString() : null;
+    const startDate = row.startDate ? row.startDate.toISOString() : quizStart;
+    const endDate = row.endDate ? row.endDate.toISOString() : quizEnd;
 
     if (row.type === 'QUIZ' && row.quizId) {
-      const pct = bestQuiz.get(row.quizId);
-      attemptCount = attemptCounts.get(row.quizId) ?? 0;
-      maxAttempts = row.quiz?.maxAttempts ?? null;
-      if (pct != null) {
+      attemptCount = row.quizProgress?.attemptCount ?? 0;
+      maxAttempts = row.maxAttempts;
+      if (row.quizProgress?.bestPercentage != null) {
         completionStatus = 'SCORED';
-        bestPercentage = pct;
+        bestPercentage = row.quizProgress.bestPercentage;
       }
     } else if (row.type === 'LESSON' && row.lessonId) {
-      const st = lessonStatus.get(row.lessonId);
-      if (st === 'COMPLETED') completionStatus = 'COMPLETED';
-      else if (st === 'STARTED') completionStatus = 'IN_PROGRESS';
+      if (row.lessonStatus === 'COMPLETED') completionStatus = 'COMPLETED';
+      else if (row.lessonStatus === 'STARTED') completionStatus = 'IN_PROGRESS';
     } else if (row.type === 'DISCUSSION' && row.chatbotId) {
-      if (chatStatus.get(row.chatbotId)) completionStatus = 'COMPLETED';
-      else if (chatStatus.has(row.chatbotId)) completionStatus = 'IN_PROGRESS';
+      if (row.chatbotCompleted) completionStatus = 'COMPLETED';
+      else if (row.chatbotAssigned) completionStatus = 'IN_PROGRESS';
     } else if (row.type === 'INTERACTIVE' && row.interactiveId) {
-      const st = interactiveStatus.get(row.interactiveId);
-      if (st === 'COMPLETED') completionStatus = 'COMPLETED';
-      else if (st === 'STARTED') completionStatus = 'IN_PROGRESS';
+      if (row.interactiveStatus === 'COMPLETED') completionStatus = 'COMPLETED';
+      else if (row.interactiveStatus === 'STARTED')
+        completionStatus = 'IN_PROGRESS';
     }
 
     return {
@@ -449,7 +324,7 @@ export async function listStudentActivities(opts: {
       title: row.title,
       description: row.description,
       courseId: row.courseId,
-      courseTitle: row.course?.title ?? null,
+      courseTitle: row.courseTitle,
       professorId: row.professorId,
       isActive: row.isActive,
       startDate,
@@ -459,9 +334,9 @@ export async function listStudentActivities(opts: {
       lessonId: row.lessonId,
       chatbotId: row.chatbotId,
       interactiveId: row.interactiveId,
-      interactiveKind: row.interactive?.kind ?? null,
-      sectionIds: secs.ids.filter((id) => sectionIds.includes(id)),
-      sectionNames: secs.names,
+      interactiveKind: row.interactiveKind,
+      sectionIds: row.sections.map((s) => s.id),
+      sectionNames: row.sections.map((s) => s.name),
       href: hrefFor(row),
       completionStatus,
       bestPercentage,

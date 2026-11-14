@@ -1,18 +1,6 @@
-import { and, eq, isNull } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import {
-  assignments,
-  attempts,
-  questions,
-  quizSections,
-  quizzes,
-  sections,
-} from '@/app/db/schema';
 import { AppShell } from '@/components/layout/AppShell';
 import { QuizTakeForm } from '@/components/quiz/QuizTakeForm';
 import { QuizUnavailable } from '@/components/quiz/QuizUnavailable';
-import { activeOnly } from '@/lib/db/filters';
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { requireLearningAccess } from '@/lib/authz/gates';
 import type { UserData } from '@/lib/getOrCreateUser';
@@ -22,7 +10,7 @@ import {
   type QuizBlockCode,
 } from '@/lib/quizBlockCopy';
 import { assertStudentCanOpenQuiz } from '@/lib/quizEnrollment';
-import { resolveAttemptSectionId } from '@/lib/resolveAttemptSection';
+import { fetchQuizTakeBundleDefiner } from '@/lib/db/studentWriteDefiners';
 import { isSectionConcluded } from '@/lib/sectionAvailability';
 import { appRedirect } from '@/lib/serverRedirect';
 import { cleanQuizDescription, normalizeDatabaseDate } from '@/lib/utils';
@@ -58,12 +46,10 @@ export default async function QuizPage(props: QuizPageProps) {
   const user = await requireLearningAccess();
   if (!isStudentEntitled(user)) appRedirect('/payment');
 
-  // Soft-deleted quizzes are treated as unavailable (do not dump to home).
-  const quiz = await db.query.quizzes.findFirst({
-    where: and(eq(quizzes.id, quizId), activeOnly(quizzes.deletedAt)),
-  });
-  if (!quiz) return blocked(user, { code: 'quiz_unavailable' });
+  const bundle = await fetchQuizTakeBundleDefiner(quizId, user.id);
+  if (!bundle?.quiz) return blocked(user, { code: 'quiz_unavailable' });
 
+  const quiz = bundle.quiz;
   const now = new Date();
   const startDate = normalizeDatabaseDate(quiz.startDate);
   const endDate = normalizeDatabaseDate(quiz.endDate);
@@ -83,65 +69,18 @@ export default async function QuizPage(props: QuizPageProps) {
     });
   }
 
-  // Enrollment before questions: unenrolled students must not see the bank
-  // or get a lazy assignment row.
-  const quizSectionLinks = await db.query.quizSections.findMany({
-    where: eq(quizSections.quizId, quizId),
-  });
-  const quizSectionIds = quizSectionLinks.map((qs) => qs.sectionId);
-  const resolvedSectionId = await resolveAttemptSectionId(
-    user.id,
-    quizSectionIds,
-  );
-  const open = assertStudentCanOpenQuiz(resolvedSectionId);
+  const open = assertStudentCanOpenQuiz(bundle.resolvedSectionId);
   if (!open.allowed) {
     return blocked(user, { code: 'not_enrolled', quizTitle: quiz.title });
   }
-  const sectionId = open.sectionId;
 
-  // Fetch or create assignment (upsert-safe for concurrent page loads in dev).
-  const assignmentWhere = and(
-    eq(assignments.quizId, quizId),
-    eq(assignments.studentId, user.id),
-  );
-  let assignment = await db.query.assignments.findFirst({
-    where: assignmentWhere,
-  });
-  if (!assignment) {
-    await db
-      .insert(assignments)
-      .values({
-        quizId,
-        studentId: user.id,
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      })
-      .onConflictDoNothing({
-        target: [assignments.quizId, assignments.studentId],
-      });
-    assignment = await db.query.assignments.findFirst({
-      where: assignmentWhere,
-    });
-  }
+  const assignment = bundle.assignment;
   if (!assignment) {
     return blocked(user, { code: 'quiz_unavailable', quizTitle: quiz.title });
   }
 
-  const [quizQuestions, inProgressAttempt, section] = await Promise.all([
-    db.query.questions.findMany({
-      where: eq(questions.quizId, quizId),
-      orderBy: questions.order,
-    }),
-    db.query.attempts.findFirst({
-      where: and(
-        eq(attempts.quizId, quizId),
-        eq(attempts.studentId, user.id),
-        isNull(attempts.submittedAt),
-      ),
-    }),
-    db.query.sections.findFirst({
-      where: eq(sections.id, sectionId),
-    }),
-  ]);
+  const inProgressAttempt = bundle.inProgressAttempt;
+  const section = bundle.section;
 
   if (isSectionConcluded(section, now) && !inProgressAttempt) {
     return blocked(user, {
@@ -161,6 +100,7 @@ export default async function QuizPage(props: QuizPageProps) {
   }
 
   const quizEndDate = normalizeDatabaseDate(quiz.endDate);
+  const quizQuestions = bundle.questions;
 
   return (
     <div className="bg-paper text-ink min-h-screen">

@@ -1,9 +1,6 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
 import { Archive } from "@/components/icons";
 
-import { db } from "@/app/db";
-import { studentSections } from "@/app/db/schema";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeading } from "@/components/layout/SectionHeading";
@@ -20,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { appPath, withBasePath } from "@/lib/basePath";
 import { requireStudent } from "@/lib/auth";
+import { fetchUserEnrollmentsDetail } from "@/lib/db/facultyStudentReads";
 import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
 import {
   LocalDateTime,
@@ -29,16 +27,16 @@ import {
 export default async function StudentArchivedSectionsPage() {
   const user = await requireStudent();
 
-  const enrollments = await db.query.studentSections.findMany({
-    where: eq(studentSections.studentId, user.id),
-    with: {
-      section: { with: { course: true } },
-    },
-  });
+  const enrollments = await fetchUserEnrollmentsDetail(user.id);
 
   const { archived } = partitionEnrollmentsByConclusion(enrollments);
   const rows = archived
-    .map((e) => e.section)
+    .map((e) => ({
+      id: e.section.id,
+      name: e.section.name,
+      endsAt: e.section.endsAt,
+      course: e.section.course,
+    }))
     .sort((a, b) => {
       const aEnd = a.endsAt ? new Date(a.endsAt).getTime() : 0;
       const bEnd = b.endsAt ? new Date(b.endsAt).getTime() : 0;

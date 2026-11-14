@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { chatbotAssignments, chatbotSessions } from '@/app/db/schema';
 import { studentCanAccessChatbot } from '@/lib/chatbot/access';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { readJsonBody } from '@/lib/api/readJsonBody';
+import { fetchSectionById } from '@/lib/db/entityScopedReads';
+import {
+  completeChatbotSessionDefiner,
+  fetchChatbotSessionByIdDefiner,
+} from '@/lib/db/studentWriteDefiners';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 
 export const dynamic = 'force-dynamic';
@@ -45,30 +47,23 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const session = await db.query.chatbotSessions.findFirst({
-      where: and(
-        eq(chatbotSessions.id, body.sessionId),
-        eq(chatbotSessions.chatbotId, chatbotId),
-        eq(chatbotSessions.studentId, user.id),
-      ),
-    });
+    const session = await fetchChatbotSessionByIdDefiner(
+      body.sessionId,
+      user.id,
+      chatbotId,
+    );
 
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    const now = new Date();
-    await db.transaction(async (tx) => {
-      await tx
-        .update(chatbotSessions)
-        .set({ status: 'completed', completedAt: now })
-        .where(eq(chatbotSessions.id, session.id));
-
-      await tx
-        .update(chatbotAssignments)
-        .set({ isCompleted: true, completedAt: now })
-        .where(eq(chatbotAssignments.id, session.assignmentId));
-    });
+    const completed = await completeChatbotSessionDefiner(
+      session.id,
+      user.id,
+    );
+    if (!completed) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
 
     if (session.sectionId) {
       const { enqueueCompletionPassback } = await import('@/lib/lti/passback');
@@ -82,40 +77,31 @@ export async function POST(
       );
     }
 
-    // Async struggle tagger (heuristic fallback if no API key).
     void (async () => {
       try {
-        const { sections } = await import('@/app/db/schema');
         const section = session.sectionId
-          ? await db.query.sections.findFirst({
-              where: eq(sections.id, session.sectionId),
-              columns: { courseId: true },
-            })
+          ? await fetchSectionById(session.sectionId)
           : null;
         const { tagSessionStruggles } = await import(
           '@/lib/chatbot/struggleTagger'
         );
         await tagSessionStruggles({
           sessionId: session.id,
+          studentId: user.id,
           courseId: section?.courseId,
         });
       } catch (err) {
-        console.warn('[chatbot/complete] struggle tagger skipped', err);
+        console.warn('[chatbot/complete] struggle tagger failed', err);
       }
     })();
 
     return NextResponse.json({
       success: true,
-      messages: session.messages,
+      sessionId: completed.id,
+      status: completed.status,
     });
   } catch (error) {
     console.error('Chatbot complete error:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.errors },
-        { status: 400 },
-      );
-    }
     return NextResponse.json(
       { error: 'Failed to complete discussion' },
       { status: 500 },

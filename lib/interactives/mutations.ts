@@ -2,7 +2,6 @@ import { and, eq } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import {
-  interactiveProgress,
   interactiveSections,
   interactives,
   type InteractiveBody,
@@ -219,47 +218,15 @@ export async function upsertInteractiveProgress(opts: {
   status: 'STARTED' | 'COMPLETED';
   xapiSummary?: Record<string, unknown> | null;
 }) {
-  const existing = await db.query.interactiveProgress.findFirst({
-    where: and(
-      eq(interactiveProgress.interactiveId, opts.interactiveId),
-      eq(interactiveProgress.studentId, opts.studentId),
-    ),
+  const { upsertInteractiveProgressDefiner } = await import(
+    '@/lib/db/studentWriteDefiners'
+  );
+  const row = await upsertInteractiveProgressDefiner({
+    interactiveId: opts.interactiveId,
+    studentId: opts.studentId,
+    status: opts.status,
+    xapiSummary: opts.xapiSummary ?? null,
   });
-
-  if (existing) {
-    if (existing.status === 'COMPLETED' && opts.status === 'STARTED') {
-      return existing;
-    }
-    const [row] = await db
-      .update(interactiveProgress)
-      .set({
-        status: opts.status,
-        completedAt:
-          opts.status === 'COMPLETED' ? new Date() : existing.completedAt,
-        xapiSummary: opts.xapiSummary ?? existing.xapiSummary,
-        updatedAt: new Date(),
-      })
-      .where(eq(interactiveProgress.id, existing.id))
-      .returning();
-    if (opts.status === 'COMPLETED') {
-      void enqueueInteractiveCompletionPassback(
-        opts.studentId,
-        opts.interactiveId,
-      );
-    }
-    return row;
-  }
-
-  const [row] = await db
-    .insert(interactiveProgress)
-    .values({
-      interactiveId: opts.interactiveId,
-      studentId: opts.studentId,
-      status: opts.status,
-      completedAt: opts.status === 'COMPLETED' ? new Date() : null,
-      xapiSummary: opts.xapiSummary ?? null,
-    })
-    .returning();
   if (opts.status === 'COMPLETED') {
     void enqueueInteractiveCompletionPassback(
       opts.studentId,

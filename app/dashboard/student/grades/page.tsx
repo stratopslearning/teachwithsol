@@ -1,12 +1,10 @@
-import { and, eq } from "drizzle-orm";
-
-import { db } from "@/app/db";
-import { attempts, studentSections } from "@/app/db/schema";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { listStudentActivities } from "@/lib/assignments";
 import { withBasePath } from "@/lib/basePath";
 import { requireStudent } from "@/lib/auth";
+import { fetchUserEnrollmentsDetail } from "@/lib/db/facultyStudentReads";
+import { fetchStudentGradebookAttemptsDefiner } from "@/lib/db/studentWriteDefiners";
 import { isSectionConcluded, partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
 
 import StudentGradesTableClient from "./StudentGradesTableClient";
@@ -20,39 +18,28 @@ export default async function StudentGradesPage({
   const user = await requireStudent();
   const { sectionId: focusSectionId } = await searchParams;
 
-  const allAttempts = await db.query.attempts.findMany({
-    where: eq(attempts.studentId, user.id),
-    orderBy: (attempts, { desc }) => desc(attempts.submittedAt),
-    with: {
-      quiz: true,
-      section: { with: { course: true } },
-    },
-  });
+  const [allAttempts, enrollments] = await Promise.all([
+    fetchStudentGradebookAttemptsDefiner(user.id),
+    fetchUserEnrollmentsDetail(user.id),
+  ]);
 
   const attemptRows = allAttempts.map((a) => ({
     id: a.id,
     quizId: a.quizId,
     sectionId: a.sectionId,
-    sectionName: a.section?.name ?? "Section",
-    quizTitle: a.quiz?.title ?? "Quiz",
-    courseTitle: a.section?.course?.title ?? null,
+    sectionName: a.sectionName,
+    quizTitle: a.quizTitle,
+    courseTitle: a.courseTitle,
     submittedAt: a.submittedAt
-      ? new Date(a.submittedAt).toISOString()
+      ? a.submittedAt.toISOString()
       : null,
     score: a.score,
     maxScore: a.maxScore,
     percentage: a.percentage,
     passed: a.passed,
-    sectionArchived: isSectionConcluded(a.section),
+    sectionArchived: isSectionConcluded({ endsAt: a.sectionEndsAt }),
   }));
 
-  const enrollments = await db.query.studentSections.findMany({
-    where: and(
-      eq(studentSections.studentId, user.id),
-      eq(studentSections.status, "ACTIVE"),
-    ),
-    with: { section: true },
-  });
   const { active } = partitionEnrollmentsByConclusion(enrollments);
   const sectionIds = active.map((e) => e.sectionId);
   const activities = await listStudentActivities({

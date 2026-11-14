@@ -1,11 +1,8 @@
-import { eq } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import { attempts } from '@/app/db/schema';
 import { SectionHubShell } from '@/components/student/SectionHubShell';
 import { listStudentActivities } from '@/lib/assignments';
 import { requireStudent } from '@/lib/auth';
 import { listAssignmentGroupsDefiner } from '@/lib/db/lmsDefiners';
+import { fetchStudentGradebookAttemptsDefiner } from '@/lib/db/studentWriteDefiners';
 import { loadCourseNav } from '@/lib/lms/loadCourseNav';
 import { computeWeightedGrade } from '@/lib/lms/weightedGrades';
 import { isSectionConcluded } from '@/lib/sectionAvailability';
@@ -24,14 +21,7 @@ export default async function StudentSectionGradesPage({
   const ctx = await requireStudentSectionAccess(user.id, sectionId);
   const lms = await loadCourseNav(ctx.courseId);
 
-  const allAttempts = await db.query.attempts.findMany({
-    where: eq(attempts.studentId, user.id),
-    orderBy: (attemptsTable, { desc }) => desc(attemptsTable.submittedAt),
-    with: {
-      quiz: true,
-      section: { with: { course: true } },
-    },
-  });
+  const allAttempts = await fetchStudentGradebookAttemptsDefiner(user.id);
 
   const attemptRows = allAttempts
     .filter((a) => a.sectionId === sectionId)
@@ -39,17 +29,15 @@ export default async function StudentSectionGradesPage({
       id: a.id,
       quizId: a.quizId,
       sectionId: a.sectionId,
-      sectionName: a.section?.name ?? 'Section',
-      quizTitle: a.quiz?.title ?? 'Quiz',
-      courseTitle: a.section?.course?.title ?? null,
-      submittedAt: a.submittedAt
-        ? new Date(a.submittedAt).toISOString()
-        : null,
+      sectionName: a.sectionName,
+      quizTitle: a.quizTitle,
+      courseTitle: a.courseTitle,
+      submittedAt: a.submittedAt ? a.submittedAt.toISOString() : null,
       score: a.score,
       maxScore: a.maxScore,
       percentage: a.percentage,
       passed: a.passed,
-      sectionArchived: isSectionConcluded(a.section),
+      sectionArchived: isSectionConcluded({ endsAt: a.sectionEndsAt }),
     }));
 
   const activities = await listStudentActivities({
@@ -76,8 +64,6 @@ export default async function StudentSectionGradesPage({
       bestByQuiz.set(row.quizId, row.percentage);
     }
   }
-  // Until group membership links are filled, put all quiz scores in each group
-  // that has weight — prefer a single catch-all when only one group exists.
   const allScores = [...bestByQuiz.values()];
   const weighted = computeWeightedGrade(
     groups.map((g) => ({

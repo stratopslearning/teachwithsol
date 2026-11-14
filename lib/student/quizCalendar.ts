@@ -90,7 +90,7 @@ export async function listStudentQuizDueEvents(
       sectionName: meta.name,
       courseTitle: meta.courseTitle,
       dueAt: due.toISOString(),
-      href: withBasePath(`/quiz/${link.quizId}`),
+      href: withBasePath(`/dashboard/student/quiz/${link.quizId}`),
     });
   }
 
