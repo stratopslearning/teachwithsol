@@ -5,6 +5,7 @@ export {
 export {
   createLessonFromAuthoring,
   setLessonVisibility,
+  updateLesson,
 } from '@/lib/learning/lessons';
 export { upsertLessonProgress } from '@/lib/learning/progress';
 export { listFlashcardsForStudent } from '@/lib/learning/flashcards';

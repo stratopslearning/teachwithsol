@@ -102,6 +102,55 @@ export async function createLessonFromAuthoring(
   return { id: created.id, title: created.title };
 }
 
+export async function updateLesson(
+  user: AuthUser,
+  lessonId: string,
+  input: {
+    title?: string;
+    markdown?: string;
+    chapter?: import('@/app/db/schema').InteractiveChapterBody | null;
+  },
+) {
+  const { assertCanManageLesson } = await import('@/lib/learning/access');
+  const existing = await assertCanManageLesson(user, lessonId);
+
+  const title = input.title?.trim() ?? existing.title;
+  let markdown = input.markdown ?? existing.markdown;
+  let chapter =
+    input.chapter !== undefined ? input.chapter : existing.chapter ?? null;
+
+  if (chapter && chapter.kind === 'interactive_chapter') {
+    const { chapterToMarkdown } = await import('@/lib/lms/interactiveChapter');
+    markdown = chapterToMarkdown(chapter);
+  }
+  if (!title) throw ApiError.badRequest('Title is required');
+  if (!markdown?.trim() && !chapter) {
+    throw ApiError.badRequest('Lesson content is required');
+  }
+
+  const [updated] = await db
+    .update(lessons)
+    .set({
+      title,
+      markdown: markdown ?? '',
+      chapter,
+      updatedAt: new Date(),
+    })
+    .where(eq(lessons.id, lessonId))
+    .returning();
+
+  await upsertActivityForLesson(updated.id, {
+    courseId: updated.courseId,
+    professorId: updated.professorId,
+    title: updated.title,
+    isActive: updated.isActive,
+    sourceOutlineItemId: updated.sourceOutlineItemId,
+    tenantId: updated.tenantId ?? existing.tenantId ?? null,
+  });
+
+  return updated;
+}
+
 /** Hook target: after visibility flip, Canvas line items may be created. */
 export async function setLessonVisibility(
   user: AuthUser,

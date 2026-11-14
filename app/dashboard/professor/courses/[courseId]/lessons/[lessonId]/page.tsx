@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { InteractiveChapterPlayer } from '@/components/lms/InteractiveChapterPlayer';
+import { LessonEditClient } from '@/components/lms/LessonEditClient';
 import { CourseHubShell } from '@/components/professor/CourseHubShell';
 import {
   facultyActiveTool,
@@ -40,42 +41,72 @@ export default async function FacultyLessonPreviewPage({
       nav={lms.nav}
       studentView={studentView}
       description={
-        chapter
-          ? studentView
-            ? 'Student preview of this interactive chapter.'
-            : 'Interactive chapter preview.'
-          : 'Lesson preview.'
+        studentView
+          ? 'Student preview of this lesson.'
+          : 'Edit AI-authored lesson content, then preview as a student.'
       }
     >
-      {chapter ? (
-        <InteractiveChapterPlayer
-          lessonId={lesson.id}
-          title={lesson.title}
-          courseTitle={course.title}
-          chapter={chapter}
-          initialProgress={[]}
-          preview
-        />
-      ) : (
-        <div className="space-y-4">
-          <h2 className="font-serif text-2xl text-ink">{lesson.title}</h2>
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {lesson.markdown}
-            </ReactMarkdown>
-          </div>
-          <p className="text-sm text-ink-muted">
+      {!studentView ? (
+        <div className="mb-8 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-xl text-ink">Edit lesson</h2>
             <a
-              className="text-brand hover:underline"
+              className="text-sm text-brand hover:underline"
               href={withBasePath(
-                `/dashboard/professor/courses/${courseId}/modules${studentView ? '?as=student' : ''}`,
+                `/dashboard/professor/courses/${courseId}/lessons/${lessonId}?as=student`,
               )}
             >
-              ← Back to modules
+              Student preview →
             </a>
-          </p>
+          </div>
+          <LessonEditClient
+            lesson={{
+              id: lesson.id,
+              title: lesson.title,
+              markdown: lesson.markdown,
+              chapter,
+            }}
+          />
         </div>
+      ) : null}
+
+      {studentView || !chapter ? (
+        chapter ? (
+          <InteractiveChapterPlayer
+            lessonId={lesson.id}
+            title={lesson.title}
+            courseTitle={course.title}
+            chapter={chapter}
+            initialProgress={[]}
+            preview
+          />
+        ) : studentView ? (
+          <div className="space-y-4">
+            <h2 className="font-serif text-2xl text-ink">{lesson.title}</h2>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {lesson.markdown}
+              </ReactMarkdown>
+            </div>
+          </div>
+        ) : null
+      ) : (
+        <p className="text-sm text-ink-muted">
+          Use Student preview to walk the interactive chapter as learners see
+          it.
+        </p>
       )}
+
+      <p className="mt-6 text-sm text-ink-muted">
+        <a
+          className="text-brand hover:underline"
+          href={withBasePath(
+            `/dashboard/professor/courses/${courseId}/modules${studentView ? '?as=student' : ''}`,
+          )}
+        >
+          ← Back to modules
+        </a>
+      </p>
     </CourseHubShell>
   );
 }
