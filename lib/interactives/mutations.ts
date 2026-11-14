@@ -81,6 +81,7 @@ export async function createInteractive(
     courseId: input.courseId,
     professorId: user.id,
     title: row.title,
+    tenantId,
     description: row.description,
     isActive: row.isActive,
     sourceOutlineItemId: row.sourceOutlineItemId,
@@ -122,6 +123,7 @@ export async function updateInteractive(
     description: row.description,
     isActive: row.isActive,
     sourceOutlineItemId: row.sourceOutlineItemId,
+    tenantId: existing.tenantId ?? row.tenantId ?? null,
   });
 
   return row;

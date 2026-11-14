@@ -714,6 +714,9 @@ export async function createDiscussion(
     '@/lib/db/facultyWriteDefiners'
   );
   const { fetchSectionById } = await import('@/lib/db/entityScopedReads');
+  const section =
+    sectionIds.length > 0 ? await fetchSectionById(sectionIds[0]!) : null;
+  const tenantId = section?.tenantId ?? section?.workspaceId ?? null;
   const created = await createChatbotDefiner({
     professorId: user.id,
     title: input.title,
@@ -725,16 +728,16 @@ export async function createDiscussion(
     model: CHATBOT_MODEL,
     isActive,
     sectionIds,
+    tenantId,
   });
 
-  const section =
-    sectionIds.length > 0 ? await fetchSectionById(sectionIds[0]!) : null;
   await upsertActivityForDiscussion(created.id, {
     courseId: section?.courseId ?? null,
     professorId: user.id,
     title: created.title,
     description: input.description ?? null,
     isActive,
+    tenantId,
   });
 
   return { id: created.id, title: created.title };
@@ -815,6 +818,11 @@ export async function updateDiscussion(
       title,
       description,
       isActive,
+      tenantId:
+        section?.tenantId ??
+        section?.workspaceId ??
+        bot.tenantId ??
+        null,
     });
   }
 

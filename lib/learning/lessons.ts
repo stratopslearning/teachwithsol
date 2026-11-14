@@ -96,6 +96,7 @@ export async function createLessonFromAuthoring(
     title: created.title,
     isActive: created.isActive,
     sourceOutlineItemId: created.sourceOutlineItemId,
+    tenantId,
   });
 
   return { id: created.id, title: created.title };
