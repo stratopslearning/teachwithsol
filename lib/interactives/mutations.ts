@@ -54,6 +54,9 @@ export async function createInteractive(
 
   const { createInteractiveDefiner, setInteractiveSectionsDefiner } =
     await import('@/lib/db/facultyWriteDefiners');
+  const { fetchCourseById } = await import('@/lib/db/entityScopedReads');
+  const course = await fetchCourseById(input.courseId);
+  const tenantId = course?.tenantId ?? course?.workspaceId ?? null;
   const row = await createInteractiveDefiner({
     courseId: input.courseId,
     professorId: user.id,
@@ -63,6 +66,7 @@ export async function createInteractive(
     body: (input.body ?? {}) as Record<string, unknown>,
     isActive: input.isActive ?? false,
     sourceOutlineItemId: input.sourceOutlineItemId ?? null,
+    tenantId,
   });
 
   if (sectionIds.length > 0) {

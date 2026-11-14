@@ -736,6 +736,13 @@
       "when": 1787400000000,
       "tag": "0104_student_enroll_definer_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1787500000000,
+      "tag": "0105_publish_lesson_interactive_rls",
+      "breakpoints": true
     }
   ]
 }

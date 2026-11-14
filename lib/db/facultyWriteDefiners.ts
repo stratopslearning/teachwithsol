@@ -453,6 +453,8 @@ export async function createLessonDefiner(payload: {
   isActive?: boolean;
   sourceOutlineItemId?: string | null;
   flashcards?: Array<{ front: string; back: string }>;
+  /** Optional FORCE RLS hint — set before courses lookup in the DEFINER. */
+  tenantId?: string | null;
 }): Promise<{
   id: string;
   title: string;
@@ -492,6 +494,7 @@ export async function createInteractiveDefiner(payload: {
   body?: Record<string, unknown>;
   isActive?: boolean;
   sourceOutlineItemId?: string | null;
+  tenantId?: string | null;
 }): Promise<{
   id: string;
   courseId: string;

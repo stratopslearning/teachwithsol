@@ -66,6 +66,10 @@ export async function createLessonFromAuthoring(
   const { createLessonDefiner, assignLessonSectionsDefiner } = await import(
     '@/lib/db/facultyWriteDefiners'
   );
+  // FORCE RLS: pass tenant so sol_create_lesson can see the course row.
+  const { fetchCourseById } = await import('@/lib/db/entityScopedReads');
+  const course = await fetchCourseById(input.courseId);
+  const tenantId = course?.tenantId ?? course?.workspaceId ?? null;
   const created = await createLessonDefiner({
     courseId: input.courseId,
     professorId: user.id,
@@ -77,6 +81,7 @@ export async function createLessonFromAuthoring(
     flashcards: (input.flashcards ?? []).filter(
       (c) => c.front?.trim() && c.back?.trim(),
     ),
+    tenantId,
   });
 
   await assignLessonSectionsDefiner({
