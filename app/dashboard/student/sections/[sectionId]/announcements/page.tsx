@@ -1,3 +1,4 @@
+import { AnnouncementsPanel } from '@/components/lms/AnnouncementsPanel';
 import { SectionHubShell } from '@/components/student/SectionHubShell';
 import {
   requireStudentSectionLms,
@@ -14,9 +15,26 @@ export default async function Page({
 }) {
   const { sectionId } = await params;
   const { user, ctx, lms } = await requireStudentSectionLms(sectionId);
-  const announcements = (await listCourseAnnouncementsDefiner(ctx.courseId)).filter(
-    (a) => a.publishedAt != null,
-  );
+  const announcements = (await listCourseAnnouncementsDefiner(ctx.courseId))
+    .filter((a) => a.publishedAt != null)
+    .map((a) => {
+      const raw = a.publishedAt ?? a.createdAt ?? null;
+      const createdAt =
+        raw instanceof Date
+          ? raw
+          : typeof raw === 'string' || typeof raw === 'number'
+            ? new Date(raw)
+            : null;
+      return {
+        id: String(a.id),
+        title: String(a.title ?? ''),
+        bodyMarkdown: String(a.bodyMarkdown ?? ''),
+        createdAt:
+          createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt : null,
+        published: true,
+      };
+    });
+
   return (
     <SectionHubShell
       sectionId={ctx.sectionId}
@@ -25,22 +43,21 @@ export default async function Page({
       activeTab={studentActiveTool('announcements', lms.enabled)}
       tools={lms.enabled ? lms.studentTools : undefined}
       user={user}
-      description="Announcements"
+      description="Course announcements"
     >
-      <ul className="space-y-3">
-        {announcements.length === 0 ? (
-          <li className="text-sm text-ink-muted">No announcements.</li>
-        ) : (
-          announcements.map((a) => (
-            <li key={String(a.id)} className="rounded border border-rule/60 p-3">
-              <div className="font-medium">{String(a.title)}</div>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-ink-muted">
-                {String(a.bodyMarkdown ?? '')}
-              </p>
-            </li>
-          ))
-        )}
-      </ul>
+      <div className="space-y-5">
+        <div>
+          <h2 className="font-display text-2xl text-ink">Announcements</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Updates from your instructor for this course.
+          </p>
+        </div>
+        <AnnouncementsPanel
+          courseId={ctx.courseId}
+          announcements={announcements}
+          studentPreview
+        />
+      </div>
     </SectionHubShell>
   );
 }

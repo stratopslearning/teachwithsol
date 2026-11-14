@@ -9,6 +9,7 @@ import {
   listModuleItemProgressDefiner,
   listModuleItemsDefiner,
   softDeleteCourseModuleDefiner,
+  softDeleteModuleItemDefiner,
   type CourseModuleRow,
   type ModuleItemRow,
   upsertCourseModuleDefiner,
@@ -186,6 +187,18 @@ export async function updateModuleItem(
   });
   if (!row) throw ApiError.notFound('Module item not found');
   return row;
+}
+
+export async function deleteModuleItem(moduleId: string, itemId: string) {
+  try {
+    return await softDeleteModuleItemDefiner(moduleId, itemId);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/module_item_not_found|module_not_found/i.test(msg)) {
+      throw ApiError.notFound('Module item not found');
+    }
+    throw err;
+  }
 }
 
 /** Evaluate lock state for a student (prereqs + unlock date + published). */

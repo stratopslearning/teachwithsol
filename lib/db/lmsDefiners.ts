@@ -168,6 +168,21 @@ export async function softDeleteCourseModuleDefiner(
   return id;
 }
 
+export async function softDeleteModuleItemDefiner(
+  moduleId: string,
+  itemId: string,
+): Promise<string> {
+  const result = await db.execute(sql`
+    SELECT sol_soft_delete_module_item(
+      ${moduleId}::uuid,
+      ${itemId}::uuid
+    ) AS id
+  `);
+  const id = rowsFromExecute<{ id: string }>(result)[0]?.id;
+  if (!id) throw new Error('sol_soft_delete_module_item returned no id');
+  return id;
+}
+
 export async function upsertModuleItemDefiner(payload: {
   id?: string;
   moduleId: string;

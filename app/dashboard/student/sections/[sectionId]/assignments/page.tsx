@@ -26,12 +26,20 @@ export default async function StudentSectionAssignmentsPage({
       sectionId={ctx.sectionId}
       sectionName={ctx.sectionName}
       courseTitle={ctx.courseTitle}
-      description="Quizzes, lessons, and interactives assigned to this section."
+      description="Assigned work for this section"
       activeTab="assignments"
       tools={lms.enabled ? lms.studentTools : undefined}
       user={user}
     >
-      <AssignmentsTableClient items={items} role="student" />
+      <div className="space-y-5">
+        <div>
+          <h2 className="font-display text-2xl text-ink">Assignments</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Quizzes, lessons, discussions, and interactives released to you.
+          </p>
+        </div>
+        <AssignmentsTableClient items={items} role="student" />
+      </div>
     </SectionHubShell>
   );
 }

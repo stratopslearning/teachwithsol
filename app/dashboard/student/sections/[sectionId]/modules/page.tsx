@@ -27,7 +27,7 @@ export default async function Page({
       activeTab={studentActiveTool('modules', lms.enabled)}
       tools={lms.enabled ? lms.studentTools : undefined}
       user={user}
-      description="Course modules"
+      description="Weekly modules and learning path"
     >
       <StudentModulesClient
         sectionId={sectionId}

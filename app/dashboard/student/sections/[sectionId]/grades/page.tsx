@@ -94,12 +94,18 @@ export default async function StudentSectionGradesPage({
       sectionId={ctx.sectionId}
       sectionName={ctx.sectionName}
       courseTitle={ctx.courseTitle}
-      description="Quiz scores and completion for work in this section."
+      description="Scores and completion for this section"
       activeTab="grades"
       tools={lms.enabled ? lms.studentTools : undefined}
       user={user}
     >
-      <div className="space-y-12">
+      <div className="space-y-8">
+        <div>
+          <h2 className="font-display text-2xl text-ink">Grades</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Quiz scores and activity completion for this section.
+          </p>
+        </div>
         {groups.length > 0 && weighted.total != null ? (
           <div className="rounded-lg border border-rule/70 bg-surface p-4">
             <div className="text-sm text-ink-muted">Weighted total</div>

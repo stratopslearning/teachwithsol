@@ -275,6 +275,31 @@ export function ModulesEditorClient({
     startTransition(() => router.refresh());
   }
 
+  async function removeItem(
+    moduleId: string,
+    itemId: string,
+    itemTitle: string,
+  ) {
+    if (
+      !confirm(
+        `Remove “${itemTitle}” from this module? The linked assignment is not deleted.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    const res = await fetch(
+      `/api/lms/courses/${courseId}/modules/${moduleId}/items/${itemId}`,
+      { method: 'DELETE' },
+    );
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(body.error ?? 'Failed to remove item');
+      return;
+    }
+    startTransition(() => router.refresh());
+  }
+
   async function setRequirement(
     moduleId: string,
     itemId: string,
@@ -585,6 +610,22 @@ export function ModulesEditorClient({
                                 >
                                   <Check className="h-3.5 w-3.5" />
                                 </button>
+                              </IconTip>
+                            ) : null}
+                            {!studentPreview ? (
+                              <IconTip label="Remove from module">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-ink-muted hover:text-destructive"
+                                  disabled={pending}
+                                  onClick={() =>
+                                    void removeItem(m.id, item.id, item.title)
+                                  }
+                                  aria-label={`Remove ${item.title}`}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
                               </IconTip>
                             ) : null}
                           </li>
