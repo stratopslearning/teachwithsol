@@ -210,13 +210,16 @@ export async function POST(
         const { loadCoursePromptContext } = await import(
           '@/lib/ai/prompts/courseContext'
         );
-        const { fetchCourseById } = await import('@/lib/db/entityScopedReads');
+        const { fetchCourseHubMeta } = await import(
+          '@/lib/db/entityScopedReads'
+        );
         courseCtx = await loadCoursePromptContext(sessionSection.courseId);
-        const course = await fetchCourseById(sessionSection.courseId);
+        // sol_course_by_id has no ai_policy; hub meta DEFINER returns it under FORCE RLS.
+        const hub = await fetchCourseHubMeta(sessionSection.courseId);
         tutorPolicyRules = tutorPolicySystemRules(
           resolveTutorAiPolicy({
             chatbotPolicy: bot.aiPolicy,
-            coursePolicy: course?.aiPolicy,
+            coursePolicy: hub?.aiPolicy,
           }),
         );
       }
