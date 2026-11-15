@@ -61,10 +61,15 @@ export function looksLikeProposeOutlineRequest(message: string): boolean {
   const m = message.toLowerCase().trim();
   if (!m) return false;
   if (looksLikeEnsureLessonsRequest(message)) return false;
+  // "make the outline better" / "improve the outline" is a refine, not a regenerate.
+  const improvesExisting =
+    /\bimprove\b/.test(m) ||
+    /\boutline\b.{0,20}\b(better|stronger|clearer|sharper)\b/.test(m);
   return (
-    /\b(propose|generate|create|draft|build|make)\b.{0,48}\b(a |an |the |new |fresh )?(course )?outline\b/.test(
-      m,
-    ) ||
+    (!improvesExisting &&
+      /\b(propose|generate|create|draft|build|make)\b.{0,48}\b(a |an |the |new |fresh )?(course )?outline\b/.test(
+        m,
+      )) ||
     /\b(re-?propose|regenerate|rebuild|replace)\b.{0,24}\boutline\b/.test(m) ||
     /\bnew outline\b/.test(m) ||
     /\boutline from (my |the )?materials?\b/.test(m)
