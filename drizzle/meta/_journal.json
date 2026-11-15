@@ -778,6 +778,27 @@
       "when": 1788000000000,
       "tag": "0110_staff_invite_co_instructor",
       "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1788100000000,
+      "tag": "0111_staff_invite_role_check_co_instructor",
+      "breakpoints": true
+    },
+    {
+      "idx": 112,
+      "version": "7",
+      "when": 1788200000000,
+      "tag": "0112_staff_invite_claim_definers",
+      "breakpoints": true
+    },
+    {
+      "idx": 113,
+      "version": "7",
+      "when": 1788300000000,
+      "tag": "0113_student_invite_claim_definer",
+      "breakpoints": true
     }
   ]
 }
