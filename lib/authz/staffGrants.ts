@@ -48,15 +48,45 @@ export async function grantOfferingStaff(opts: {
   return { grantId: result.bindingId, created: result.created };
 }
 
+export type SectionStaffInviteRole = Extract<
+  StaffGrantRole,
+  'co_instructor' | 'ta' | 'grader'
+>;
+
 export async function grantSectionStaff(opts: {
   tenantId: string;
   userId: string;
   sectionId: string;
-  role: Extract<StaffGrantRole, 'ta' | 'grader'>;
+  role: SectionStaffInviteRole;
   grantedBy?: string | null;
   /** When true, ensure a seat without elevating membership power. */
   ensureSeat?: boolean;
 }): Promise<{ grantId: string; created: boolean }> {
+  // Instructors need professor_sections metadata so they appear on the faculty roster
+  // (authority still comes from role_bindings).
+  if (opts.role === 'co_instructor') {
+    const {
+      professorSectionEnrollmentDefiner,
+      professorSectionEnrollDefiner,
+    } = await import('@/lib/db/facultyWriteDefiners');
+    const existing = await professorSectionEnrollmentDefiner(
+      opts.userId,
+      opts.sectionId,
+    );
+    if (!existing) {
+      try {
+        await professorSectionEnrollDefiner({
+          professorId: opts.userId,
+          sectionId: opts.sectionId,
+          tenantId: opts.tenantId,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (!message.includes('Already enrolled')) throw err;
+      }
+    }
+  }
+
   const result = await upsertRoleBinding({
     tenantId: opts.tenantId,
     userId: opts.userId,

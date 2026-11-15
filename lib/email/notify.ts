@@ -37,7 +37,7 @@ export async function sendStaffInviteMail(opts: {
   to: string;
   sectionName: string;
   courseTitle?: string | null;
-  role: 'ta' | 'grader';
+  role: 'co_instructor' | 'ta' | 'grader';
   claimUrl: string;
   expiresAt: Date;
 }): Promise<SendEmailResult> {

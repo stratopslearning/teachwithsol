@@ -46,6 +46,7 @@ export {
   listActiveStaffGrantsForScope,
   isStaffGrantRole,
   type StaffGrantRole,
+  type SectionStaffInviteRole,
 } from '@/lib/authz/staffGrants';
 export {
   getDashboardAreas,
@@ -62,4 +63,5 @@ export { transferWorkspaceOwnership } from '@/lib/authz/ownership';
 export {
   createSectionStaffInvite,
   claimSectionStaffInvite,
+  isSectionStaffInviteRole,
 } from '@/lib/authz/staffInvites';

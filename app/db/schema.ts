@@ -416,7 +416,7 @@ export const sections = pgTable(
   }),
 );
 
-/** Email-bound TA/grader invites (claim before or after account exists). */
+/** Email-bound instructor / TA / grader invites (claim before or after account exists). */
 export const sectionStaffInvites = pgTable(
   'section_staff_invites',
   {
@@ -428,7 +428,9 @@ export const sectionStaffInvites = pgTable(
       .references(() => sections.id, { onDelete: 'cascade' })
       .notNull(),
     email: text('email').notNull(),
-    role: text('role', { enum: ['ta', 'grader'] }).notNull(),
+    role: text('role', {
+      enum: ['co_instructor', 'ta', 'grader'],
+    }).notNull(),
     tokenHash: text('token_hash').notNull(),
     grantedBy: uuid('granted_by').references(() => users.id, {
       onDelete: 'set null',

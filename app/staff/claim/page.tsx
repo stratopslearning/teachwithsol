@@ -44,5 +44,9 @@ export default async function StaffClaimPage({
     );
   }
 
+  // Instructors land on the faculty dashboard; TAs/graders use the TA desk.
+  if (result.role === 'co_instructor') {
+    appRedirect(`/dashboard/professor/sections/${result.sectionId}`);
+  }
   appRedirect('/dashboard/ta');
 }

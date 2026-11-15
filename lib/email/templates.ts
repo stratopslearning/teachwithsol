@@ -119,11 +119,16 @@ ${ctaButton(opts.claimUrl, 'Claim your invite')}
 export function staffInviteEmail(opts: {
   sectionName: string;
   courseTitle?: string | null;
-  role: 'ta' | 'grader';
+  role: 'co_instructor' | 'ta' | 'grader';
   claimUrl: string;
   expiresAt: Date;
 }) {
-  const roleLabel = opts.role === 'ta' ? 'TA' : 'grader';
+  const roleLabel =
+    opts.role === 'co_instructor'
+      ? 'instructor'
+      : opts.role === 'ta'
+        ? 'TA'
+        : 'grader';
   const where = opts.courseTitle
     ? `${opts.courseTitle} · ${opts.sectionName}`
     : opts.sectionName;
@@ -139,7 +144,7 @@ export function staffInviteEmail(opts: {
   ].join('\n');
   const html = wrapHtml({
     preheader: `${roleLabel} invite for ${where}`,
-    eyebrow: 'Section staff',
+    eyebrow: 'Section faculty',
     title: `Join as ${roleLabel}`,
     bodyHtml: `<p style="margin:0 0 12px">You've been invited as a <strong style="color:#111827">${roleLabel}</strong> for <strong style="color:#111827">${escapeHtml(where)}</strong>.</p>
 ${ctaButton(opts.claimUrl, 'Claim your invite')}

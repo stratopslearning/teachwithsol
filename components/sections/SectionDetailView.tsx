@@ -163,7 +163,7 @@ export function SectionDetailView({
             title="Faculty roster"
             enrollments={facultyEnrollments}
             emptyTitle="No faculty enrolled yet."
-            emptyDescription="Use Add faculty to invite a TA or grader, or share the faculty enrolment code."
+            emptyDescription="Use Add faculty to invite an instructor, TA, or grader, or share the faculty enrolment code."
           />
         </div>
       </section>

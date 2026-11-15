@@ -29,7 +29,7 @@ export function AddFacultyDialog({ sectionId }: { sectionId: string }) {
         <DialogHeader>
           <DialogTitle>Add faculty</DialogTitle>
           <DialogDescription>
-            Invite a TA or grader to this section by email.
+            Invite an instructor, TA, or grader to this section by email.
           </DialogDescription>
         </DialogHeader>
         <SectionStaffInviteForm sectionId={sectionId} />

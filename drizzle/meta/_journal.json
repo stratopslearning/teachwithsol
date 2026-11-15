@@ -771,6 +771,13 @@
       "when": 1787900000000,
       "tag": "0109_student_force_rls_crud",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1788000000000,
+      "tag": "0110_staff_invite_co_instructor",
+      "breakpoints": true
     }
   ]
 }
