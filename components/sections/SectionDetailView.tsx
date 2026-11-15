@@ -26,6 +26,8 @@ type SectionDetailViewProps = {
   headerActions?: ReactNode;
   /** e.g. “Assign existing” for professor section detail */
   courseworkActions?: ReactNode;
+  /** Override default section gradebook path. */
+  gradebookHref?: string;
 };
 
 export function SectionDetailView({
@@ -37,15 +39,17 @@ export function SectionDetailView({
   discussionRowActions,
   headerActions,
   courseworkActions,
+  gradebookHref,
 }: SectionDetailViewProps) {
   const { section, learnerEnrollments, facultyEnrollments, quizzes, discussions } =
     data;
   const concluded = isSectionConcluded(section);
   const courseworkCount = quizzes.length + discussions.length;
   const gradebookBase =
-    role === 'admin'
+    gradebookHref ??
+    (role === 'admin'
       ? `/dashboard/admin/sections/${sectionId}/gradebook`
-      : `/dashboard/professor/sections/${sectionId}/gradebook`;
+      : `/dashboard/professor/sections/${sectionId}/gradebook`);
   const canInvite = role === 'professor';
 
   return (
@@ -163,7 +167,7 @@ export function SectionDetailView({
             title="Faculty roster"
             enrollments={facultyEnrollments}
             emptyTitle="No faculty enrolled yet."
-            emptyDescription="Use Add faculty to invite a TA or grader, or share the faculty enrolment code."
+            emptyDescription="Use Add faculty to invite an instructor, TA, or grader, or share the faculty enrolment code."
           />
         </div>
       </section>

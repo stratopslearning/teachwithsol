@@ -37,8 +37,8 @@ export function AddLearnersDialog({ sectionId }: { sectionId: string }) {
         <DialogHeader>
           <DialogTitle>Add learners</DialogTitle>
           <DialogDescription>
-            Invite students by email list or CSV. They join this section after
-            claiming the invite.
+            Invite students by email list or CSV. We send a claim link so they
+            can join this section; copy links are shown if email is off.
           </DialogDescription>
         </DialogHeader>
         <InviteLearnersPanel sectionId={sectionId} />

@@ -1,0 +1,63 @@
+-- Allow co_instructor on section staff email invites (alongside ta/grader).
+-- App schema already stores role as text; widen DEFINER validation only.
+
+CREATE OR REPLACE FUNCTION sol_create_staff_invite(p_payload jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant uuid := (p_payload->>'tenantId')::uuid;
+  v_section uuid := (p_payload->>'sectionId')::uuid;
+  v_email text := lower(trim(COALESCE(p_payload->>'email', '')));
+  v_role text := p_payload->>'role';
+  v_token_hash text := p_payload->>'tokenHash';
+  v_granted_by uuid := NULLIF(p_payload->>'grantedBy', '')::uuid;
+  v_expires timestamptz := (p_payload->>'expiresAt')::timestamptz;
+  v_id uuid;
+BEGIN
+  IF v_tenant IS NULL OR v_section IS NULL OR v_email = '' OR v_token_hash IS NULL OR v_expires IS NULL THEN
+    RAISE EXCEPTION 'tenantId, sectionId, email, tokenHash, expiresAt required';
+  END IF;
+  IF v_role IS NULL OR v_role NOT IN ('ta', 'grader', 'co_instructor') THEN
+    RAISE EXCEPTION 'role must be ta|grader|co_instructor';
+  END IF;
+  PERFORM set_config('app.tenant_id', v_tenant::text, true);
+
+  UPDATE section_staff_invites
+  SET expires_at = now()
+  WHERE section_id = v_section
+    AND lower(email) = v_email
+    AND claimed_at IS NULL;
+
+  INSERT INTO section_staff_invites (
+    tenant_id, section_id, email, role, token_hash, granted_by, expires_at
+  ) VALUES (
+    v_tenant, v_section, v_email, v_role, v_token_hash, v_granted_by, v_expires
+  )
+  RETURNING id INTO v_id;
+
+  RETURN jsonb_build_object('id', v_id, 'expiresAt', v_expires);
+END;
+$$;
+
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION sol_create_staff_invite(jsonb) FROM PUBLIC;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'sol_app') THEN
+    GRANT EXECUTE ON FUNCTION sol_create_staff_invite(jsonb) TO sol_app;
+  END IF;
+END
+$$;
+
+--> statement-breakpoint
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'neondb_owner')
+     AND pg_has_role(current_user, 'neondb_owner', 'member') THEN
+    ALTER FUNCTION sol_create_staff_invite(jsonb) OWNER TO neondb_owner;
+  END IF;
+END
+$$;

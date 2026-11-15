@@ -2,8 +2,23 @@ import { createHash, randomBytes } from 'crypto';
 import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-import { grantSectionStaff } from '@/lib/authz/staffGrants';
+import {
+  grantSectionStaff,
+  type SectionStaffInviteRole,
+} from '@/lib/authz/staffGrants';
 import { withBasePath } from '@/lib/basePath';
+
+const STAFF_INVITE_ROLES: SectionStaffInviteRole[] = [
+  'co_instructor',
+  'ta',
+  'grader',
+];
+
+export function isSectionStaffInviteRole(
+  role: string,
+): role is SectionStaffInviteRole {
+  return STAFF_INVITE_ROLES.includes(role as SectionStaffInviteRole);
+}
 
 const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -48,7 +63,7 @@ export async function createSectionStaffInvite(opts: {
   tenantId: string;
   sectionId: string;
   email: string;
-  role: 'ta' | 'grader';
+  role: SectionStaffInviteRole;
   grantedBy: string;
   baseUrl?: string;
 }): Promise<{
@@ -87,7 +102,12 @@ export async function claimSectionStaffInvite(opts: {
   token: string;
   user: { id: string; email: string };
 }): Promise<
-  | { ok: true; sectionId: string; role: 'ta' | 'grader'; tenantId: string }
+  | {
+      ok: true;
+      sectionId: string;
+      role: SectionStaffInviteRole;
+      tenantId: string;
+    }
   | { ok: false; error: string; status: 400 | 403 | 404 | 410 }
 > {
   const tokenHash = hashToken(opts.token);
@@ -129,11 +149,15 @@ export async function claimSectionStaffInvite(opts: {
     return { ok: false, error: 'Invite already claimed', status: 410 };
   }
 
+  if (!isSectionStaffInviteRole(claimed.role)) {
+    return { ok: false, error: 'Invite role is invalid', status: 400 };
+  }
+
   await grantSectionStaff({
     tenantId: claimed.tenant_id,
     userId: opts.user.id,
     sectionId: claimed.section_id,
-    role: claimed.role as 'ta' | 'grader',
+    role: claimed.role,
     grantedBy: claimed.granted_by,
     ensureSeat: true,
   });
@@ -141,7 +165,7 @@ export async function claimSectionStaffInvite(opts: {
   return {
     ok: true,
     sectionId: claimed.section_id,
-    role: claimed.role as 'ta' | 'grader',
+    role: claimed.role,
     tenantId: claimed.tenant_id,
   };
 }

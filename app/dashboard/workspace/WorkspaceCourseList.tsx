@@ -119,7 +119,7 @@ function CourseCard({
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <Link
                         href={appPath(
-                          `/dashboard/professor/sections/${s.id}`,
+                          `/dashboard/professor/courses/${c.id}/sections/${s.id}`,
                         )}
                         className="font-medium text-ink transition-colors hover:text-brand"
                       >
@@ -128,7 +128,7 @@ function CourseCard({
                       <Button asChild variant="ghost" size="sm">
                         <Link
                           href={appPath(
-                            `/dashboard/professor/sections/${s.id}`,
+                            `/dashboard/professor/courses/${c.id}/sections/${s.id}`,
                           )}
                         >
                           Open

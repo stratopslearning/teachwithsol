@@ -44,5 +44,10 @@ export default async function StaffClaimPage({
     );
   }
 
+  // Instructors land on the course hub section; TAs/graders use the TA desk.
+  // Legacy /sections/[id] redirects into /courses/.../sections/[id].
+  if (result.role === 'co_instructor') {
+    appRedirect(`/dashboard/professor/sections/${result.sectionId}`);
+  }
   appRedirect('/dashboard/ta');
 }

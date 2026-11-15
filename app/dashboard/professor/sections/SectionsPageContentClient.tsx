@@ -229,7 +229,7 @@ export default function ProfessorSectionsPageContentClient({
                       </Button>
                       <Button asChild size="sm" variant="outline">
                         <Link
-                          href={`/dashboard/professor/sections/${section.id}`}
+                          href={`/dashboard/professor/courses/${section.courseId}/sections/${section.id}`}
                         >
                           Details
                         </Link>

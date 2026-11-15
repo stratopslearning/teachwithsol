@@ -162,7 +162,7 @@ export async function createStaffInviteDefiner(payload: {
   tenantId: string;
   sectionId: string;
   email: string;
-  role: 'ta' | 'grader';
+  role: 'co_instructor' | 'ta' | 'grader';
   tokenHash: string;
   grantedBy: string;
   expiresAt: string;

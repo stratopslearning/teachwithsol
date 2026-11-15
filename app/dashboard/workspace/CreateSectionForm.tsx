@@ -54,9 +54,17 @@ export function CreateSectionForm({
       setOpen(false);
       toast.success(`“${trimmed}” is ready`, {
         id: toastId,
-        description: 'Enrollment codes are on the section card below.',
+        description: 'Open the section for roster and email invites.',
       });
-      router.refresh();
+      if (sectionId) {
+        router.push(
+          withBasePath(
+            `/dashboard/professor/courses/${courseId}/sections/${sectionId}`,
+          ),
+        );
+      } else {
+        router.refresh();
+      }
     } catch {
       setError('Network error');
       toast.error('Network error — try again', { id: toastId });
@@ -83,7 +91,9 @@ export function CreateSectionForm({
         {createdId ? (
           <Button asChild variant="link" size="sm" className="h-auto px-0">
             <Link
-              href={withBasePath(`/dashboard/professor/sections/${createdId}`)}
+              href={withBasePath(
+                `/dashboard/professor/courses/${courseId}/sections/${createdId}`,
+              )}
             >
               Open new section
             </Link>
