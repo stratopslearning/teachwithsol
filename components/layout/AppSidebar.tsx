@@ -2,19 +2,30 @@
 
 import * as React from "react";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   LogOut,
+  RefreshCw,
   Search,
+  Users,
   X,
 } from "@/components/icons";
-import { SignOutButton } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 
 import { SolMark } from "@/components/brand/SolMark";
 import { useShortcutsOptional } from "@/components/shortcuts/ShortcutsProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -655,104 +666,136 @@ function SidebarFooter(props: {
   paid: boolean;
   collapsed?: boolean;
 }) {
-  const {
-    clerkImage,
-    firstName,
-    email,
-    initials,
-    showPaid,
-    paid,
-    collapsed,
-  } = props;
+  const { firstName, email, initials, showPaid, paid, collapsed } = props;
+  const { user: clerkUser } = useUser();
+  const { openUserProfile, signOut } = useClerk();
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  const displayName = firstName || email || "Member";
-  const accountLabel = firstName || email || "Account";
-  const secondary = showPaid
-    ? paid
-      ? "Paid"
-      : "Trial"
-    : firstName && email
-      ? email
-      : null;
+  const displayName =
+    [firstName, clerkUser?.lastName].filter(Boolean).join(" ") ||
+    firstName ||
+    email ||
+    "Member";
+  const sessionEmail =
+    email ||
+    clerkUser?.primaryEmailAddress?.emailAddress ||
+    clerkUser?.emailAddresses?.[0]?.emailAddress ||
+    "";
+  const avatarSrc = mounted
+    ? (clerkUser?.imageUrl ?? props.clerkImage ?? undefined)
+    : undefined;
+  const loginHref = withBasePath("/login");
+  const homeHref = withBasePath("/");
+
+  const entitlementLabel = showPaid ? (paid ? "Paid" : "Trial") : null;
+
+  const trigger = (
+    <button
+      type="button"
+      aria-label={
+        sessionEmail
+          ? `Account menu for ${sessionEmail}`
+          : "Account menu"
+      }
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-xl text-left transition-colors",
+        "hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+        collapsed ? "justify-center px-0 py-1.5" : "px-1.5 py-1.5",
+      )}
+    >
+      <Avatar className="h-8 w-8 shrink-0 border border-rule">
+        {avatarSrc ? (
+          <AvatarImage src={avatarSrc} alt={displayName} />
+        ) : null}
+        <AvatarFallback className="bg-brand-soft text-[0.65rem] font-semibold text-brand">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      {!collapsed ? (
+        <>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-medium text-ink">
+              {displayName}
+            </div>
+            {sessionEmail ? (
+              <div className="mt-0.5 truncate text-[0.6875rem] leading-tight text-ink-faint">
+                {sessionEmail}
+              </div>
+            ) : null}
+            {entitlementLabel ? (
+              <div
+                className={cn(
+                  "mt-0.5 truncate text-[0.6875rem] leading-tight",
+                  paid ? "font-medium text-success" : "text-ink-faint",
+                )}
+              >
+                {entitlementLabel}
+              </div>
+            ) : null}
+          </div>
+          <ChevronDown
+            className="h-3.5 w-3.5 shrink-0 text-ink-faint"
+            aria-hidden
+          />
+        </>
+      ) : null}
+    </button>
+  );
 
   return (
-    <div className="mt-3 space-y-1 border-t border-rule pt-3">
-      <SidebarTip label={accountLabel} enabled={Boolean(collapsed)}>
-        <div
-          className={cn(
-            "flex items-center gap-2.5",
-            collapsed ? "justify-center px-0" : "px-1.5",
-          )}
+    <div className="mt-3 border-t border-rule pt-3">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+        <DropdownMenuContent
+          side={collapsed ? "right" : "top"}
+          align="start"
+          sideOffset={10}
+          className="w-64"
         >
-          <Avatar className="h-8 w-8 shrink-0 border border-rule">
-            {mounted && clerkImage ? (
-              <AvatarImage src={clerkImage} alt={firstName || "User"} />
-            ) : null}
-            <AvatarFallback className="bg-brand-soft text-[0.65rem] font-semibold text-brand">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          {!collapsed ? (
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-ink">
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col gap-0.5">
+              <span className="truncate text-sm font-medium text-ink">
                 {displayName}
-              </div>
-              {secondary ? (
-                <div
-                  className={cn(
-                    "mt-0.5 truncate text-[0.6875rem] leading-tight",
-                    showPaid && paid
-                      ? "font-medium text-success"
-                      : "text-ink-faint",
-                  )}
-                >
-                  {secondary}
-                </div>
-              ) : null}
+              </span>
+              {sessionEmail ? (
+                <span className="truncate text-xs text-ink-muted">
+                  {sessionEmail}
+                </span>
+              ) : (
+                <span className="text-xs text-ink-faint">
+                  No email on this session
+                </span>
+              )}
             </div>
-          ) : null}
-        </div>
-      </SidebarTip>
-      {collapsed ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="block w-full">
-              <SignOutButton redirectUrl={withBasePath("/")}>
-                <button
-                  type="button"
-                  aria-label="Sign out"
-                  className="flex w-full items-center justify-center rounded-xl px-0 py-2 text-[0.8125rem] text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger"
-                >
-                  <LogOut className="h-4 w-4 shrink-0" aria-hidden />
-                </button>
-              </SignOutButton>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent
-            side="right"
-            sideOffset={10}
-            className="bg-ink text-paper border-none shadow-md"
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => openUserProfile()}>
+            <Users className="h-4 w-4" aria-hidden />
+            Manage account
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => {
+              void signOut({ redirectUrl: loginHref });
+            }}
           >
+            <RefreshCw className="h-4 w-4" aria-hidden />
+            Switch account
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={() => {
+              void signOut({ redirectUrl: homeHref });
+            }}
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
             Sign out
-          </TooltipContent>
-        </Tooltip>
-      ) : (
-        <SignOutButton redirectUrl={withBasePath("/")}>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2.5 rounded-xl px-1.5 py-2 text-[0.8125rem] text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger"
-          >
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center">
-              <LogOut className="h-4 w-4" aria-hidden />
-            </span>
-            <span>Sign out</span>
-          </button>
-        </SignOutButton>
-      )}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

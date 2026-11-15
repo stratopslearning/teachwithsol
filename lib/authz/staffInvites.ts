@@ -98,6 +98,42 @@ export async function createSectionStaffInvite(opts: {
   };
 }
 
+export type StaffInvitePeek =
+  | {
+      ok: true;
+      email: string;
+      role: string;
+      sectionId: string;
+      tenantId: string;
+      claimed: boolean;
+      expired: boolean;
+      expiresAt: Date;
+    }
+  | { ok: false; error: string; status: 404 };
+
+/** Read-only lookup for the claim UI (does not mark claimed). */
+export async function peekSectionStaffInvite(
+  token: string,
+): Promise<StaffInvitePeek> {
+  const tokenHash = hashToken(token);
+  const found = rowsFromExecute<StaffInviteRow>(
+    await db.execute(
+      sql`SELECT * FROM sol_find_staff_invite_by_token(${tokenHash})`,
+    ),
+  )[0];
+  if (!found) return { ok: false, error: 'Invite not found', status: 404 };
+  return {
+    ok: true,
+    email: found.email,
+    role: found.role,
+    sectionId: found.section_id,
+    tenantId: found.tenant_id,
+    claimed: Boolean(found.claimed_at),
+    expired: new Date(found.expires_at).getTime() < Date.now(),
+    expiresAt: new Date(found.expires_at),
+  };
+}
+
 export async function claimSectionStaffInvite(opts: {
   token: string;
   user: { id: string; email: string };
@@ -110,27 +146,24 @@ export async function claimSectionStaffInvite(opts: {
     }
   | { ok: false; error: string; status: 400 | 403 | 404 | 410 }
 > {
-  const tokenHash = hashToken(opts.token);
-  const found = rowsFromExecute<StaffInviteRow>(
-    await db.execute(
-      sql`SELECT * FROM sol_find_staff_invite_by_token(${tokenHash})`,
-    ),
-  )[0];
-  if (!found) return { ok: false, error: 'Invite not found', status: 404 };
-  if (found.claimed_at) {
+  const peek = await peekSectionStaffInvite(opts.token);
+  if (!peek.ok) return peek;
+  if (peek.claimed) {
     return { ok: false, error: 'Invite already claimed', status: 410 };
   }
-  if (new Date(found.expires_at).getTime() < Date.now()) {
+  if (peek.expired) {
     return { ok: false, error: 'Invite expired', status: 410 };
   }
   const sessionEmail = opts.user.email.trim().toLowerCase();
-  if (!sessionEmail || sessionEmail !== found.email.toLowerCase()) {
+  if (!sessionEmail || sessionEmail !== peek.email.toLowerCase()) {
     return {
       ok: false,
       error: 'Sign in with the invited email address to claim this invite',
       status: 403,
     };
   }
+
+  const tokenHash = hashToken(opts.token);
 
   const claimed = rowsFromExecute<{
     id: string;

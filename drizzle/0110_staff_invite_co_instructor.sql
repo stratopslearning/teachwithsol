@@ -1,5 +1,5 @@
 -- Allow co_instructor on section staff email invites (alongside ta/grader).
--- App schema already stores role as text; widen DEFINER validation only.
+-- Widen DEFINER validation. Table CHECK is widened in 0111.
 
 CREATE OR REPLACE FUNCTION sol_create_staff_invite(p_payload jsonb)
 RETURNS jsonb

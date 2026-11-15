@@ -63,5 +63,6 @@ export { transferWorkspaceOwnership } from '@/lib/authz/ownership';
 export {
   createSectionStaffInvite,
   claimSectionStaffInvite,
+  peekSectionStaffInvite,
   isSectionStaffInviteRole,
 } from '@/lib/authz/staffInvites';
