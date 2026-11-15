@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { sections } from '@/app/db/schema';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
@@ -12,7 +9,7 @@ import { authorize, tenantIdForSection } from '@/lib/authz';
 import { createSectionStudentInvite } from '@/lib/authz/studentInvites';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { parseEmailListFromCsv } from '@/lib/csv/parseEmailList';
-import { activeOnly } from '@/lib/db/filters';
+import { fetchCourseById, fetchSectionById } from '@/lib/db/entityScopedReads';
 import { sendStudentInviteMail } from '@/lib/email';
 import { getRequiredBaseUrl } from '@/lib/stripe';
 
@@ -62,13 +59,12 @@ export async function POST(
       );
     }
 
-    const section = await db.query.sections.findFirst({
-      where: and(eq(sections.id, sectionId), activeOnly(sections.deletedAt)),
-      with: { course: { columns: { title: true } } },
-    });
-    if (!section) {
+    // FORCE RLS: never read sections via db.query here.
+    const section = await fetchSectionById(sectionId);
+    if (!section || section.deletedAt) {
       return NextResponse.json({ error: 'Section not found' }, { status: 404 });
     }
+    const course = await fetchCourseById(section.courseId);
 
     const parsed = bodySchema.safeParse(await readJsonBody(req));
     if (!parsed.success) {
@@ -96,6 +92,7 @@ export async function POST(
     const results: Array<{
       email: string;
       ok: boolean;
+      invited?: boolean;
       claimUrl?: string;
       emailSent?: boolean;
       error?: string;
@@ -114,7 +111,7 @@ export async function POST(
           workspaceId: tenantId,
           to: email,
           sectionName: section.name,
-          courseTitle: section.course?.title ?? null,
+          courseTitle: course?.title ?? null,
           claimUrl: invite.claimUrl,
           enrollmentCode: section.studentEnrollmentCode,
           expiresAt: invite.expiresAt,
@@ -122,6 +119,7 @@ export async function POST(
         results.push({
           email,
           ok: true,
+          invited: true,
           claimUrl: invite.claimUrl,
           emailSent:
             emailResult.ok && !('skipped' in emailResult && emailResult.skipped),

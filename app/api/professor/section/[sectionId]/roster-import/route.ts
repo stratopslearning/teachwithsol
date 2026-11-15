@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '@/app/db';
-import { sections, users } from '@/app/db/schema';
+import { users } from '@/app/db/schema';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
@@ -13,8 +13,8 @@ import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { assertTeachesSection } from '@/lib/professor/sections';
 import { createSectionStudentInvite } from '@/lib/authz/studentInvites';
 import { parseEmailListFromCsv } from '@/lib/csv/parseEmailList';
+import { fetchCourseById, fetchSectionById } from '@/lib/db/entityScopedReads';
 import { upsertStudentEnrollment } from '@/lib/enrollment/sources';
-import { activeOnly } from '@/lib/db/filters';
 import { sendStudentInviteMail } from '@/lib/email';
 import { getRequiredBaseUrl } from '@/lib/stripe';
 import {
@@ -69,12 +69,12 @@ export async function POST(
       }
     }
 
-    const section = await db.query.sections.findFirst({
-      where: and(eq(sections.id, sectionId), activeOnly(sections.deletedAt)),
-    });
-    if (!section) {
+    // FORCE RLS: never read sections via db.query here.
+    const section = await fetchSectionById(sectionId);
+    if (!section || section.deletedAt) {
       return NextResponse.json({ error: 'Section not found' }, { status: 404 });
     }
+    const course = await fetchCourseById(section.courseId);
 
     const parsed = bodySchema.safeParse(await readJsonBody(req));
     if (!parsed.success) {
@@ -104,11 +104,6 @@ export async function POST(
       baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
     }
 
-    const sectionWithCourse = await db.query.sections.findFirst({
-      where: eq(sections.id, sectionId),
-      with: { course: { columns: { title: true } } },
-    });
-
     const results: Array<{
       email: string;
       ok: boolean;
@@ -135,7 +130,7 @@ export async function POST(
             workspaceId: tenantId,
             to: email,
             sectionName: section.name,
-            courseTitle: sectionWithCourse?.course?.title ?? null,
+            courseTitle: course?.title ?? null,
             claimUrl: invite.claimUrl,
             enrollmentCode: section.studentEnrollmentCode,
             expiresAt: invite.expiresAt,
