@@ -418,7 +418,9 @@ export default async function ProfessorDashboard() {
                       <Button asChild variant="ghost" size="sm">
                         <a
                           href={withBasePath(
-                            `/dashboard/professor/sections/${section.id}`,
+                            section.course?.id
+                              ? `/dashboard/professor/courses/${section.course.id}/sections/${section.id}`
+                              : `/dashboard/professor/sections/${section.id}`,
                           )}
                         >
                           Details

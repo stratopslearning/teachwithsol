@@ -51,18 +51,17 @@ export default async function CourseHubSectionsPage({
     <CourseHubShell
       courseId={courseId}
       courseTitle={course.title}
-      description="Invite faculty with each section’s faculty code — they only see courses they teach. Open a section for roster, releases, and gradebook."
+      description="Create sections, share enrolment codes, and open a section for roster, email invites, releases, and gradebook — all inside this course."
       activeTab="sections"
       tools={lms.enabled ? lms.facultyTools : undefined}
       nav={lms.nav}
       studentView={studentView}
     >
       <div className="mb-4 max-w-2xl rounded-2xl border border-rule/70 bg-surface-sunken/40 px-4 py-3 text-sm text-ink-muted">
-        <p className="font-medium text-ink">Invite to teach</p>
+        <p className="font-medium text-ink">Invite to teach or learn</p>
         <p className="mt-1 text-ink-faint">
-          Share the faculty enrollment code for a section. When a professor
-          enrolls, this course (and its materials) appears on their dashboard.
-          Co-teachers share the same course materials set.
+          Share a section’s faculty or learner code, or open the section for
+          email invites and roster. Co-teachers share the same course materials.
         </p>
       </div>
       <div className="mb-6 max-w-xl">
@@ -88,7 +87,9 @@ export default async function CourseHubSectionsPage({
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule/60 px-5 py-4">
                   <div className="min-w-0">
                     <Link
-                      href={appPath(`/dashboard/professor/sections/${s.id}`)}
+                      href={appPath(
+                        `/dashboard/professor/courses/${courseId}/sections/${s.id}`,
+                      )}
                       className="font-display text-lg tracking-tight text-ink transition-colors hover:text-brand"
                     >
                       {s.name}
@@ -101,7 +102,9 @@ export default async function CourseHubSectionsPage({
                   </div>
                   <Button asChild variant="outline" size="sm">
                     <Link
-                      href={appPath(`/dashboard/professor/sections/${s.id}`)}
+                      href={appPath(
+                        `/dashboard/professor/courses/${courseId}/sections/${s.id}`,
+                      )}
                     >
                       Open
                       <ArrowUpRight className="h-3.5 w-3.5" />

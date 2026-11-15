@@ -62,7 +62,11 @@ export default async function SectionGradebookPage({
             : []),
           {
             label: sectionName,
-            href: withBasePath(`/dashboard/professor/sections/${sectionId}`),
+            href: withBasePath(
+              sectionMeta.courseId
+                ? `/dashboard/professor/courses/${sectionMeta.courseId}/sections/${sectionId}`
+                : `/dashboard/professor/sections/${sectionId}`,
+            ),
           },
           { label: 'Gradebook' },
         ]}
