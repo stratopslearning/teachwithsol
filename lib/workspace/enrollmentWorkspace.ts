@@ -1,7 +1,3 @@
-import { and, eq } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import { workspaceMemberships } from '@/app/db/schema';
 import { resolveFacultyWorkspaceId } from '@/lib/workspace/activeWorkspace';
 
 /**
@@ -40,13 +36,14 @@ export async function resolveStudentEnrollWorkspaceId(
     return { ok: true, workspaceId: trimmed, requireGlobalUnique: false };
   }
 
-  const learnerRows = await db.query.workspaceMemberships.findMany({
-    where: and(
-      eq(workspaceMemberships.userId, userId),
-      eq(workspaceMemberships.status, 'active'),
-    ),
-    columns: { workspaceId: true },
-  });
+  // FORCE RLS: a plain db read returned no memberships, so the sole-seat
+  // shortcut never applied. Use the SECURITY DEFINER membership lookup.
+  const { fetchUserActiveMembershipsDetail } = await import(
+    '@/lib/authz/userScopedReads'
+  );
+  const learnerRows = (await fetchUserActiveMembershipsDetail(userId)).filter(
+    (m) => m.status === 'active',
+  );
   const learnerIds = [...new Set(learnerRows.map((r) => r.workspaceId))];
   if (learnerIds.length === 1) {
     return {

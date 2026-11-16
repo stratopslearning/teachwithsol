@@ -1,6 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import { roleBindings } from '@/app/db/schema';
 import {
   countActiveOwners,
@@ -23,16 +23,20 @@ export async function transferWorkspaceOwnership(opts: {
     throw ApiError.badRequest('Already the owner');
   }
 
-  const current = await db.query.roleBindings.findFirst({
-    where: and(
-      eq(roleBindings.tenantId, opts.workspaceId),
-      eq(roleBindings.userId, opts.fromUserId),
-      eq(roleBindings.scopeType, 'organization'),
-      eq(roleBindings.scopeId, opts.workspaceId),
-      eq(roleBindings.role, 'owner'),
-      isNull(roleBindings.revokedAt),
-    ),
-  });
+  // FORCE RLS: a plain db read found no binding, so every transfer was
+  // refused as "Only the current owner". Read under the workspace.
+  const current = await withTenant(opts.workspaceId, opts.fromUserId, (tx) =>
+    tx.query.roleBindings.findFirst({
+      where: and(
+        eq(roleBindings.tenantId, opts.workspaceId),
+        eq(roleBindings.userId, opts.fromUserId),
+        eq(roleBindings.scopeType, 'organization'),
+        eq(roleBindings.scopeId, opts.workspaceId),
+        eq(roleBindings.role, 'owner'),
+        isNull(roleBindings.revokedAt),
+      ),
+    }),
+  );
   if (!current) {
     throw ApiError.forbidden('Only the current owner can transfer ownership');
   }

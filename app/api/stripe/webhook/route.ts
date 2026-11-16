@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import type Stripe from 'stripe';
 
 import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import {
   stripeEvents,
   users as dbUsers,
@@ -126,20 +127,32 @@ async function processStripeEvent(event: Stripe.Event): Promise<void> {
           typeof session.subscription === 'string'
             ? session.subscription
             : session.subscription?.id ?? null;
-        await db
-          .update(workspaceLicenses)
-          .set({
-            status: 'active',
-            billingProvider: 'stripe',
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            updatedAt: new Date(),
-          })
-          .where(eq(workspaceLicenses.workspaceId, workspaceId));
-        await db
-          .update(workspaces)
-          .set({ status: 'active', updatedAt: new Date() })
-          .where(eq(workspaces.id, workspaceId));
+        // FORCE RLS: plain db updates matched no rows, so a paid license
+        // was never activated. Write under the workspace's tenant, and fail
+        // loudly (Stripe retries) if the license row is missing.
+        const activated = await withTenant(workspaceId, null, async (tx) => {
+          const licenseRows = await tx
+            .update(workspaceLicenses)
+            .set({
+              status: 'active',
+              billingProvider: 'stripe',
+              stripeCustomerId: customerId,
+              stripeSubscriptionId: subscriptionId,
+              updatedAt: new Date(),
+            })
+            .where(eq(workspaceLicenses.workspaceId, workspaceId))
+            .returning({ id: workspaceLicenses.id });
+          await tx
+            .update(workspaces)
+            .set({ status: 'active', updatedAt: new Date() })
+            .where(eq(workspaces.id, workspaceId));
+          return licenseRows.length;
+        });
+        if (activated === 0) {
+          throw new Error(
+            `checkout.session.completed: no license row for workspace ${workspaceId} (session ${session.id})`,
+          );
+        }
         const actor = await db.query.users.findFirst({
           where: eq(dbUsers.clerkId, clerkUserId),
         });
@@ -200,22 +213,26 @@ async function processStripeEvent(event: Stripe.Event): Promise<void> {
             : sub.status === 'trialing'
               ? 'trialing'
               : 'active';
-      await db
-        .update(workspaceLicenses)
-        .set({
-          status,
-          stripeSubscriptionId: sub.id,
-          stripeCustomerId:
-            typeof sub.customer === 'string' ? sub.customer : sub.customer?.id,
-          updatedAt: new Date(),
-        })
-        .where(eq(workspaceLicenses.workspaceId, workspaceId));
-      if (status === 'canceled') {
-        await db
-          .update(workspaces)
-          .set({ status: 'suspended', updatedAt: new Date() })
-          .where(eq(workspaces.id, workspaceId));
-      }
+      // FORCE RLS: write under the workspace's tenant (plain db updates
+      // matched no rows, so cancellations never suspended anything).
+      await withTenant(workspaceId, null, async (tx) => {
+        await tx
+          .update(workspaceLicenses)
+          .set({
+            status,
+            stripeSubscriptionId: sub.id,
+            stripeCustomerId:
+              typeof sub.customer === 'string' ? sub.customer : sub.customer?.id,
+            updatedAt: new Date(),
+          })
+          .where(eq(workspaceLicenses.workspaceId, workspaceId));
+        if (status === 'canceled') {
+          await tx
+            .update(workspaces)
+            .set({ status: 'suspended', updatedAt: new Date() })
+            .where(eq(workspaces.id, workspaceId));
+        }
+      });
       return;
     }
 

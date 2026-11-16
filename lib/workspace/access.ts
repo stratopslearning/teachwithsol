@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import {
   courses,
   DEFAULT_WORKSPACE_ID,
@@ -67,9 +68,12 @@ export async function ensureDefaultWorkspace(): Promise<WorkspaceRow> {
 }
 
 export async function getWorkspace(workspaceId: string) {
-  return db.query.workspaces.findFirst({
-    where: eq(workspaces.id, workspaceId),
-  });
+  // FORCE RLS: a workspace row is visible under its own tenant only.
+  return withTenant(workspaceId, null, (tx) =>
+    tx.query.workspaces.findFirst({
+      where: eq(workspaces.id, workspaceId),
+    }),
+  );
 }
 
 export async function getActiveLicense(
@@ -198,40 +202,46 @@ export async function userCanAccessWorkspace(
   if (user.platformStaff) {
     return adminHasTenantDataAccess(user, workspaceId);
   }
-  const membership = await db.query.workspaceMemberships.findFirst({
-    where: and(
-      eq(workspaceMemberships.workspaceId, workspaceId),
-      eq(workspaceMemberships.userId, user.id),
-      eq(workspaceMemberships.status, 'active'),
-    ),
-  });
-  if (membership) return true;
-
-  const viaEnrollment = await db
-    .select({ id: courses.id })
-    .from(courses)
-    .innerJoin(sections, eq(sections.courseId, courses.id))
-    .innerJoin(
-      studentSections,
-      and(
-        eq(studentSections.sectionId, sections.id),
-        eq(studentSections.studentId, user.id),
-        eq(studentSections.status, 'ACTIVE'),
+  // FORCE RLS: plain db reads returned nothing, so this always denied
+  // members. Both checks filter on this user; run them under the workspace.
+  return withTenant(workspaceId, user.id, async (tx) => {
+    const membership = await tx.query.workspaceMemberships.findFirst({
+      where: and(
+        eq(workspaceMemberships.workspaceId, workspaceId),
+        eq(workspaceMemberships.userId, user.id),
+        eq(workspaceMemberships.status, 'active'),
       ),
-    )
-    .where(eq(courses.workspaceId, workspaceId))
-    .limit(1);
-  return viaEnrollment.length > 0;
+    });
+    if (membership) return true;
+
+    const viaEnrollment = await tx
+      .select({ id: courses.id })
+      .from(courses)
+      .innerJoin(sections, eq(sections.courseId, courses.id))
+      .innerJoin(
+        studentSections,
+        and(
+          eq(studentSections.sectionId, sections.id),
+          eq(studentSections.studentId, user.id),
+          eq(studentSections.status, 'ACTIVE'),
+        ),
+      )
+      .where(eq(courses.workspaceId, workspaceId))
+      .limit(1);
+    return viaEnrollment.length > 0;
+  });
 }
 
 export async function assertCourseInWorkspace(
   courseId: string,
   workspaceId: string,
 ): Promise<boolean> {
-  const course = await db.query.courses.findFirst({
-    where: and(eq(courses.id, courseId), eq(courses.workspaceId, workspaceId)),
-    columns: { id: true },
-  });
+  const course = await withTenant(workspaceId, null, (tx) =>
+    tx.query.courses.findFirst({
+      where: and(eq(courses.id, courseId), eq(courses.workspaceId, workspaceId)),
+      columns: { id: true },
+    }),
+  );
   return Boolean(course);
 }
 

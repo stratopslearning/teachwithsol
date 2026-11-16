@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import { workspaceUsageDaily } from '@/app/db/schema';
 import { recordProcessAiBudget } from '@/lib/ai/budget';
 import { getActiveLicense } from '@/lib/workspace/access';
@@ -24,24 +24,28 @@ export async function recordAiUsage(
   const tutor = kind === 'tutor' ? units : 0;
   const embed = kind === 'embed' ? units : 0;
 
-  await db
-    .insert(workspaceUsageDaily)
-    .values({
-      workspaceId,
-      day,
-      gradeUnits: grade,
-      tutorUnits: tutor,
-      embedUnits: embed,
-    })
-    .onConflictDoUpdate({
-      target: [workspaceUsageDaily.workspaceId, workspaceUsageDaily.day],
-      set: {
-        gradeUnits: sql`${workspaceUsageDaily.gradeUnits} + ${grade}`,
-        tutorUnits: sql`${workspaceUsageDaily.tutorUnits} + ${tutor}`,
-        embedUnits: sql`${workspaceUsageDaily.embedUnits} + ${embed}`,
-        updatedAt: new Date(),
-      },
-    });
+  // FORCE RLS: a plain insert was rejected / matched nothing, so AI usage
+  // was never recorded and per-workspace AI caps could never trip.
+  await withTenant(workspaceId, null, (tx) =>
+    tx
+      .insert(workspaceUsageDaily)
+      .values({
+        workspaceId,
+        day,
+        gradeUnits: grade,
+        tutorUnits: tutor,
+        embedUnits: embed,
+      })
+      .onConflictDoUpdate({
+        target: [workspaceUsageDaily.workspaceId, workspaceUsageDaily.day],
+        set: {
+          gradeUnits: sql`${workspaceUsageDaily.gradeUnits} + ${grade}`,
+          tutorUnits: sql`${workspaceUsageDaily.tutorUnits} + ${tutor}`,
+          embedUnits: sql`${workspaceUsageDaily.embedUnits} + ${embed}`,
+          updatedAt: new Date(),
+        },
+      }),
+  );
 }
 
 export async function sumUsageInPeriod(
@@ -49,18 +53,20 @@ export async function sumUsageInPeriod(
   fromDay: string,
   toDay: string,
 ): Promise<number> {
-  const rows = await db
-    .select({
-      total: sql<number>`coalesce(sum(${workspaceUsageDaily.gradeUnits} + ${workspaceUsageDaily.tutorUnits} + ${workspaceUsageDaily.embedUnits}), 0)::int`,
-    })
-    .from(workspaceUsageDaily)
-    .where(
-      and(
-        eq(workspaceUsageDaily.workspaceId, workspaceId),
-        sql`${workspaceUsageDaily.day} >= ${fromDay}`,
-        sql`${workspaceUsageDaily.day} <= ${toDay}`,
+  const rows = await withTenant(workspaceId, null, (tx) =>
+    tx
+      .select({
+        total: sql<number>`coalesce(sum(${workspaceUsageDaily.gradeUnits} + ${workspaceUsageDaily.tutorUnits} + ${workspaceUsageDaily.embedUnits}), 0)::int`,
+      })
+      .from(workspaceUsageDaily)
+      .where(
+        and(
+          eq(workspaceUsageDaily.workspaceId, workspaceId),
+          sql`${workspaceUsageDaily.day} >= ${fromDay}`,
+          sql`${workspaceUsageDaily.day} <= ${toDay}`,
+        ),
       ),
-    );
+  );
   return Number(rows[0]?.total ?? 0);
 }
 

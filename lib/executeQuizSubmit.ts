@@ -129,7 +129,7 @@ export async function executeQuizSubmit(
       'submit',
     );
     // Wave 3 (23): ended / archived offerings are read-only for submissions.
-    await assertOfferingWritable(sectionRow.offeringId, now);
+    await assertOfferingWritable(sectionRow.offeringId, tenantId, now);
   }
 
   const savedAnswers = inProgressAttempt?.answers ?? {};

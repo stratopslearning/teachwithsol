@@ -7,8 +7,9 @@
  */
 import { eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
-import { courseOfferings, sections } from '@/app/db/schema';
+import { fetchSectionById } from '@/lib/db/entityScopedReads';
+import { withTenant } from '@/lib/db/tenantContext';
+import { courseOfferings } from '@/app/db/schema';
 import { normalizeDatabaseDate } from '@/lib/utils';
 
 export const OFFERING_ENDED_MESSAGE =
@@ -43,13 +44,18 @@ export function isOfferingEnded(
 
 export async function assertOfferingWritable(
   offeringId: string | null | undefined,
+  tenantId: string,
   now: Date = new Date(),
 ): Promise<void> {
   if (!offeringId) return;
-  const offering = await db.query.courseOfferings.findFirst({
-    where: eq(courseOfferings.id, offeringId),
-    columns: { status: true, endsAt: true },
-  });
+  // FORCE RLS: a plain db read found no offering, so this guard never fired
+  // and ended offerings still accepted writes. Read under the tenant.
+  const offering = await withTenant(tenantId, null, (tx) =>
+    tx.query.courseOfferings.findFirst({
+      where: eq(courseOfferings.id, offeringId),
+      columns: { status: true, endsAt: true },
+    }),
+  );
   if (isOfferingEnded(offering, now)) throw new OfferingEndedError();
 }
 
@@ -58,9 +64,8 @@ export async function assertSectionOfferingWritable(
   sectionId: string,
   now: Date = new Date(),
 ): Promise<void> {
-  const section = await db.query.sections.findFirst({
-    where: eq(sections.id, sectionId),
-    columns: { offeringId: true },
-  });
-  await assertOfferingWritable(section?.offeringId, now);
+  const section = await fetchSectionById(sectionId);
+  const tenantId = section?.tenantId ?? section?.workspaceId;
+  if (!tenantId) return;
+  await assertOfferingWritable(section?.offeringId, tenantId, now);
 }
