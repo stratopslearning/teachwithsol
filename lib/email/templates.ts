@@ -1,10 +1,4 @@
-import { withBasePath } from '@/lib/basePath';
-
-function abs(baseUrl: string | undefined, path: string): string {
-  const p = path.startsWith('/') ? path : `/${path}`;
-  if (!baseUrl) return withBasePath(p);
-  return `${baseUrl.replace(/\/$/, '')}${withBasePath(p)}`;
-}
+import { absoluteUrl } from '@/lib/siteUrl';
 
 function formatExpires(d: Date): string {
   return d.toLocaleString('en-US', {
@@ -251,8 +245,9 @@ ${ctaButton(opts.teamUrl, 'Review requests')}`,
   return { subject, text, html };
 }
 
-export function workspaceTeamUrl(baseUrl?: string): string {
-  return abs(baseUrl, '/dashboard/workspace');
+/** Always absolute (email clients can't resolve relative links), on the app host. */
+export function workspaceTeamUrl(): string {
+  return absoluteUrl('/dashboard/workspace');
 }
 
 /** Marker replaced by send() with the HTML compliance footer. */

@@ -195,6 +195,15 @@ describe('middleware upload body limits', () => {
     ).toBe(true);
   });
 
+  it('lets a max-size book plus multipart framing through', () => {
+    expect(
+      isBodyTooLarge(
+        String(50 * 1024 * 1024 + 200 * 1024),
+        middlewareBodyLimitBytes('/api/professor/books'),
+      ),
+    ).toBe(false);
+  });
+
   it('allows 50 MB for hosted book EPUB/XML uploads', () => {
     expect(isBookUploadApiPath('/api/professor/books')).toBe(true);
     expect(isBookUploadApiPath('/api/professor/books/abc')).toBe(true);
@@ -210,7 +219,7 @@ describe('middleware upload body limits', () => {
     ).toBe(false);
     expect(
       isBodyTooLarge(
-        String(51 * 1024 * 1024),
+        String(52 * 1024 * 1024),
         middlewareBodyLimitBytes('/api/professor/books'),
       ),
     ).toBe(true);

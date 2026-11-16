@@ -11,6 +11,8 @@
  * not browsers on our origin.
  */
 
+import { MAX_BOOK_UPLOAD_BYTES } from '@/lib/books/constants';
+
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /** Default max Content-Length for /api/* mutations checked at the edge. */
@@ -24,10 +26,12 @@ export const MIDDLEWARE_MAX_BODY_BYTES = 1_048_576; // 1 MB
 export const MIDDLEWARE_UPLOAD_MAX_BODY_BYTES = 51 * 1024 * 1024; // 51 MB
 
 /**
- * Hosted-book EPUB/XML uploads (Pressbooks exports are often large).
- * Must stay aligned with `MAX_BOOK_UPLOAD_BYTES` in lib/books/constants.ts.
+ * Hosted-book EPUB/XML uploads (Pressbooks exports are often large): the
+ * book file cap plus ~1 MB of multipart framing, so a max-size book is not
+ * rejected at the edge (same headroom as the materials budget above).
  */
-export const MIDDLEWARE_BOOK_UPLOAD_MAX_BODY_BYTES = 50 * 1024 * 1024; // 50 MB
+export const MIDDLEWARE_BOOK_UPLOAD_MAX_BODY_BYTES =
+  MAX_BOOK_UPLOAD_BYTES + 1024 * 1024; // 51 MB
 
 /** Paths that may receive multipart file uploads up to the materials budget. */
 export function isLargeUploadApiPath(appPath: string): boolean {

@@ -9,7 +9,6 @@ import {
   accessRequestDigestEmail,
   workspaceTeamUrl,
 } from '@/lib/email/templates';
-import { getRequiredBaseUrl } from '@/lib/stripe';
 import { accessRequestDigestStats } from '@/lib/workspace/accessRequests';
 
 function utcDayKey(d = new Date()): string {
@@ -31,13 +30,6 @@ export async function runAccessRequestDigests(): Promise<{
 
   let emailsSent = 0;
   let skipped = 0;
-
-  let baseUrl: string | undefined;
-  try {
-    baseUrl = getRequiredBaseUrl();
-  } catch {
-    baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-  }
 
   const periodKey = utcDayKey();
 
@@ -78,7 +70,7 @@ export async function runAccessRequestDigests(): Promise<{
       pendingCount: stats.pendingCount,
       newCount: stats.newCount,
       rejectedCount: stats.rejectedCount,
-      teamUrl: workspaceTeamUrl(baseUrl),
+      teamUrl: workspaceTeamUrl(),
     });
 
     const sent = await sendTransactionalEmail({
