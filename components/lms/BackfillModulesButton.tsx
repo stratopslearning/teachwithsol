@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { apiUrl } from '@/lib/basePath';
 
 export function BackfillModulesButton({ courseId }: { courseId: string }) {
   const router = useRouter();
@@ -12,7 +13,7 @@ export function BackfillModulesButton({ courseId }: { courseId: string }) {
 
   async function run() {
     setMsg(null);
-    const res = await fetch(`/api/lms/courses/${courseId}/backfill-modules`, {
+    const res = await fetch(apiUrl(`/api/lms/courses/${courseId}/backfill-modules`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',

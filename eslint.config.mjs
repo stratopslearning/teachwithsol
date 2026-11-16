@@ -69,6 +69,21 @@ export default [
       "prefer-const": "warn",
       "react-hooks/exhaustive-deps": "warn",
       "sol/no-legacy-authz": ["error", { allowlist: legacyAllowlist }],
+      // A bare '/api/...' path skips NEXT_PUBLIC_BASE_PATH and 404s on the
+      // /learning deploy. Wrap it: fetch(apiUrl('/api/...')).
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.name='fetch'] > Literal.arguments:first-child[value=/^\\/api\\//]",
+          message: "Wrap API paths with apiUrl() from '@/lib/basePath'.",
+        },
+        {
+          selector:
+            "CallExpression[callee.name='fetch'] > TemplateLiteral.arguments:first-child[quasis.0.value.raw=/^\\/api\\//]",
+          message: "Wrap API paths with apiUrl() from '@/lib/basePath'.",
+        },
+      ],
       "no-restricted-imports": ["error", { paths: openAiRestrictedPaths }],
     },
   },

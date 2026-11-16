@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { withBasePath } from '@/lib/basePath';
+import { apiUrl } from '@/lib/basePath';
 import { cn } from '@/lib/utils';
 
 type Item = {
@@ -145,7 +146,7 @@ export function ModulesEditorClient({
 
   async function createModule() {
     setError(null);
-    const res = await fetch(`/api/lms/courses/${courseId}/modules`, {
+    const res = await fetch(apiUrl(`/api/lms/courses/${courseId}/modules`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: title.trim() || 'New module' }),
@@ -169,7 +170,7 @@ export function ModulesEditorClient({
     }
     setError(null);
     const res = await fetch(
-      `/api/lms/courses/${courseId}/modules/${moduleId}`,
+      apiUrl(`/api/lms/courses/${courseId}/modules/${moduleId}`),
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -194,7 +195,7 @@ export function ModulesEditorClient({
     setError(null);
     for (const m of unpublished) {
       const res = await fetch(
-        `/api/lms/courses/${courseId}/modules/${m.id}`,
+        apiUrl(`/api/lms/courses/${courseId}/modules/${m.id}`),
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -217,7 +218,7 @@ export function ModulesEditorClient({
   ) {
     setError(null);
     const res = await fetch(
-      `/api/lms/courses/${courseId}/modules/${moduleId}/items/${itemId}`,
+      apiUrl(`/api/lms/courses/${courseId}/modules/${moduleId}/items/${itemId}`),
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -235,7 +236,7 @@ export function ModulesEditorClient({
   async function addHeader(moduleId: string) {
     setError(null);
     const res = await fetch(
-      `/api/lms/courses/${courseId}/modules/${moduleId}/items`,
+      apiUrl(`/api/lms/courses/${courseId}/modules/${moduleId}/items`),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,7 +265,7 @@ export function ModulesEditorClient({
     }
     setError(null);
     const res = await fetch(
-      `/api/lms/courses/${courseId}/modules/${moduleId}`,
+      apiUrl(`/api/lms/courses/${courseId}/modules/${moduleId}`),
       { method: 'DELETE' },
     );
     if (!res.ok) {
@@ -289,7 +290,7 @@ export function ModulesEditorClient({
     }
     setError(null);
     const res = await fetch(
-      `/api/lms/courses/${courseId}/modules/${moduleId}/items/${itemId}`,
+      apiUrl(`/api/lms/courses/${courseId}/modules/${moduleId}/items/${itemId}`),
       { method: 'DELETE' },
     );
     if (!res.ok) {
@@ -307,7 +308,7 @@ export function ModulesEditorClient({
   ) {
     setError(null);
     const res = await fetch(
-      `/api/lms/courses/${courseId}/modules/${moduleId}/items/${itemId}`,
+      apiUrl(`/api/lms/courses/${courseId}/modules/${moduleId}/items/${itemId}`),
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
