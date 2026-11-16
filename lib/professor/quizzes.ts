@@ -4,8 +4,9 @@
  */
 import { eq, inArray } from 'drizzle-orm';
 
-import { db } from '@/app/db';
-import { quizSections, quizzes, sections } from '@/app/db/schema';
+import { quizSections, quizzes } from '@/app/db/schema';
+import { fetchSectionsByIds } from '@/lib/db/entityScopedReads';
+import { readBySectionTenants, withQuizTenant } from '@/lib/db/sectionTenants';
 import { ApiError } from '@/lib/api/errors';
 import { activeOnly } from '@/lib/db/filters';
 import type { UserData } from '@/lib/getOrCreateUser';
@@ -45,37 +46,41 @@ export async function listProfessorQuizzes(
   // Binding-derived teaching sections (professor_sections is metadata only).
   const teachingIds = await listTeachingSectionIds(user);
   if (teachingIds.length === 0) return [];
-  const teachingSections = await db.query.sections.findMany({
-    where: inArray(sections.id, teachingIds),
-  });
+  // FORCE RLS: plain db reads return nothing (the quiz list was always
+  // empty). Sections come from the definer; links are read per tenant.
+  const teachingSections = await fetchSectionsByIds(teachingIds);
   const { active: ongoing } = partitionEnrollmentsByConclusion(
     teachingSections.map((section) => ({ sectionId: section.id, section })),
   );
   const sectionIds = ongoing.map((e) => e.sectionId);
   if (sectionIds.length === 0) return [];
 
-  const links = await db.query.quizSections.findMany({
-    where: inArray(quizSections.sectionId, sectionIds),
-    with: {
-      quiz: {
-        with: {
-          sectionAssignments: { with: { section: true } },
-          attempts: {
-            columns: {
-              id: true,
-              studentId: true,
-              submittedAt: true,
-              percentage: true,
-              score: true,
-              maxScore: true,
+  const linkRows = await readBySectionTenants(sectionIds, user.id, (tx, ids) =>
+    tx.query.quizSections.findMany({
+      where: inArray(quizSections.sectionId, ids),
+      with: {
+        quiz: {
+          with: {
+            sectionAssignments: { with: { section: true } },
+            attempts: {
+              columns: {
+                id: true,
+                studentId: true,
+                submittedAt: true,
+                percentage: true,
+                score: true,
+                maxScore: true,
+              },
             },
+            questions: { columns: { id: true } },
           },
-          questions: { columns: { id: true } },
         },
       },
-    },
-    orderBy: (t, { desc }) => desc(t.assignedAt),
-  });
+    }),
+  );
+  const links = linkRows.sort(
+    (a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime(),
+  );
 
   const seen = new Set<string>();
   const result: ProfessorQuizSummary[] = [];
@@ -164,13 +169,15 @@ export async function getProfessorQuiz(
   const allowed = await professorCanAccessQuiz(user, quizId);
   if (!allowed) throw ApiError.forbidden('You do not have access to this quiz');
 
-  const quiz = await db.query.quizzes.findFirst({
-    where: (t, { and }) => and(eq(t.id, quizId), activeOnly(quizzes.deletedAt)),
-    with: {
-      questions: { orderBy: (q, { asc }) => [asc(q.order)] },
-      sectionAssignments: { with: { section: true } },
-    },
-  });
+  const quiz = await withQuizTenant(quizId, user.id, (tx) =>
+    tx.query.quizzes.findFirst({
+      where: (t, { and }) => and(eq(t.id, quizId), activeOnly(quizzes.deletedAt)),
+      with: {
+        questions: { orderBy: (q, { asc }) => [asc(q.order)] },
+        sectionAssignments: { with: { section: true } },
+      },
+    }),
+  );
   if (!quiz) throw ApiError.notFound('Quiz not found');
 
   // Answer keys only for callers with content.write on this quiz (bindings).

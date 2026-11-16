@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { quizzes } from '@/app/db/schema';
+import { fetchQuizById } from '@/lib/db/entityScopedReads';
 import { ApiError, jsonError } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
@@ -41,10 +39,8 @@ export async function POST(
     const canAccess = await professorCanAccessQuiz(user, quizId);
     if (!canAccess) throw ApiError.forbidden('Not allowed to manage this quiz');
 
-    const quiz = await db.query.quizzes.findFirst({
-      where: eq(quizzes.id, quizId),
-      columns: { tenantId: true },
-    });
+    // FORCE RLS: a plain db read finds no quiz (release always 404'd).
+    const quiz = await fetchQuizById(quizId);
     if (!quiz) throw ApiError.notFound('Quiz not found');
     if (quiz.tenantId) {
       const { requireWorkspaceTeaching } = await import(

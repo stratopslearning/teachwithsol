@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, isNull } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { fetchKnowledgeConnectorByIdDefiner } from '@/lib/db/knowledgeJobDefiners';
+import { withTenant } from '@/lib/db/tenantContext';
 import { knowledgeConnectors } from '@/app/db/schema';
 import { apiErrorResponse, ApiError } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
@@ -26,12 +27,19 @@ export async function GET(
       professorOnly: true,
     });
     const { id } = await ctx.params;
-    const connector = await db.query.knowledgeConnectors.findFirst({
-      where: and(
-        eq(knowledgeConnectors.id, id),
-        isNull(knowledgeConnectors.deletedAt),
-      ),
-    });
+    // FORCE RLS: a plain db read finds nothing. Find the workspace via the
+    // definer, then re-read under it (the definer doesn't skip deleted rows).
+    const meta = await fetchKnowledgeConnectorByIdDefiner(id);
+    const connector = meta
+      ? await withTenant(meta.workspaceId, auth.user.id, (tx) =>
+          tx.query.knowledgeConnectors.findFirst({
+            where: and(
+              eq(knowledgeConnectors.id, id),
+              isNull(knowledgeConnectors.deletedAt),
+            ),
+          }),
+        )
+      : undefined;
     if (!connector) throw ApiError.notFound('Connector not found');
     await assertWorkspaceFaculty(auth.user, connector.workspaceId);
 

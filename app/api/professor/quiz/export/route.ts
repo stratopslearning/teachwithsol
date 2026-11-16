@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/app/db';
-import { quizzes, attempts, users, professorSections, quizSections } from '@/app/db/schema';
-import { eq, and, inArray, gte, lte, isNotNull } from 'drizzle-orm';
-import { parse } from 'json2csv';
 
 import { ApiError, jsonError } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
-import { extractRequestMeta, logAudit } from '@/lib/audit';
+import { extractRequestMeta } from '@/lib/audit';
+import { exportResultsCsv } from '@/lib/professor/grading';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * CSV of submitted attempts across the professor's sections. Shares
+ * exportResultsCsv with the MCP tool (which reads under each tenant; the old
+ * plain-db copy here always returned "No quiz access" under FORCE RLS).
+ */
 export async function GET(req: NextRequest) {
   try {
     const { user: professor } = await requireProfessorApi(req, {
@@ -17,111 +19,16 @@ export async function GET(req: NextRequest) {
       professorOnly: true,
     });
 
-    const { listTeachingSectionIds } = await import(
-      '@/lib/professor/graderSections'
-    );
-    const sectionIds = await listTeachingSectionIds(professor);
-    if (sectionIds.length === 0) {
-      return NextResponse.json({ error: 'No section access' }, { status: 403 });
-    }
-
-    // Get all quiz IDs assigned to these sections
-    const quizSectionAssignments = await db.query.quizSections.findMany({
-      where: inArray(quizSections.sectionId, sectionIds),
-    });
-    const allowedQuizIds = quizSectionAssignments.map(qs => qs.quizId);
-    if (allowedQuizIds.length === 0) {
-      return NextResponse.json({ error: 'No quiz access' }, { status: 403 });
-    }
-
-    // Get query parameters
     const { searchParams } = new URL(req.url);
-    const quizId = searchParams.get('quizId');
-    const dateFrom = searchParams.get('dateFrom');
-    const dateTo = searchParams.get('dateTo');
-
-    // Build where conditions: only submitted attempts (exclude in-progress)
-    const whereConditions = [
-      inArray(attempts.quizId, allowedQuizIds),
-      isNotNull(attempts.submittedAt),
-    ];
-    if (quizId) {
-      if (!allowedQuizIds.includes(quizId)) {
-        return NextResponse.json({ error: 'Access denied for this quiz' }, { status: 403 });
-      }
-      whereConditions.push(eq(attempts.quizId, quizId));
-    }
-    if (dateFrom) {
-      whereConditions.push(gte(attempts.submittedAt, new Date(dateFrom)));
-    }
-    if (dateTo) {
-      whereConditions.push(lte(attempts.submittedAt, new Date(dateTo + 'T23:59:59')));
-    }
-
-    // Fetch attempts with student and quiz data
-    const results = await db
-      .select({
-        studentFirstName: users.firstName,
-        studentLastName: users.lastName,
-        studentEmail: users.email,
-        quizTitle: quizzes.title,
-        attemptDate: attempts.submittedAt,
-        score: attempts.score,
-        maxScore: attempts.maxScore,
-        percentage: attempts.percentage,
-        attemptId: attempts.id,
-      })
-      .from(attempts)
-      .innerJoin(quizzes, eq(attempts.quizId, quizzes.id))
-      .innerJoin(users, eq(attempts.studentId, users.id))
-      .where(and(...whereConditions))
-      .orderBy(attempts.submittedAt);
-
-    // Calculate attempt counts per student per quiz
-    const attemptCounts = new Map<string, number>();
-    results.forEach(result => {
-      const key = `${result.studentEmail}-${result.quizTitle}`;
-      attemptCounts.set(key, (attemptCounts.get(key) || 0) + 1);
-    });
-
-    // Format data for CSV (score/maxScore may be null for legacy data; show 0 or N/A)
-    const csvData = results.map(result => {
-      const key = `${result.studentEmail}-${result.quizTitle}`;
-      const fullName = [result.studentFirstName, result.studentLastName].filter(Boolean).join(' ') || 'Unknown';
-      return {
-        'Student Name': fullName,
-        'Student Email': result.studentEmail,
-        'Quiz Name': result.quizTitle,
-        'Attempt Date': result.attemptDate ? new Date(result.attemptDate).toLocaleString() : 'N/A',
-        'Score': result.score ?? 0,
-        'Max Score': result.maxScore ?? 0,
-        'Attempt Number': attemptCounts.get(key) || 1,
-      };
-    });
-
-    // Generate CSV
-    const csv = parse(csvData, {
-      fields: ['Student Name', 'Student Email', 'Quiz Name', 'Attempt Date', 'Score', 'Max Score', 'Attempt Number'],
-    });
-
     const meta = extractRequestMeta(req);
-    await logAudit({
-      actorUserId: professor.id,
-      actorClerkId: professor.clerkId,
-      action: 'education.grades.export',
-      targetType: 'quiz',
-      targetId: quizId ?? 'all',
-      metadata: {
-        rowCount: csvData.length,
-        dateFrom: dateFrom || null,
-        dateTo: dateTo || null,
-        sectionCount: sectionIds.length,
-      },
-      ip: meta.ip,
-      userAgent: meta.userAgent,
+    const { csv } = await exportResultsCsv(professor, {
+      quizId: searchParams.get('quizId') ?? undefined,
+      dateFrom: searchParams.get('dateFrom') ?? undefined,
+      dateTo: searchParams.get('dateTo') ?? undefined,
+      audit: { via: 'api', ip: meta.ip, userAgent: meta.userAgent },
+      headerOnlyWhenEmpty: true,
     });
 
-    // Return CSV file
     return new NextResponse(csv, {
       status: 200,
       headers: {
@@ -129,10 +36,9 @@ export async function GET(req: NextRequest) {
         'Content-Disposition': 'attachment; filename="quiz_results.csv"',
       },
     });
-
   } catch (error) {
     console.error('Export error:', error);
     if (error instanceof ApiError) return jsonError(error);
     return NextResponse.json({ error: 'Failed to export results' }, { status: 500 });
   }
-} 
+}

@@ -1,13 +1,10 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { requireTeachingAccess } from '@/lib/authz/gates';
 
-import { db } from '@/app/db';
-import {
-  chatbots,
-  professorSections,
-  quizSections,
-  quizzes,
-} from '@/app/db/schema';
+import { chatbots } from '@/app/db/schema';
+import { fetchChatbotByIdDefiner } from '@/lib/db/studentReadDefiners';
+import { withTenant } from '@/lib/db/tenantContext';
+import { listDiscussionQuizOptions } from '@/lib/professor/discussionQuizOptions';
 import { ChatbotCreationForm } from '@/components/chatbot/ChatbotCreationForm';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -27,14 +24,21 @@ export default async function EditDiscussionPage(props: PageProps) {
   const user = await requireTeachingAccess();
 
   const { id } = await props.params;
-  const bot = await db.query.chatbots.findFirst({
-    where: and(
-      eq(chatbots.id, id),
-      isNull(chatbots.deletedAt),
-      eq(chatbots.professorId, user.id),
-    ),
-    with: { sectionAssignments: true },
-  });
+  // FORCE RLS: plain db reads return nothing (this page always redirected
+  // away). Find the bot's tenant via the definer and read under it.
+  const meta = await fetchChatbotByIdDefiner(id);
+  const bot = meta?.tenantId
+    ? await withTenant(meta.tenantId, user.id, (tx) =>
+        tx.query.chatbots.findFirst({
+          where: and(
+            eq(chatbots.id, id),
+            isNull(chatbots.deletedAt),
+            eq(chatbots.professorId, user.id),
+          ),
+          with: { sectionAssignments: true },
+        }),
+      )
+    : undefined;
   if (!bot || bot.isTemplate) {
     appRedirect('/dashboard/professor/discussions');
   }
@@ -80,29 +84,7 @@ export default async function EditDiscussionPage(props: PageProps) {
   const { active: ongoingEnrollments } =
     partitionEnrollmentsByConclusion(professorSectionsList);
   const enrolledSectionIds = ongoingEnrollments.map((ps) => ps.sectionId);
-  const ownedQuizzes = await db.query.quizzes.findMany({
-    where: eq(quizzes.professorId, user.id),
-  });
-  const sectionQuizLinks =
-    enrolledSectionIds.length > 0
-      ? await db.query.quizSections.findMany({
-          where: inArray(quizSections.sectionId, enrolledSectionIds),
-          with: { quiz: true },
-        })
-      : [];
-
-  const quizMap = new Map<string, { id: string; title: string }>();
-  for (const q of ownedQuizzes) {
-    if (!q.deletedAt) quizMap.set(q.id, { id: q.id, title: q.title });
-  }
-  for (const link of sectionQuizLinks) {
-    if (link.quiz && !link.quiz.deletedAt) {
-      quizMap.set(link.quiz.id, {
-        id: link.quiz.id,
-        title: link.quiz.title,
-      });
-    }
-  }
+  const quizMap = await listDiscussionQuizOptions(user.id, enrolledSectionIds);
 
   return (
     <AppShell
@@ -127,7 +109,7 @@ export default async function EditDiscussionPage(props: PageProps) {
       <div className="mt-10">
         <ChatbotCreationForm
           sections={enrolledSections}
-          quizzes={Array.from(quizMap.values())}
+          quizzes={Array.from(quizMap.values(), ({ id, title }) => ({ id, title }))}
           initial={{
             id: bot.id,
             title: bot.title,

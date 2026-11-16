@@ -4,12 +4,13 @@
  */
 import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { chatbotSessions, chatbots } from '@/app/db/schema';
 import {
-  chatbotSections,
-  chatbotSessions,
-  chatbots,
-} from '@/app/db/schema';
+  fetchChatbotByIdDefiner,
+  fetchChatbotSectionIdsDefiner,
+} from '@/lib/db/studentReadDefiners';
+import { withTenant } from '@/lib/db/tenantContext';
+import { findInUserTenants, readInUserTenants } from '@/lib/db/userTenants';
 import { ApiError } from '@/lib/api/errors';
 import { authorizeOnSection } from '@/lib/authz/courseAccess';
 import { logAudit } from '@/lib/audit';
@@ -39,17 +40,23 @@ export type DiscussionSummary = {
 export async function listProfessorDiscussions(
   user: ProfessorUser,
 ): Promise<DiscussionSummary[]> {
-  const rows = await db.query.chatbots.findMany({
-    where: and(
-      isNull(chatbots.deletedAt),
-      or(eq(chatbots.professorId, user.id), eq(chatbots.isTemplate, true)),
-    ),
-    with: {
-      relatedQuiz: { columns: { id: true, title: true } },
-      sectionAssignments: { with: { section: true } },
-    },
-    orderBy: (t, { desc: d }) => [d(t.updatedAt)],
-  });
+  // FORCE RLS: a plain db read returns no chatbots. Read each of the user's
+  // tenants, then merge newest-first.
+  const found = await readInUserTenants(user.id, (tx) =>
+    tx.query.chatbots.findMany({
+      where: and(
+        isNull(chatbots.deletedAt),
+        or(eq(chatbots.professorId, user.id), eq(chatbots.isTemplate, true)),
+      ),
+      with: {
+        relatedQuiz: { columns: { id: true, title: true } },
+        sectionAssignments: { with: { section: true } },
+      },
+    }),
+  );
+  const rows = [...new Map(found.map((b) => [b.id, b])).values()].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
 
   return rows.map((bot) => {
     const authorId = bot.professorId;
@@ -83,13 +90,18 @@ export async function getProfessorDiscussion(
   user: ProfessorUser,
   chatbotId: string,
 ): Promise<DiscussionDetail> {
-  const bot = await db.query.chatbots.findFirst({
-    where: and(eq(chatbots.id, chatbotId), isNull(chatbots.deletedAt)),
-    with: {
-      relatedQuiz: { columns: { id: true, title: true } },
-      sectionAssignments: { with: { section: true } },
-    },
-  });
+  // FORCE RLS: find the bot's tenant via the definer, then read under it.
+  const meta = await fetchChatbotByIdDefiner(chatbotId);
+  if (!meta?.tenantId) throw ApiError.notFound('Discussion not found');
+  const bot = await withTenant(meta.tenantId, user.id, (tx) =>
+    tx.query.chatbots.findFirst({
+      where: and(eq(chatbots.id, chatbotId), isNull(chatbots.deletedAt)),
+      with: {
+        relatedQuiz: { columns: { id: true, title: true } },
+        sectionAssignments: { with: { section: true } },
+      },
+    }),
+  );
   if (!bot) throw ApiError.notFound('Discussion not found');
 
   const authorId = bot.professorId;
@@ -139,30 +151,32 @@ export async function listDiscussionSessions(
     throw ApiError.forbidden('You do not have access to this discussion');
   }
 
-  const assigned = await db.query.chatbotSections.findMany({
-    where: eq(chatbotSections.chatbotId, chatbotId),
-  });
+  // FORCE RLS: plain db reads return nothing; use the definer for the
+  // assigned sections and read sessions under the bot's tenant.
+  const assignedSectionIds = await fetchChatbotSectionIdsDefiner(chatbotId);
   const allowedSections: string[] = [];
-  for (const a of assigned) {
+  for (const sectionId of assignedSectionIds) {
     if (
-      (await authorizeOnSection(user, 'tutor.transcripts.read', a.sectionId)) ||
-      (await authorizeOnSection(user, 'content.write', a.sectionId))
+      (await authorizeOnSection(user, 'tutor.transcripts.read', sectionId)) ||
+      (await authorizeOnSection(user, 'content.write', sectionId))
     ) {
-      allowedSections.push(a.sectionId);
+      allowedSections.push(sectionId);
     }
   }
 
-  if (allowedSections.length === 0) return [];
+  if (allowedSections.length === 0 || !bot.tenantId) return [];
 
-  const sessions = await db.query.chatbotSessions.findMany({
-    where: and(
-      eq(chatbotSessions.chatbotId, chatbotId),
-      eq(chatbotSessions.status, 'completed'),
-      inArray(chatbotSessions.sectionId, allowedSections),
-    ),
-    with: { student: true, section: true },
-    orderBy: [desc(chatbotSessions.completedAt)],
-  });
+  const sessions = await withTenant(bot.tenantId, user.id, (tx) =>
+    tx.query.chatbotSessions.findMany({
+      where: and(
+        eq(chatbotSessions.chatbotId, chatbotId),
+        eq(chatbotSessions.status, 'completed'),
+        inArray(chatbotSessions.sectionId, allowedSections),
+      ),
+      with: { student: true, section: true },
+      orderBy: [desc(chatbotSessions.completedAt)],
+    }),
+  );
 
   return sessions.map((s) => ({
     id: s.id,
@@ -193,10 +207,14 @@ export async function getDiscussionSession(
   user: ProfessorUser,
   sessionId: string,
 ): Promise<DiscussionSessionDetail> {
-  const session = await db.query.chatbotSessions.findFirst({
-    where: eq(chatbotSessions.id, sessionId),
-    with: { student: true, section: true, chatbot: true },
-  });
+  // FORCE RLS: a plain db read finds nothing. Look in the user's own tenants
+  // (access is still checked on the session's section below).
+  const session = await findInUserTenants(user.id, (tx) =>
+    tx.query.chatbotSessions.findFirst({
+      where: eq(chatbotSessions.id, sessionId),
+      with: { student: true, section: true, chatbot: true },
+    }),
+  );
   if (!session) throw ApiError.notFound('Session not found');
 
   const canRead =

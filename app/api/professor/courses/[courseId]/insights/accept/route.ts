@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
+import { withCourseTenant } from '@/lib/db/sectionTenants';
 import { courseOutlines } from '@/app/db/schema';
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
@@ -41,14 +41,17 @@ export async function POST(
     }
     const body = bodySchema.parse(raw);
 
-    const outline = await db.query.courseOutlines.findFirst({
-      where: and(
-        eq(courseOutlines.courseId, courseId),
-        isNull(courseOutlines.deletedAt),
-        ne(courseOutlines.status, 'ARCHIVED'),
-      ),
-      orderBy: (t, { desc }) => [desc(t.updatedAt)],
-    });
+    // FORCE RLS: a plain db read finds no outline (always "no_outline").
+    const outline = await withCourseTenant(courseId, auth.user.id, (tx) =>
+      tx.query.courseOutlines.findFirst({
+        where: and(
+          eq(courseOutlines.courseId, courseId),
+          isNull(courseOutlines.deletedAt),
+          ne(courseOutlines.status, 'ARCHIVED'),
+        ),
+        orderBy: (t, { desc }) => [desc(t.updatedAt)],
+      }),
+    );
 
     if (!outline) {
       return NextResponse.json(

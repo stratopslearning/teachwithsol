@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 
-import { db } from '@/app/db';
 import { attempts, gradeOverrides } from '@/app/db/schema';
+import { withQuizTenant } from '@/lib/db/sectionTenants';
 
 export type CalibrationSample = {
   attemptId: string;
@@ -24,20 +24,23 @@ export async function getCalibrationStubForQuiz(
   sampleSize = 5,
 ): Promise<CalibrationStubSummary> {
   const n = Math.max(1, Math.min(sampleSize, 20));
-  const rows = await db.query.attempts.findMany({
-    where: and(eq(attempts.quizId, quizId), isNotNull(attempts.submittedAt)),
-    with: { student: true },
-    orderBy: [desc(attempts.submittedAt)],
-    limit: n,
-  });
-
-  const attemptIds = rows.map((r) => r.id);
-  const overrides =
-    attemptIds.length > 0
-      ? await db.query.gradeOverrides.findMany({
-          where: inArray(gradeOverrides.attemptId, attemptIds),
-        })
-      : [];
+  // FORCE RLS: plain db reads return nothing; read under the quiz's tenant.
+  const { rows, overrides } = (await withQuizTenant(quizId, null, async (tx) => {
+    const rows = await tx.query.attempts.findMany({
+      where: and(eq(attempts.quizId, quizId), isNotNull(attempts.submittedAt)),
+      with: { student: true },
+      orderBy: [desc(attempts.submittedAt)],
+      limit: n,
+    });
+    const attemptIds = rows.map((r) => r.id);
+    const overrides =
+      attemptIds.length > 0
+        ? await tx.query.gradeOverrides.findMany({
+            where: inArray(gradeOverrides.attemptId, attemptIds),
+          })
+        : [];
+    return { rows, overrides };
+  })) ?? { rows: [], overrides: [] };
   const overrideCountByAttempt = new Map<string, number>();
   for (const o of overrides) {
     overrideCountByAttempt.set(

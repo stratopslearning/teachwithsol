@@ -1,6 +1,9 @@
 import { and, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { groupSectionIdsByTenant } from '@/lib/db/sectionTenants';
+import { withTenant } from '@/lib/db/tenantContext';
+
+type TenantTx = Parameters<Parameters<typeof withTenant>[2]>[0];
 import { chatbotSessions, professorSections } from '@/app/db/schema';
 
 export type TutorEscalationItem = {
@@ -45,9 +48,23 @@ export async function listTutorEscalationsForProfessor(
 
   const limit = Math.max(1, Math.min(options.limit ?? 100, 300));
 
-  const rows = await db.query.chatbotSessions.findMany({
+  // FORCE RLS: a plain db read returns no sessions. Read each tenant's
+  // sections under that tenant, then merge newest-first.
+  const byTenant = await groupSectionIdsByTenant(sectionIds);
+  const perTenant = await Promise.all(
+    [...byTenant].map(([tenantId, ids]) =>
+      withTenant(tenantId, professorId, (tx) => readEscalations(tx, ids)),
+    ),
+  );
+  const rows = perTenant
+    .flat()
+    .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+    .slice(0, limit);
+
+  function readEscalations(tx: TenantTx, ids: string[]) {
+  return tx.query.chatbotSessions.findMany({
     where: and(
-      inArray(chatbotSessions.sectionId, sectionIds),
+      inArray(chatbotSessions.sectionId, ids),
       or(
         sql`${chatbotSessions.sessionMetadata}->>'escalated' = 'true'`,
         sql`${chatbotSessions.sessionMetadata}->>'instructorEscalationRequested' = 'true'`,
@@ -61,6 +78,7 @@ export async function listTutorEscalationsForProfessor(
     orderBy: (t, { desc }) => [desc(t.startedAt)],
     limit,
   });
+  }
 
   return rows
     .filter((row) =>

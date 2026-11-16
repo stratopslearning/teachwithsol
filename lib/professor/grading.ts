@@ -6,7 +6,6 @@
 import { and, eq, gte, inArray, isNotNull, lte } from 'drizzle-orm';
 import { parse as toCsv } from 'json2csv';
 
-import { db } from '@/app/db';
 import {
   attempts,
   quizSections,
@@ -29,6 +28,8 @@ import {
 import { assertTeachesSection } from '@/lib/professor/sections';
 import { loadAttemptForGrading } from '@/lib/quiz/gradingData';
 import { withTenant } from '@/lib/db/tenantContext';
+import { fetchSectionById } from '@/lib/db/entityScopedReads';
+import { groupSectionIdsByTenant } from '@/lib/db/sectionTenants';
 
 type ProfessorUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
@@ -61,10 +62,33 @@ export async function getSectionGradebook(
 ): Promise<GradebookData> {
   await assertTeachesSection(user, sectionId);
 
-  const section = await db.query.sections.findFirst({
-    where: and(eq(sections.id, sectionId), activeOnly(sections.deletedAt)),
-    with: { course: true },
-  });
+  // FORCE RLS: plain db reads return nothing (the gradebook was always
+  // "Section not found"). Read everything under the section's tenant.
+  const sectionMeta = await fetchSectionById(sectionId);
+  const tenantId = sectionMeta?.tenantId ?? sectionMeta?.workspaceId;
+  if (!tenantId) throw ApiError.notFound('Section not found');
+
+  const { section, studentEnrollments, quizLinks } = await withTenant(
+    tenantId,
+    user.id,
+    async (tx) => ({
+      section: await tx.query.sections.findFirst({
+        where: and(eq(sections.id, sectionId), activeOnly(sections.deletedAt)),
+        with: { course: true },
+      }),
+      studentEnrollments: await tx.query.studentSections.findMany({
+        where: and(
+          eq(studentSections.sectionId, sectionId),
+          eq(studentSections.status, 'ACTIVE'),
+        ),
+        with: { student: true },
+      }),
+      quizLinks: await tx.query.quizSections.findMany({
+        where: eq(quizSections.sectionId, sectionId),
+        with: { quiz: true },
+      }),
+    }),
+  );
   if (!section) throw ApiError.notFound('Section not found');
 
   await logGradebookAccess({
@@ -74,21 +98,10 @@ export async function getSectionGradebook(
     role: user.platformStaff ? 'ADMIN' : 'PROFESSOR',
   });
 
-  const studentEnrollments = await db.query.studentSections.findMany({
-    where: and(
-      eq(studentSections.sectionId, sectionId),
-      eq(studentSections.status, 'ACTIVE'),
-    ),
-    with: { student: true },
-  });
   const students = studentEnrollments
     .map((e) => e.student)
     .sort((a, b) => comparePersonsByLastName(a, b));
 
-  const quizLinks = await db.query.quizSections.findMany({
-    where: eq(quizSections.sectionId, sectionId),
-    with: { quiz: true },
-  });
   const sectionQuizzes = quizLinks
     .map((qs) => qs.quiz)
     .filter(
@@ -260,53 +273,88 @@ export async function getAttemptDetail(
  * CSV of submitted attempts across the professor's sections. Mirrors
  * GET /api/professor/quiz/export (PROFESSOR only, audited).
  */
+const CSV_FIELDS = [
+  'Student Name',
+  'Student Email',
+  'Quiz Name',
+  'Attempt Date',
+  'Score',
+  'Max Score',
+  'Attempt Number',
+] as const;
+
 export async function exportResultsCsv(
   user: ProfessorUser,
-  options: { quizId?: string; dateFrom?: string; dateTo?: string } = {},
+  options: {
+    quizId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    /** Where the export came from, for the audit log. */
+    audit?: { via?: string; ip?: string | null; userAgent?: string | null };
+    /** CSV with only the header row when nothing matched (file downloads). */
+    headerOnlyWhenEmpty?: boolean;
+  } = {},
 ): Promise<{ csv: string; rowCount: number }> {
   const sectionIds = await listTeachingSectionIds(user);
   if (sectionIds.length === 0) throw ApiError.forbidden('No section access');
 
-  const quizLinks = await db.query.quizSections.findMany({
-    where: inArray(quizSections.sectionId, sectionIds),
-  });
-  const allowedQuizIds = quizLinks.map((qs) => qs.quizId);
-  if (allowedQuizIds.length === 0) throw ApiError.forbidden('No quiz access');
-
-  const whereConditions = [
-    inArray(attempts.quizId, allowedQuizIds),
-    isNotNull(attempts.submittedAt),
-  ];
-  if (options.quizId) {
-    if (!allowedQuizIds.includes(options.quizId)) {
-      throw ApiError.forbidden('Access denied for this quiz');
-    }
-    whereConditions.push(eq(attempts.quizId, options.quizId));
-  }
-  if (options.dateFrom) {
-    whereConditions.push(gte(attempts.submittedAt, new Date(options.dateFrom)));
-  }
-  if (options.dateTo) {
-    whereConditions.push(
-      lte(attempts.submittedAt, new Date(options.dateTo + 'T23:59:59')),
+  // FORCE RLS: plain db reads return nothing, so exports were always "No quiz
+  // access". A teacher's sections can span tenants: read each under its own.
+  const byTenant = await groupSectionIdsByTenant(sectionIds);
+  const quizIdsByTenant = new Map<string, string[]>();
+  for (const [tenantId, ids] of byTenant) {
+    const links = await withTenant(tenantId, user.id, (tx) =>
+      tx.query.quizSections.findMany({
+        where: inArray(quizSections.sectionId, ids),
+        columns: { quizId: true },
+      }),
     );
+    quizIdsByTenant.set(tenantId, [...new Set(links.map((l) => l.quizId))]);
+  }
+  const allowedQuizIds = [...quizIdsByTenant.values()].flat();
+  if (allowedQuizIds.length === 0) throw ApiError.forbidden('No quiz access');
+  if (options.quizId && !allowedQuizIds.includes(options.quizId)) {
+    throw ApiError.forbidden('Access denied for this quiz');
   }
 
-  const results = await db
-    .select({
-      studentFirstName: users.firstName,
-      studentLastName: users.lastName,
-      studentEmail: users.email,
-      quizTitle: quizzes.title,
-      attemptDate: attempts.submittedAt,
-      score: attempts.score,
-      maxScore: attempts.maxScore,
-    })
-    .from(attempts)
-    .innerJoin(quizzes, eq(attempts.quizId, quizzes.id))
-    .innerJoin(users, eq(attempts.studentId, users.id))
-    .where(and(...whereConditions))
-    .orderBy(attempts.submittedAt);
+  const perTenant = await Promise.all(
+    [...quizIdsByTenant].map(([tenantId, quizIds]) => {
+      const whereConditions = [
+        inArray(attempts.quizId, quizIds),
+        isNotNull(attempts.submittedAt),
+      ];
+      if (options.quizId) whereConditions.push(eq(attempts.quizId, options.quizId));
+      if (options.dateFrom) {
+        whereConditions.push(gte(attempts.submittedAt, new Date(options.dateFrom)));
+      }
+      if (options.dateTo) {
+        whereConditions.push(
+          lte(attempts.submittedAt, new Date(options.dateTo + 'T23:59:59')),
+        );
+      }
+      if (quizIds.length === 0) return Promise.resolve([]);
+      return withTenant(tenantId, user.id, (tx) =>
+        tx
+          .select({
+            studentFirstName: users.firstName,
+            studentLastName: users.lastName,
+            studentEmail: users.email,
+            quizTitle: quizzes.title,
+            attemptDate: attempts.submittedAt,
+            score: attempts.score,
+            maxScore: attempts.maxScore,
+          })
+          .from(attempts)
+          .innerJoin(quizzes, eq(attempts.quizId, quizzes.id))
+          .innerJoin(users, eq(attempts.studentId, users.id))
+          .where(and(...whereConditions)),
+      );
+    }),
+  );
+  const time = (d: Date | null) => (d ? new Date(d).getTime() : 0);
+  const results = perTenant
+    .flat()
+    .sort((a, b) => time(a.attemptDate) - time(b.attemptDate));
 
   const attemptCounts = new Map<string, number>();
   const csvData = results.map((row) => {
@@ -331,17 +379,11 @@ export async function exportResultsCsv(
   const csv =
     csvData.length > 0
       ? toCsv(csvData, {
-          fields: [
-            'Student Name',
-            'Student Email',
-            'Quiz Name',
-            'Attempt Date',
-            'Score',
-            'Max Score',
-            'Attempt Number',
-          ],
+          fields: [...CSV_FIELDS],
         })
-      : 'No submitted attempts matched the filters.';
+      : options.headerOnlyWhenEmpty
+        ? CSV_FIELDS.map((f) => `"${f}"`).join(',')
+        : 'No submitted attempts matched the filters.';
 
   await logAudit({
     actorUserId: user.id,
@@ -354,8 +396,10 @@ export async function exportResultsCsv(
       dateFrom: options.dateFrom || null,
       dateTo: options.dateTo || null,
       sectionCount: sectionIds.length,
-      via: 'mcp',
+      via: options.audit?.via ?? 'mcp',
     },
+    ip: options.audit?.ip ?? undefined,
+    userAgent: options.audit?.userAgent ?? undefined,
   });
 
   return { csv, rowCount: csvData.length };
