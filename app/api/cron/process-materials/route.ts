@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { isCronAuthorized } from '@/lib/api/cronAuth';
 import { processPendingMaterials } from '@/lib/knowledge';
+import { processPendingKnowledgeDocuments } from '@/lib/knowledge/processDocument';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -16,5 +17,7 @@ export async function GET(req: NextRequest) {
   }
 
   const processed = await processPendingMaterials(10);
-  return NextResponse.json({ ok: true, processed });
+  // Knowledge documents had no sweep of their own; stuck ones never retried.
+  const documents = await processPendingKnowledgeDocuments(10);
+  return NextResponse.json({ ok: true, processed, documents });
 }

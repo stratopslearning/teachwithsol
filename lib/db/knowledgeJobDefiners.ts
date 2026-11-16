@@ -104,6 +104,24 @@ export async function updateKnowledgeVersionMetaDefiner(payload: {
   `);
 }
 
+/** PENDING documents plus PROCESSING ones not updated since `staleBefore`. */
+export async function listPendingKnowledgeDocumentsDefiner(
+  limit: number,
+  staleBefore: Date,
+): Promise<Array<{ id: string; status: string }>> {
+  const result = await db.execute(sql`
+    SELECT sol_list_pending_knowledge_documents(
+      ${limit}::integer,
+      ${staleBefore.toISOString()}::timestamptz
+    ) AS rows
+  `);
+  const raw = parseJsonb<Array<{ id: string; status: string }>>(
+    rowsFromExecute<{ rows: unknown }>(result)[0]?.rows,
+  );
+  if (!Array.isArray(raw)) return [];
+  return raw.map((r) => ({ id: String(r.id), status: String(r.status) }));
+}
+
 export async function resetKnowledgeDocumentPendingDefiner(
   documentId: string,
   currentVersionId?: string | null,
