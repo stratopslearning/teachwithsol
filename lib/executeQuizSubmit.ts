@@ -251,7 +251,7 @@ export async function executeQuizSubmit(
   const { attempt, allAttempts } = submitResult;
 
   if (pendingQuestionIds.length > 0) {
-    scheduleAttemptRetry(attempt.id);
+    scheduleAttemptRetry(attempt.id, tenantId);
   } else {
     const { enqueueQuizPassback } = await import('@/lib/lti/passback');
     void enqueueQuizPassback({ attemptId: attempt.id }).catch((err) =>

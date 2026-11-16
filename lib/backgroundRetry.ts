@@ -10,12 +10,12 @@ import { enqueueGradeAttempt } from '@/lib/jobs/enqueue';
  * Enqueues a background retry for a specific attempt. Safe to call from API
  * routes, server actions, and RSCs. Fire-and-forget (does not block the response).
  */
-export function scheduleAttemptRetry(
-  attemptId: string,
-  workspaceId?: string | null,
-): void {
+export function scheduleAttemptRetry(attemptId: string, tenantId: string): void {
   if (!attemptId) return;
-  void enqueueGradeAttempt(attemptId, workspaceId ?? 'default');
+  // The tenant is required: resolving it later from the attempt runs outside
+  // any tenant context, so under FORCE RLS it finds nothing and the job (and
+  // its AI-cap check) would run as the "default" tenant.
+  void enqueueGradeAttempt(attemptId, tenantId);
 }
 
 /**

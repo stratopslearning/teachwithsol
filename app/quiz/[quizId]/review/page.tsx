@@ -98,8 +98,8 @@ export default async function ReviewPage({
   // Self-heal: if any question on this attempt is still pending or in
   // manual_review, kick off a background re-grade so the next refresh
   // most likely shows a finalized score. Cheap; runs after the response.
-  if (attemptNeedsBackgroundRetry(gptFeedback)) {
-    scheduleAttemptRetry(attempt.id);
+  if (attempt.tenantId && attemptNeedsBackgroundRetry(gptFeedback)) {
+    scheduleAttemptRetry(attempt.id, attempt.tenantId);
   }
 
   return (

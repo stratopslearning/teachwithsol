@@ -48,10 +48,11 @@ export default async function ResultsPage({
 
   const quiz = attempt.quiz;
   if (
-    attempt.gradingStatus !== "complete" ||
-    attemptNeedsBackgroundRetry(attempt.gptFeedback)
+    attempt.tenantId &&
+    (attempt.gradingStatus !== "complete" ||
+      attemptNeedsBackgroundRetry(attempt.gptFeedback))
   ) {
-    scheduleAttemptRetry(attempt.id);
+    scheduleAttemptRetry(attempt.id, attempt.tenantId);
   }
 
   const gradesReleased = quizGradesAreReleased(quiz);
