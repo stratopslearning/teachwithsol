@@ -1,5 +1,5 @@
 /** Max book upload size (50 MB) — larger than Knowledge materials. */
-export const MAX_BOOK_UPLOAD_BYTES = 50 * 1024 * 1024;
+export { MAX_BOOK_UPLOAD_BYTES } from '@/lib/uploadLimits';
 
 /**
  * Vercel serverless request bodies max out around 4.5 MB. Files at or above

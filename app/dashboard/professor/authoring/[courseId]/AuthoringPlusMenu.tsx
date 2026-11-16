@@ -12,6 +12,11 @@ import {
   Plus,
   Upload,
 } from '@/components/icons';
+import {
+  MAX_UPLOAD_BYTES as MAX_BYTES,
+  MAX_ZIP_UPLOAD_BYTES as MAX_ZIP_BYTES,
+  MATERIAL_UPLOAD_ACCEPT as ACCEPTED,
+} from '@/lib/uploadLimits';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -25,10 +30,6 @@ import { apiUrl } from '@/lib/basePath';
 import { cn } from '@/lib/utils';
 
 import type { AttachableDoc, CourseCorpusItem } from './AuthoringMaterialsPanel';
-
-const ACCEPTED = '.pdf,.docx,.txt,.md,.zip';
-const MAX_BYTES = 50 * 1024 * 1024;
-const MAX_ZIP_BYTES = 50 * 1024 * 1024;
 
 function isZipFile(file: File) {
   const mime = (file.type || '').toLowerCase();

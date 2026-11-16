@@ -10,10 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { apiUrl } from "@/lib/basePath";
 import type { KnowledgeDocumentSummary } from "@/lib/knowledge";
 import { cn } from "@/lib/utils";
-
-const ACCEPTED = ".pdf,.docx,.txt,.md,.zip";
-const MAX_BYTES = 50 * 1024 * 1024;
-const MAX_ZIP_BYTES = 50 * 1024 * 1024;
+import {
+  MAX_UPLOAD_BYTES as MAX_BYTES,
+  MAX_ZIP_UPLOAD_BYTES as MAX_ZIP_BYTES,
+  MATERIAL_UPLOAD_ACCEPT as ACCEPTED,
+} from "@/lib/uploadLimits";
 
 function isZipFile(file: File) {
   const mime = (file.type || "").toLowerCase();
