@@ -3,7 +3,9 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '@/app/db';
-import { attempts, sections } from '@/app/db/schema';
+import { attempts } from '@/app/db/schema';
+import { fetchSectionById } from '@/lib/db/entityScopedReads';
+import { withTenant } from '@/lib/db/tenantContext';
 import { autoSubmitInProgressAttempt } from '@/lib/autoSubmitInProgressAttempt';
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
@@ -115,9 +117,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ quizId
       throw ApiError.badRequest('No valid section found for this quiz/assignment');
     }
 
-    const section = await db.query.sections.findFirst({
-      where: eq(sections.id, sectionId),
-    });
+    // FORCE RLS: a plain db read returns no section, which silently skipped
+    // the section-ended rule. Read it through the definer.
+    const section = await fetchSectionById(sectionId);
+    const tenantId = section?.tenantId ?? section?.workspaceId ?? null;
     assertQuizAccess(
       { quiz, assignment, section, inProgressAttempt, submittedCount, now },
       'start',
@@ -223,9 +226,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ quizId
     };
     try {
       const { authorize } = await import('@/lib/authz');
-      const { fetchSectionById } = await import('@/lib/db/entityScopedReads');
-      const sectionMeta = await fetchSectionById(sectionId);
-      const tenantId = sectionMeta?.tenantId ?? sectionMeta?.workspaceId;
       if (!tenantId) throw ApiError.badRequest('Section is missing tenant');
       const canSubmit = await authorize(user, 'student.submit', {
         tenantId,
@@ -312,13 +312,18 @@ export async function POST(req: NextRequest, context: { params: Promise<{ quizId
     } catch (insertError) {
       if (insertError instanceof ApiError) throw insertError;
       // Unique open-attempt index (0007): a concurrent start won: resume it.
-      const open = await db.query.attempts.findFirst({
-        where: and(
-          eq(attempts.assignmentId, assignmentId),
-          eq(attempts.studentId, user.id),
-          isNull(attempts.submittedAt),
-        ),
-      });
+      // Read under the tenant: a plain db read returns nothing under FORCE RLS.
+      // (tenantId is set here: without it the insert path threw ApiError above.)
+      if (!tenantId) throw ApiError.internal('Failed to start quiz');
+      const open = await withTenant(tenantId, user.id, (tx) =>
+        tx.query.attempts.findFirst({
+          where: and(
+            eq(attempts.assignmentId, assignmentId),
+            eq(attempts.studentId, user.id),
+            isNull(attempts.submittedAt),
+          ),
+        }),
+      );
       if (!open) {
         console.error('Error starting quiz (insert):', insertError);
         throw ApiError.internal('Failed to start quiz');
