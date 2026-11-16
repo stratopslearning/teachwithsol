@@ -10,6 +10,7 @@ import type { ActivityListItem, ActivityType } from "@/lib/assignments/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { releaseLabel } from "@/components/status/badges";
 
 const FILTERS: Array<{ id: ActivityType | "ALL"; label: string }> = [
   { id: "ALL", label: "All" },
@@ -203,7 +204,7 @@ export function AssignmentsTableClient({
                 <div className="flex shrink-0 items-center gap-3">
                   {role !== "student" ? (
                     <span className="text-sm text-ink-muted">
-                      {item.isActive ? "Released" : "Draft"}
+                      {releaseLabel(item.isActive)}
                     </span>
                   ) : item.bestPercentage != null &&
                     item.completionStatus === "SCORED" ? (

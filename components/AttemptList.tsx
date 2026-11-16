@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 
-import { Badge } from "@/components/ui/badge";
+import { PassFailBadge } from "@/components/status/badges";
 
 interface Attempt {
   id: string;
@@ -67,11 +67,7 @@ export function AttemptList({ attempts }: AttemptListProps) {
             <span className="font-mono tnum text-sm text-ink">
               {attempt.percentage ?? 0}%
             </span>
-            <Badge
-              variant={attempt.passed === true ? "success" : "destructive"}
-            >
-              {attempt.passed === true ? "Passed" : "Failed"}
-            </Badge>
+            <PassFailBadge passed={attempt.passed === true} />
           </div>
         </motion.li>
       ))}

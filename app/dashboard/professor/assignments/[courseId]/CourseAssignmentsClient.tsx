@@ -41,6 +41,7 @@ import type { ActivityListItem, ActivityType } from "@/lib/assignments";
 import { appPath } from "@/lib/basePath";
 import { entityIdForActivity } from "@/lib/professor/activityEntity";
 import { cn } from "@/lib/utils";
+import { releaseLabel } from "@/components/status/badges";
 
 const FILTERS: Array<{ id: "ALL" | ActivityType; label: string }> = [
   { id: "ALL", label: "All" },
@@ -429,7 +430,7 @@ export function CourseAssignmentsClient({
                             : "border-border bg-muted/60 text-muted-foreground",
                         )}
                       >
-                        {item.isActive ? "Released" : "Inactive"}
+                        {releaseLabel(item.isActive)}
                       </span>
                     </div>
                     <Link

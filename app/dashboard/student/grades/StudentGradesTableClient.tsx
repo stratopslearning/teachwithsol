@@ -39,6 +39,7 @@ import {
   TIMESTAMP_CELL_CLASS,
 } from "@/components/timezone/LocalDateTime";
 import { cn } from "@/lib/utils";
+import { PassFailBadge } from "@/components/status/badges";
 
 type AttemptRow = {
   id: string;
@@ -146,14 +147,14 @@ function StatusBadge({ passed }: { passed: boolean | null }) {
     return (
       <span className="inline-flex items-center gap-1.5 text-success">
         <CheckCircle2 className="h-4 w-4" />
-        <Badge variant="success">Passed</Badge>
+        <PassFailBadge passed />
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-danger">
       <XCircle className="h-4 w-4" />
-      <Badge variant="destructive">Failed</Badge>
+      <PassFailBadge passed={false} />
     </span>
   );
 }
