@@ -95,6 +95,11 @@ export default [
             "JSXOpeningElement[name.name='Link'] > JSXAttribute[name.name='href'] CallExpression[callee.name='withBasePath']",
           message: "Use appPath() for next/link hrefs (Next adds basePath).",
         },
+        {
+          selector:
+            "CallExpression[callee.property.name=/^(push|replace|prefetch)$/] > CallExpression.arguments:first-child[callee.name=/^(withBasePath|apiUrl)$/]",
+          message: "Use appPath() with router.push/replace (Next adds basePath).",
+        },
       ],
       "no-restricted-imports": ["error", { paths: openAiRestrictedPaths }],
     },

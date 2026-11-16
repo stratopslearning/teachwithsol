@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { withBasePath } from '@/lib/basePath';
+import { appPath, withBasePath } from '@/lib/basePath';
 import { fillCourseHrefTemplate } from '@/lib/professor/courseHref';
 
 export type CourseSwitcherOption = {
@@ -75,7 +75,7 @@ export function CourseSwitcher({
           await persistActiveCourse(courseId);
           if (hrefTemplate) {
             router.push(
-              withBasePath(fillCourseHrefTemplate(hrefTemplate, courseId)),
+              appPath(fillCourseHrefTemplate(hrefTemplate, courseId)),
             );
           } else {
             router.refresh();

@@ -28,7 +28,7 @@ import { useRef, useEffect, useCallback } from "react";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 import { getRemainingSeconds } from "@/lib/quizTimeLimit";
 import { shouldHideFeedbackForStudent, cleanQuizDescription } from "@/lib/utils";
-import { apiUrl, withBasePath } from "@/lib/basePath";
+import { apiUrl, appPath, withBasePath } from "@/lib/basePath";
 import {
   startApiErrorToBlockCode,
   type QuizBlockCode,
@@ -110,7 +110,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
 
         if (data.serverAutoSubmitted && data.attemptId) {
           router.push(
-            withBasePath(`/quiz/${quiz.id}/results?attemptId=${data.attemptId}`),
+            appPath(`/quiz/${quiz.id}/results?attemptId=${data.attemptId}`),
           );
           return;
         }
