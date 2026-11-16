@@ -10,10 +10,7 @@ import { ApiError, jsonError } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { jobsBackend } from '@/lib/jobs/backend';
-import { eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
-import { attempts } from '@/app/db/schema';
 import { enqueueBulkRegrades } from '@/lib/gradingBatch';
 import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
 
@@ -67,17 +64,25 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const firstAttempt = await db.query.attempts.findFirst({
-      where: eq(attempts.id, targets[0]!),
-      columns: { tenantId: true },
-    });
-    const workspaceId = firstAttempt?.tenantId ?? 'default';
-
-    const batch = await enqueueBulkRegrades({
-      tenantId: workspaceId,
-      attemptIds: targets,
-      professorId: user.id,
-    });
+    // Queue each tenant's attempts under that tenant. (This used to look the
+    // tenant up with a plain db read, which finds nothing under FORCE RLS, so
+    // every job was queued under the made-up tenant 'default'.)
+    const tenantOf = new Map(queue.map((q) => [q.attemptId, q.tenantId]));
+    const byTenant = new Map<string, string[]>();
+    for (const id of targets) {
+      const tenantId = tenantOf.get(id)!;
+      byTenant.set(tenantId, [...(byTenant.get(tenantId) ?? []), id]);
+    }
+    const batches = [];
+    for (const [tenantId, attemptIds] of byTenant) {
+      batches.push(
+        await enqueueBulkRegrades({ tenantId, attemptIds, professorId: user.id }),
+      );
+    }
+    const batch = {
+      mode: batches[0]!.mode,
+      batchId: batches.find((b) => b.batchId)?.batchId,
+    };
 
     return NextResponse.json({
       success: true,

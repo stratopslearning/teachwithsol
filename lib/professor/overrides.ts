@@ -2,9 +2,8 @@
  * Instructor grade overrides: insert rows and recompute attempt totals from
  * the latest override per question (plus optional whole-attempt override).
  */
-import { asc, eq, inArray } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
 import {
   attempts,
   gradeOverrides,
@@ -20,6 +19,8 @@ import {
   resolveAttemptFeedback,
 } from '@/lib/quizAttemptAnswers';
 import { scoreOutcome } from '@/lib/quiz/score';
+import { loadAttemptForGrading, loadQuizQuestions } from '@/lib/quiz/gradingData';
+import { withTenant } from '@/lib/db/tenantContext';
 
 export type GradeOverrideInput = {
   attemptId: string;
@@ -109,23 +110,39 @@ export async function computeEffectiveAttemptScore(
   attemptId: string,
   overrideRows?: GradeOverrideRow[],
 ): Promise<EffectiveAttemptScore> {
-  const attempt = await db.query.attempts.findFirst({
-    where: eq(attempts.id, attemptId),
-    with: { quiz: { columns: { passingScore: true } } },
-  });
+  // FORCE RLS: plain db reads return nothing here. Find the attempt's tenant
+  // via the definer and read under it.
+  const found = await loadAttemptForGrading(attemptId);
+  if (!found?.tenantId) throw ApiError.notFound('Attempt not found');
+  const tenantId = found.tenantId;
+
+  const { attempt, quizQuestions, storedRows } = await withTenant(
+    tenantId,
+    null,
+    async (tx) => {
+      const attempt = await tx.query.attempts.findFirst({
+        where: eq(attempts.id, attemptId),
+        with: { quiz: { columns: { passingScore: true } } },
+      });
+      if (!attempt) return { attempt, quizQuestions: [], storedRows: [] };
+      return {
+        attempt,
+        quizQuestions: await tx.query.questions.findMany({
+          where: eq(questions.quizId, attempt.quizId),
+          orderBy: (q, { asc: ascOp }) => ascOp(q.order),
+        }),
+        storedRows: overrideRows
+          ? []
+          : await tx.query.gradeOverrides.findMany({
+              where: eq(gradeOverrides.attemptId, attemptId),
+              orderBy: asc(gradeOverrides.createdAt),
+            }),
+      };
+    },
+  );
   if (!attempt) throw ApiError.notFound('Attempt not found');
 
-  const quizQuestions = await db.query.questions.findMany({
-    where: eq(questions.quizId, attempt.quizId),
-    orderBy: (q, { asc: ascOp }) => ascOp(q.order),
-  });
-
-  const rows =
-    overrideRows ??
-    (await db.query.gradeOverrides.findMany({
-      where: eq(gradeOverrides.attemptId, attemptId),
-      orderBy: asc(gradeOverrides.createdAt),
-    }));
+  const rows = overrideRows ?? storedRows;
 
   const { byQuestionId, wholeAttempt } = buildLatestOverrides(rows);
 
@@ -276,16 +293,9 @@ export async function insertGradeOverride(
     );
   }
 
-  const attempt = await db.query.attempts.findFirst({
-    where: eq(attempts.id, input.attemptId),
-    columns: {
-      id: true,
-      submittedAt: true,
-      quizId: true,
-      tenantId: true,
-      sectionId: true,
-    },
-  });
+  // FORCE RLS: a plain db read finds no attempt (every override returned
+  // "Attempt not found"). Look it up via the definer.
+  const attempt = await loadAttemptForGrading(input.attemptId);
   if (!attempt) throw ApiError.notFound('Attempt not found');
   if (!attempt.submittedAt) {
     throw ApiError.badRequest('Only submitted attempts can be overridden');
@@ -301,11 +311,14 @@ export async function insertGradeOverride(
     }
   }
 
+  if (!attempt.tenantId) {
+    throw ApiError.badRequest('Attempt is missing tenant_id');
+  }
+  const tenantId = attempt.tenantId;
+  const quizQs = await loadQuizQuestions(attempt.quizId, tenantId);
+
   if (input.questionId) {
-    const question = await db.query.questions.findFirst({
-      where: eq(questions.id, input.questionId),
-      columns: { id: true, quizId: true, points: true },
-    });
+    const question = quizQs.find((q) => q.id === input.questionId);
     if (!question || question.quizId !== attempt.quizId) {
       throw ApiError.badRequest('questionId does not belong to this attempt quiz');
     }
@@ -325,17 +338,13 @@ export async function insertGradeOverride(
     );
   }
 
-  if (!attempt.tenantId) {
-    throw ApiError.badRequest('Attempt is missing tenant_id');
-  }
-
   const {
     insertGradeOverrideDefiner,
     listGradeOverridesDefiner,
   } = await import('@/lib/db/tenantWriteDefiners');
   const override = await insertGradeOverrideDefiner({
     attemptId: input.attemptId,
-    tenantId: attempt.tenantId,
+    tenantId,
     questionId: input.questionId ?? null,
     numericScore: hasNumeric ? input.numericScore! : null,
     criteriaOverrides: hasCriteria ? input.criteriaOverrides! : null,
@@ -346,19 +355,11 @@ export async function insertGradeOverride(
   // Few-shot moat: persist labeled example for this question.
   if (input.questionId) {
     try {
-      const fullAttempt = await db.query.attempts.findFirst({
-        where: eq(attempts.id, input.attemptId),
-        columns: { answers: true, gptFeedback: true },
-      });
-      const answers = (fullAttempt?.answers ?? {}) as Record<string, unknown>;
-      const gptFeedback = (fullAttempt?.gptFeedback ?? {}) as Record<
+      const answers = (attempt.answers ?? {}) as Record<string, unknown>;
+      const gptFeedback = (attempt.gptFeedback ?? {}) as Record<
         string,
         unknown
       >;
-      const quizQs = await db.query.questions.findMany({
-        where: eq(questions.quizId, attempt.quizId),
-        columns: { id: true, order: true, question: true },
-      });
       const keyMap = buildLegacyQuestionKeyMap(quizQs, answers, gptFeedback);
       const answerText =
         resolveAttemptAnswer(input.questionId, answers, keyMap) ?? '';
@@ -371,7 +372,7 @@ export async function insertGradeOverride(
         '@/lib/gradingOverrideExamples'
       );
       await recordOverrideExample({
-        tenantId: attempt.tenantId,
+        tenantId,
         questionId: input.questionId,
         rubricVersion: feedback?.rubricVersion ?? 1,
         studentAnswer: String(answerText),
@@ -395,17 +396,6 @@ export async function insertGradeOverride(
   return { override: override as GradeOverrideRow, effective };
 }
 
-export async function listAttemptIdsWithGradeOverrides(
-  attemptIds: string[],
-): Promise<Set<string>> {
-  if (attemptIds.length === 0) return new Set();
-  const rows = await db
-    .selectDistinct({ attemptId: gradeOverrides.attemptId })
-    .from(gradeOverrides)
-    .where(inArray(gradeOverrides.attemptId, attemptIds));
-  return new Set(rows.map((r) => r.attemptId));
-}
-
 /** Override history for student display when grades are released. */
 export async function listGradeOverrideHistoryForAttempt(
   attemptId: string,
@@ -419,20 +409,16 @@ export async function listGradeOverrideHistoryForAttempt(
     createdAt: Date;
   }>
 > {
-  const rows = await db.query.gradeOverrides.findMany({
-    where: eq(gradeOverrides.attemptId, attemptId),
-    orderBy: asc(gradeOverrides.createdAt),
-    columns: {
-      id: true,
-      questionId: true,
-      numericScore: true,
-      criteriaOverrides: true,
-      note: true,
-      createdAt: true,
-    },
-  });
+  // FORCE RLS: a plain db read returned no overrides, so students never saw
+  // instructor notes. Callers check the student owns the attempt.
+  const { listGradeOverridesDefiner } = await import('@/lib/db/tenantWriteDefiners');
+  const rows = await listGradeOverridesDefiner(attemptId);
   return rows.map((r) => ({
-    ...r,
+    id: r.id,
+    questionId: r.questionId,
+    numericScore: r.numericScore,
     criteriaOverrides: r.criteriaOverrides ?? null,
+    note: r.note,
+    createdAt: r.createdAt,
   }));
 }
