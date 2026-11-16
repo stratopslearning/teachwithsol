@@ -60,8 +60,6 @@ export async function indexBookChaptersAsSingleMaterial(opts: {
       .map((r) => r.materialId)
       .filter((id): id is string => id != null);
 
-  await softDeleteLinkedMaterials(prior);
-
   const markdown = buildBookIndexMarkdown(
     opts.bookTitle,
     opts.chapters.map((c) => ({
@@ -81,6 +79,9 @@ export async function indexBookChaptersAsSingleMaterial(opts: {
       markdown,
     });
     await setBookChaptersMaterialDefiner(opts.bookId, materialId);
+    // Retire the previous index only once the new one exists, so a failed
+    // re-index leaves the book searchable.
+    await softDeleteLinkedMaterials(prior.filter((id) => id !== materialId));
     return materialId;
   } catch (err) {
     console.warn('[indexBookChaptersAsSingleMaterial] failed', {

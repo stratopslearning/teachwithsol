@@ -126,9 +126,11 @@ export async function processKnowledgeDocument(
       return;
     }
 
-    await supersedeKnowledgeChunksDefiner(documentId);
-
+    // Embed before superseding the current chunks: if the embedding call
+    // fails, the document keeps its current search content.
     const embeddings = await embedTexts(chunks.map((c) => c.content));
+
+    await supersedeKnowledgeChunksDefiner(documentId);
 
     await insertKnowledgeChunksDefiner({
       documentId,
