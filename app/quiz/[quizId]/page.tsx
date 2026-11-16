@@ -4,7 +4,10 @@ import { QuizUnavailable } from '@/components/quiz/QuizUnavailable';
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { requireLearningAccess } from '@/lib/authz/gates';
 import type { UserData } from '@/lib/getOrCreateUser';
-import { getQuizAvailability } from '@/lib/quizAvailability';
+import {
+  effectiveQuizCloseDate,
+  getQuizAvailability,
+} from '@/lib/quizAvailability';
 import {
   availabilityReasonToBlockCode,
   type QuizBlockCode,
@@ -99,7 +102,8 @@ export default async function QuizPage(props: QuizPageProps) {
     });
   }
 
-  const quizEndDate = normalizeDatabaseDate(quiz.endDate);
+  // Countdown and auto-submit use the close time the server enforces.
+  const quizEndDate = effectiveQuizCloseDate(quiz, assignment);
   const quizQuestions = bundle.questions;
 
   return (

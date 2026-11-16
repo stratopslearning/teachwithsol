@@ -16,6 +16,8 @@ import {
 import { maybeEncryptAttemptAnswers } from '@/lib/crypto/fieldEncryption';
 import { getLatestQuizVersionId } from '@/lib/quiz/versions';
 import { assertOfferingWritable } from '@/lib/offerings/lifecycle';
+import { ApiError } from '@/lib/api/errors';
+import { normalizeDatabaseDate } from '@/lib/utils';
 
 function rowsFromExecute<T>(result: unknown): T[] {
   return (
@@ -84,6 +86,15 @@ export async function executeQuizSubmit(
   }
   const assignment = ctx.assignment!;
   const quiz = ctx.quiz!;
+  // Same rule as start: archived quizzes take no new submissions. Server
+  // auto-submit (bypassAvailability) may still close out a saved attempt.
+  if (!bypassAvailability && !quiz.isActive) {
+    throw new ApiError({
+      status: 400,
+      message: 'This quiz is no longer available.',
+      extras: { quizArchived: true },
+    });
+  }
 
   const now = new Date();
 
@@ -125,16 +136,30 @@ export async function executeQuizSubmit(
     throw new Error('Not authorized to submit this quiz');
   }
 
-  if (!bypassAvailability && isSectionConcluded(sectionRow as { endsAt?: Date | null }, now)) {
+  const inProgressAttempt = ctx.inProgressAttempt;
+  const attemptCount = ctx.submittedCount;
+
+  // Start and the quiz page let a student resume an attempt after the section
+  // ends, so submit must accept it too — but only for an attempt begun while
+  // the section was still open.
+  const sectionEndsAt = normalizeDatabaseDate(
+    (sectionRow as { endsAt?: Date | string | null }).endsAt ?? null,
+  );
+  const resumingPreEndAttempt =
+    inProgressAttempt != null &&
+    sectionEndsAt != null &&
+    new Date(inProgressAttempt.startedAt).getTime() <= sectionEndsAt.getTime();
+  if (
+    !bypassAvailability &&
+    isSectionConcluded(sectionRow as { endsAt?: Date | null }, now) &&
+    !resumingPreEndAttempt
+  ) {
     throw new Error(SECTION_CONCLUDED_MESSAGE);
   }
   // Wave 3 (23): ended / archived offerings are read-only for submissions.
   if (!bypassAvailability) {
     await assertOfferingWritable(sectionRow.offeringId, now);
   }
-
-  const inProgressAttempt = ctx.inProgressAttempt;
-  const attemptCount = ctx.submittedCount;
 
   if (!inProgressAttempt && attemptCount >= quiz.maxAttempts) {
     throw new MaxAttemptsExceededError(quiz.maxAttempts);
