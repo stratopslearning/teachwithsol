@@ -1,40 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingApi } from '@/lib/api/sessionAuth';
-import { assertCanManageCourse } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
+import { completionRequirementSchema } from '@/lib/lms/schemas';
 import { addModuleItem } from '@/lib/lms/modules';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string; moduleId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId, moduleId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    const body = (await readJsonBody(req)) as {
-      title?: string;
-      type?: string;
-      isHeader?: boolean;
-      position?: number;
-      lessonId?: string;
-      quizId?: string;
-      chatbotId?: string;
-      interactiveId?: string;
-      pageId?: string;
-      peerDiscussionId?: string;
-      externalUrl?: string;
-      completionRequirement?: {
-        type: 'view' | 'submit' | 'score_at_least';
-        minPercent?: number;
-      };
-      published?: boolean;
-    };
-    const item = await addModuleItem(moduleId, {
+const createBody = z.object({
+  title: z.string().optional(),
+  type: z.string().optional(),
+  isHeader: z.boolean().optional(),
+  position: z.number().optional(),
+  lessonId: z.string().optional(),
+  quizId: z.string().optional(),
+  chatbotId: z.string().optional(),
+  interactiveId: z.string().optional(),
+  pageId: z.string().optional(),
+  peerDiscussionId: z.string().optional(),
+  externalUrl: z.string().optional(),
+  completionRequirement: completionRequirementSchema.optional(),
+  published: z.boolean().optional(),
+});
+
+export const POST = route<{ courseId: string; moduleId: string }, typeof createBody>(
+  { auth: 'manageCourse', body: createBody },
+  async ({ params, body }) => {
+    const item = await addModuleItem(params.moduleId, {
       title: body.title?.trim() || 'Item',
       type: body.type || (body.isHeader ? 'HEADER' : 'PAGE'),
       isHeader: Boolean(body.isHeader),
@@ -50,7 +42,5 @@ export async function POST(
       published: body.published ?? true,
     });
     return NextResponse.json({ item });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
