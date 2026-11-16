@@ -248,7 +248,7 @@ describe('executeQuizSubmit', () => {
 
     expect(result.gradingStatus).toBe('partial');
     expect(result.pendingQuestionCount).toBe(1);
-    expect(mocks.scheduleAttemptRetry).toHaveBeenCalledWith('att-1');
+    expect(mocks.scheduleAttemptRetry).toHaveBeenCalledWith('att-1', 'tenant-1');
     expect(gradeMultipleQuestions).not.toHaveBeenCalled();
     expect(getOrDeriveRubric).not.toHaveBeenCalled();
   });

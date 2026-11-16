@@ -118,8 +118,8 @@ export default async function AttemptDetailPage({
   // Self-heal: nudge the worker every time a professor opens an attempt
   // that still has pending/manual_review entries. On Hobby we can't run a
   // per-minute cron, so we lean on real user activity to drive retries.
-  if (attemptNeedsBackgroundRetry(gptFeedback)) {
-    scheduleAttemptRetry(attempt.id);
+  if (attempt.tenantId && attemptNeedsBackgroundRetry(gptFeedback)) {
+    scheduleAttemptRetry(attempt.id, attempt.tenantId);
   }
 
   const overrideRows = await db.query.gradeOverrides.findMany({
