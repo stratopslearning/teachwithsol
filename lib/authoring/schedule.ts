@@ -1,5 +1,6 @@
 import type { OutlineItemBody } from '@/app/db/schema';
 import { DEFAULT_QUIZ_WINDOW_DAYS } from '@/lib/authoring/constants';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -105,7 +106,7 @@ export function ensureQuizAssignmentDefaults(
   const withDefaults: OutlineItemBody = {
     ...body,
     maxAttempts: body.maxAttempts ?? 1,
-    passingScore: body.passingScore ?? 70,
+    passingScore: body.passingScore ?? DEFAULT_PASSING_SCORE,
     timeLimit: body.timeLimit ?? 30,
     startDate: planned.startDate,
     endDate: planned.endDate,

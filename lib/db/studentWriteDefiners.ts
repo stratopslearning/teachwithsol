@@ -17,6 +17,7 @@ import type {
   sections,
 } from '@/app/db/schema';
 import { asUuidArray } from '@/lib/db/sqlArrays';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
 
 function rowsFromExecute<T>(result: unknown): T[] {
   return (
@@ -81,7 +82,7 @@ function mapQuiz(
     offeringId: pick<string | null>(raw, 'offering_id', 'offeringId') ?? null,
     maxAttempts: Number(pick(raw, 'max_attempts', 'maxAttempts') ?? 1),
     timeLimit: pick<number | null>(raw, 'time_limit', 'timeLimit') ?? null,
-    passingScore: Number(pick(raw, 'passing_score', 'passingScore') ?? 60),
+    passingScore: Number(pick(raw, 'passing_score', 'passingScore') ?? DEFAULT_PASSING_SCORE),
     startDate: asDate(pick(raw, 'start_date', 'startDate') as Date | string | null),
     endDate: asDate(pick(raw, 'end_date', 'endDate') as Date | string | null),
     isActive: Boolean(pick(raw, 'is_active', 'isActive') ?? true),

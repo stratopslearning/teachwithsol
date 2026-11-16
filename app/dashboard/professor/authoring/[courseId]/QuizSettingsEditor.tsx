@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import type { OutlineItemBody } from "@/app/db/schema";
+import { DEFAULT_PASSING_SCORE } from "@/lib/quizSchemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -32,7 +33,7 @@ export type QuizSettingsValues = {
 export function quizSettingsFromBody(body: OutlineItemBody): QuizSettingsValues {
   return {
     maxAttempts: body.maxAttempts ?? 1,
-    passingScore: body.passingScore ?? 70,
+    passingScore: body.passingScore ?? DEFAULT_PASSING_SCORE,
     timeLimit: body.timeLimit ?? null,
     startDate: body.startDate ?? null,
     endDate: body.endDate ?? null,
@@ -74,7 +75,7 @@ export function QuizSettingsEditor({
     maxAttempts: Math.max(1, Math.floor(Number(maxAttempts) || 1)),
     passingScore: Math.min(
       100,
-      Math.max(0, Math.floor(Number(passingScore) || 70)),
+      Math.max(0, Math.floor(Number(passingScore) || DEFAULT_PASSING_SCORE)),
     ),
     timeLimit:
       timeLimit.trim() === ""

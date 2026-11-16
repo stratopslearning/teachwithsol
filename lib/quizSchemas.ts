@@ -44,6 +44,9 @@ export function quizWindowSuperRefine(
   }
 }
 
+/** One default for quizzes created without an explicit passing score (matches the DB column default). */
+export const DEFAULT_PASSING_SCORE = 60;
+
 export const quizCreateBaseSchema = z
   .object({
     title: z.string().min(1).max(200),
@@ -54,7 +57,7 @@ export const quizCreateBaseSchema = z
       .max(50),
     maxAttempts: z.number().min(1).max(10).default(1),
     timeLimit: z.number().min(1).max(24 * 60).optional(),
-    passingScore: z.number().int().min(0).max(100).default(60),
+    passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
     startDate: isoDateTimeRequired,
     endDate: isoDateTimeRequired,
     questions: z.array(quizQuestionInputSchema).max(200),
