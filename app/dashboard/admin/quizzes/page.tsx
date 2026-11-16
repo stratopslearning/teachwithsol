@@ -1,4 +1,5 @@
-import { db } from "@/app/db";
+import { fetchAdminWorkspaceDirectory } from "@/lib/admin/platformReads";
+import { withTenant } from "@/lib/db/tenantContext";
 import { quizzes, sections } from "@/app/db/schema";
 import { AppShell } from "@/components/layout/AppShell";
 import { activeOnly } from "@/lib/db/filters";
@@ -17,24 +18,44 @@ export default async function AdminQuizzesPage({
   const params = await searchParams;
   const scope = resolveWorkspaceScopeParam(params.workspaceId);
   const workspaceScope = scope === 'all' ? null : scope;
+  // FORCE RLS: plain db reads return nothing. With a workspace selected,
+  // read it under that workspace; for "all", list quizzes per workspace
+  // (sections were only ever shown for a selected workspace).
+  const scoped = workspaceScope
+    ? await withTenant(workspaceScope, null, async (tx) => ({
+        sections: await tx.query.sections.findMany({
+          where: activeOnly(sections.deletedAt),
+          with: { course: true },
+        }),
+        quizzes: await tx.query.quizzes.findMany({
+          where: activeOnly(quizzes.deletedAt),
+        }),
+        quizSections: await tx.query.quizSections.findMany(),
+      }))
+    : null;
   const workspaceCourses = workspaceScope
     ? await listCoursesForWorkspace(workspaceScope)
     : [];
   const courseIds = new Set(workspaceCourses.map((c) => c.id));
-  const allSectionsRaw = (
-    await db.query.sections.findMany({
-      where: activeOnly(sections.deletedAt),
-      with: { course: true },
-    })
-  ).filter((s) => courseIds.has(s.courseId));
+  const allSectionsRaw = (scoped?.sections ?? []).filter((s) =>
+    courseIds.has(s.courseId),
+  );
   const { active: ongoingSections } =
     partitionBySectionConclusion(allSectionsRaw);
-  const allQuizzesRaw = await db.query.quizzes.findMany({
-    where: activeOnly(quizzes.deletedAt),
-  });
+  const allQuizzesRaw =
+    scoped?.quizzes ??
+    (
+      await Promise.all(
+        (await fetchAdminWorkspaceDirectory()).map((ws) =>
+          withTenant(ws.id, null, (tx) =>
+            tx.query.quizzes.findMany({ where: activeOnly(quizzes.deletedAt) }),
+          ),
+        ),
+      )
+    ).flat();
   const ongoingIds = new Set(ongoingSections.map((s) => s.id));
-  const allQuizSections = (await db.query.quizSections.findMany()).filter(
-    (qs) => ongoingIds.has(qs.sectionId),
+  const allQuizSections = (scoped?.quizSections ?? []).filter((qs) =>
+    ongoingIds.has(qs.sectionId),
   );
 
   return (

@@ -3,7 +3,8 @@ import { auth } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-import { quizzes, users } from '@/app/db/schema';
+import { users } from '@/app/db/schema';
+import { loadAdminRecord } from '@/lib/admin/records';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
 import { updateQuizDefiner } from '@/lib/db/entityScopedReads';
@@ -39,10 +40,8 @@ export async function PUT(
       );
     }
 
-    const existingQuiz = await db.query.quizzes.findFirst({
-      where: eq(quizzes.id, quizId),
-      columns: { tenantId: true },
-    });
+    // FORCE RLS: a plain db read finds no quiz; load it via the definer.
+    const existingQuiz = await loadAdminRecord('quiz', quizId);
     if (!existingQuiz) {
       return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
     }

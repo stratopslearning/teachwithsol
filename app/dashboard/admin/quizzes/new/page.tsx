@@ -1,21 +1,19 @@
 import Link from "next/link";
 
-import { db } from "@/app/db";
-import { sections } from "@/app/db/schema";
+import { fetchAdminSectionsAll } from "@/lib/admin/platformReads";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { QuizCreationForm } from "@/components/quiz/QuizCreationForm";
-import { activeOnly } from "@/lib/db/filters";
 import { withBasePath } from "@/lib/basePath";
 import { requireAdmin } from "@/lib/auth";
 import { partitionBySectionConclusion } from "@/lib/sectionAvailability";
 
 export default async function AdminQuizNewPage() {
   await requireAdmin();
-  const allSectionsRaw = await db.query.sections.findMany({
-    where: activeOnly(sections.deletedAt),
-    with: { course: true },
-  });
+  // FORCE RLS: a plain db read returns no sections; use the admin definer.
+  const allSectionsRaw = (await fetchAdminSectionsAll()).filter(
+    (s) => s.deletedAt == null,
+  );
   const { active: ongoingSections } =
     partitionBySectionConclusion(allSectionsRaw);
   const courseOptions = ongoingSections.map((section) => ({

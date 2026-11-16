@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { Archive } from '@/components/icons';
 
-import { db } from '@/app/db';
-import { sections } from '@/app/db/schema';
+import { fetchAdminSectionsAll } from '@/lib/admin/platformReads';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/patterns/EmptyState';
@@ -18,7 +17,6 @@ import {
 } from '@/components/ui/table';
 import { requireAdmin } from '@/lib/auth';
 import { appPath, withBasePath } from '@/lib/basePath';
-import { activeOnly } from '@/lib/db/filters';
 import { partitionBySectionConclusion } from '@/lib/sectionAvailability';
 import {
   LocalDateTime,
@@ -27,10 +25,10 @@ import {
 
 export default async function AdminArchivedSectionsPage() {
   await requireAdmin();
-  const allSectionsRaw = await db.query.sections.findMany({
-    where: activeOnly(sections.deletedAt),
-    with: { course: true },
-  });
+  // FORCE RLS: a plain db read returns no sections; use the admin definer.
+  const allSectionsRaw = (await fetchAdminSectionsAll()).filter(
+    (s) => s.deletedAt == null,
+  );
   const { archived } = partitionBySectionConclusion(allSectionsRaw);
   const rows = [...archived].sort((a, b) => {
     const aEnd = a.endsAt ? new Date(a.endsAt).getTime() : 0;
