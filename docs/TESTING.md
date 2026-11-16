@@ -47,8 +47,7 @@ It does **not** prove UI clicks, live Canvas LTI, or deterministic LLM scores (B
 | `test` | Always `npm test` (unit); optional Neon `test:db` if secret set |
 | `isolation-pgvector` | **Required** ephemeral Postgres: migrate → `sol_app` → `npm run test:db` → tenant-schema |
 | `tenant-schema` | `check:tenant-schema` when Neon URL present |
-| `lint` | lint + legacy-authz ratchet |
-| `a11y-axe` | Non-blocking stub — **no Playwright** |
+| `lint` | `next lint` (errors fail the build; warnings are backlog) + legacy-authz ratchet |
 
 ## Adding tests
 
