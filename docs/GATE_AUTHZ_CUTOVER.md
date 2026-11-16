@@ -50,3 +50,7 @@
 
 - `.env.local`: `LEGACY_ADMIN_ROLE_FALLBACK=0` (app default is off unless `=1`).
 - Runtime: `DATABASE_URL` = `sol_app`; migrate: `DATABASE_MIGRATE_URL` = `sol_migrator`.
+
+## Final cleanup (done)
+
+The shadow path and rollback escape hatches are removed: `lib/authz/shadowAuthorize.ts` (and its `gates.ts` calls), `LEGACY_ADMIN_ROLE_FALLBACK`, the `count-legacy-authz` ratchet and baseline, the empty allowlist, and the one-off `contract-drop-users-role` / `prune-legacy-authz-allowlist` scripts. `users.role` no longer exists, and the `sol/no-legacy-authz` eslint rule (now blocking in CI lint) still rejects `users.role` and `professorId === user.id` authorization checks.

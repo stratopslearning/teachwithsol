@@ -39,7 +39,6 @@ export async function grantOfferingStaff(opts: {
   await ensureWorkspaceMembership({
     workspaceId: opts.tenantId,
     userId: opts.userId,
-    role: 'learner',
   });
   return { grantId: result.bindingId, created: result.created };
 }
@@ -95,7 +94,6 @@ export async function grantSectionStaff(opts: {
     await ensureWorkspaceMembership({
       workspaceId: opts.tenantId,
       userId: opts.userId,
-      role: 'learner',
     });
   }
   return { grantId: result.bindingId, created: result.created };

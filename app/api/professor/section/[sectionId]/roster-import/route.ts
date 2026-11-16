@@ -164,7 +164,6 @@ export async function POST(
           await ensureWorkspaceMembership({
             workspaceId,
             userId: student.id,
-            role: 'learner',
           });
         }
         results.push({ email, ok: true });

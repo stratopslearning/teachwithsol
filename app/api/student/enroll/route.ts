@@ -198,7 +198,6 @@ export async function POST(req: NextRequest) {
       await ensureWorkspaceMembership({
         workspaceId,
         userId: user.id,
-        role: 'learner',
       });
     }
 

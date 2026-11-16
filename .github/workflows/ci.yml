@@ -70,8 +70,6 @@ jobs:
       - run: npm ci
       # Errors fail the build. Warnings (unused vars etc.) are a tracked backlog.
       - run: npm run lint
-      - name: Legacy authz ratchet
-        run: npm run check:legacy-authz
 
   tenant-schema:
     name: Tenant schema check

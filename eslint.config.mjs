@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FlatCompat } from "@eslint/eslintrc";
 
@@ -7,10 +6,6 @@ import noLegacyAuthz from "./eslint-rules/no-legacy-authz.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const compat = new FlatCompat({ baseDirectory: __dirname });
-
-const legacyAllowlist = JSON.parse(
-  readFileSync(join(__dirname, "eslint-legacy-authz-allowlist.json"), "utf8"),
-);
 
 // Wave 4 (24): lib/ai/gateway.ts is the sole OpenAI entry point.
 const openAiRestrictedPaths = [
@@ -68,7 +63,7 @@ export default [
       "@typescript-eslint/no-unused-expressions": "off",
       "prefer-const": "warn",
       "react-hooks/exhaustive-deps": "warn",
-      "sol/no-legacy-authz": ["error", { allowlist: legacyAllowlist }],
+      "sol/no-legacy-authz": "error",
       // A bare '/api/...' path skips NEXT_PUBLIC_BASE_PATH and 404s on the
       // /learning deploy. Wrap it: fetch(apiUrl('/api/...')).
       "no-restricted-syntax": [

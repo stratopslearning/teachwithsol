@@ -1,4 +1,3 @@
-// TODO(authz-cutover 11j admin/tokens): replace remaining users.role / professor_sections checks with authorize()/gates (see docs/GATE_2_REPORT.md).
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 

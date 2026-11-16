@@ -243,8 +243,6 @@ export async function assertCourseInWorkspace(
 export async function ensureWorkspaceMembership(opts: {
   workspaceId: string;
   userId: string;
-  /** @deprecated Ignored. Seats are role-less ('member'); grant a role_binding instead. */
-  role?: 'owner' | 'admin' | 'instructor' | 'learner' | 'member';
   status?: 'active' | 'invited' | 'removed';
 }): Promise<void> {
   // FORCE RLS: bare membership insert/update flakes without a sticky tenant GUC.
