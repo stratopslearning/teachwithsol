@@ -11,7 +11,10 @@
  */
 import { z } from 'zod';
 
-const baseSchema = z.object({
+/** Listed for inventory only: any string, never fails validation. */
+const optionalString = z.string().optional();
+
+export const baseSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().url(),
   // Optional migrate-only URL (sol_migrator). Runtime always uses DATABASE_URL
@@ -123,6 +126,113 @@ const baseSchema = z.object({
   LTI_TOOL_PUBLIC_KEY: z.string().min(1).optional(),
   LTI_TOOL_KEY_ID: z.string().min(1).optional(),
   LTI_PLATFORM_LABEL: z.string().min(1).optional(),
+  /** Workspace that owns the env-configured LTI platform when no platform row resolves it. */
+  LTI_WORKSPACE_ID: optionalString,
+
+  // ---------------------------------------------------------------------------
+  // Everything below is read directly from process.env at its call site
+  // (client bundles need literal NEXT_PUBLIC_* reads; middleware runs on the
+  // edge). It is listed here so this file stays the one inventory of config;
+  // tests/unit/envInventory.test.ts fails when code reads an unlisted var.
+  // All optional strings so listing them never changes boot validation.
+  // ---------------------------------------------------------------------------
+
+  // Database / runtime guards
+  /** Max pg pool connections (default 1 serverless, 10 otherwise). */
+  PG_POOL_MAX: optionalString,
+  /** Comma-separated DATABASE_URL hosts allowed in development. */
+  DEV_DB_HOSTS: optionalString,
+  /** Set to '0' to skip the "runtime DB role must not bypass RLS" boot check. */
+  SOL_REQUIRE_APP_ROLE: optionalString,
+  /** Set to '1' to allow the legacy default workspace. */
+  ALLOW_DEFAULT_WORKSPACE: optionalString,
+
+  // Encryption / secrets
+  /** 'true' encrypts sensitive attempt fields at rest. */
+  FIELD_ENCRYPTION_ENABLED: optionalString,
+  /** Key for field encryption (required when FIELD_ENCRYPTION_ENABLED=true). */
+  FIELD_ENCRYPTION_KEY: optionalString,
+  /** Key for encrypting knowledge-connector OAuth tokens. */
+  CONNECTOR_TOKEN_SECRET: optionalString,
+  /** HMAC secret for cache keys derived from user content. */
+  CACHE_KEY_HMAC_SECRET: optionalString,
+
+  // AI models (override the tier defaults in lib/ai/modelRouter.ts)
+  SOL_MODEL_FAST: optionalString,
+  SOL_MODEL_BALANCED: optionalString,
+  SOL_MODEL_STRONG: optionalString,
+  SOL_MODEL_EMBED: optionalString,
+  SOL_MODEL_TUTOR: optionalString,
+  SOL_MODEL_GRADE: optionalString,
+  SOL_MODEL_GRADE_ESCALATE: optionalString,
+  SOL_MODEL_RUBRIC: optionalString,
+  SOL_MODEL_OUTLINE: optionalString,
+  SOL_MODEL_SKELETON: optionalString,
+  SOL_MODEL_BUILD: optionalString,
+  SOL_MODEL_REFINE: optionalString,
+  SOL_MODEL_REVIEW: optionalString,
+  SOL_MODEL_SWITCH_UP: optionalString,
+  SOL_MODEL_INSIGHTS: optionalString,
+  /** Legacy alias for the authoring model. */
+  OPENAI_AUTHORING_MODEL: optionalString,
+  /** Set to '0' to disable the per-tenant AI budget in lib/ai/gateway.ts. */
+  AI_GATEWAY_ENFORCE_BUDGET: optionalString,
+  AI_BUDGET_CAPACITY: optionalString,
+  AI_BUDGET_WINDOW_MS: optionalString,
+  /** Set to '1' to wrap OpenAI clients with Braintrust tracing in tests. */
+  BRAINTRUST_WRAP: optionalString,
+  /** Pending short answers above this count are graded in batches (default 40). */
+  SOL_GRADING_BATCH_THRESHOLD: optionalString,
+  /** Minimum group size before analytics are shown (k-anonymity). */
+  ANALYTICS_K_ANONYMITY_MIN: optionalString,
+  /** Read legacy course_materials while knowledge documents roll out. */
+  LEGACY_MATERIALS_READ: optionalString,
+
+  // Billing
+  STRIPE_PRICE_CREATOR: optionalString,
+  STRIPE_PRICE_BUSINESS: optionalString,
+  /** 'true' enables Stripe checkout for creator/business workspaces. */
+  NEXT_PUBLIC_WORKSPACE_BILLING_ENABLED: optionalString,
+
+  // Knowledge connectors (OAuth apps; each connector is off until both are set)
+  GOOGLE_DRIVE_CLIENT_ID: optionalString,
+  GOOGLE_DRIVE_CLIENT_SECRET: optionalString,
+  MICROSOFT_GRAPH_CLIENT_ID: optionalString,
+  MICROSOFT_GRAPH_CLIENT_SECRET: optionalString,
+  NOTION_CLIENT_ID: optionalString,
+  NOTION_CLIENT_SECRET: optionalString,
+  ATLASSIAN_CLIENT_ID: optionalString,
+  ATLASSIAN_CLIENT_SECRET: optionalString,
+
+  // Routing / hosts (public; inlined into the client bundle)
+  /** URL prefix; unset = '/learning', empty = root (Sol). */
+  NEXT_PUBLIC_BASE_PATH: optionalString,
+  NEXT_PUBLIC_SOL_MARKETING_HOST: optionalString,
+  NEXT_PUBLIC_SOL_APP_HOST: optionalString,
+  NEXT_PUBLIC_SOL_DOCS_HOST: optionalString,
+  NEXT_PUBLIC_SOL_TRUST_HOST: optionalString,
+  /** 'true' sends login/signup to Book a demo. */
+  NEXT_PUBLIC_SOL_DEMO_ONLY: optionalString,
+  /** Comma-separated profile URLs for structured data (sameAs). */
+  NEXT_PUBLIC_SOL_SAME_AS: optionalString,
+  /** Canvas-like course shell (modules, pages) in the course hub. */
+  NEXT_PUBLIC_COURSE_LMS_SHELL: optionalString,
+
+  // Clerk multi-domain / satellite setup
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: optionalString,
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: optionalString,
+  NEXT_PUBLIC_CLERK_DOMAIN: optionalString,
+  NEXT_PUBLIC_CLERK_IS_SATELLITE: optionalString,
+  NEXT_PUBLIC_CLERK_ALLOWED_REDIRECT_ORIGINS: optionalString,
+  NEXT_PUBLIC_CLERK_FRONTEND_API: optionalString,
+  NEXT_PUBLIC_CLERK_SATELLITE_FRONTEND_API: optionalString,
+
+  // Legal pages
+  NEXT_PUBLIC_LEGAL_ENTITY: optionalString,
+  NEXT_PUBLIC_LEGAL_STREET: optionalString,
+  NEXT_PUBLIC_LEGAL_CITY_LINE: optionalString,
+  NEXT_PUBLIC_LEGAL_PRIVACY_EMAIL: optionalString,
+  NEXT_PUBLIC_LEGAL_DMCA_EMAIL: optionalString,
 });
 
 type RawEnv = z.infer<typeof baseSchema>;
