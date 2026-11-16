@@ -1,6 +1,5 @@
 export {
   sendTransactionalEmail,
-  emailEnabled,
   type SendEmailResult,
   type SendTransactionalEmailOpts,
 } from '@/lib/email/send';

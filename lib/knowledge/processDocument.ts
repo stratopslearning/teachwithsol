@@ -221,13 +221,6 @@ export async function nextDocumentVersionNumber(
   return max + 1;
 }
 
-export async function listDocumentVersions(documentId: string) {
-  const { fetchKnowledgeDocumentVersions } = await import(
-    '@/lib/db/entityScopedReads'
-  );
-  return fetchKnowledgeDocumentVersions(documentId);
-}
-
 /**
  * Cron sweep: retry PENDING documents and reset PROCESSING ones stuck longer
  * than 15 minutes (a crashed or timed-out job never clears its claim).

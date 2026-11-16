@@ -113,7 +113,3 @@ export async function sendTransactionalEmail(
     return { ok: false, error: message };
   }
 }
-
-export function emailEnabled(): boolean {
-  return env().EMAIL_ENABLED === 'true';
-}

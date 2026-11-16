@@ -61,7 +61,6 @@ import { MessageSquareMoreIcon as MessageSquareMoreIconRaw } from "@/components/
 import { MonitorCogIcon as MonitorCogIconRaw } from "@/components/icons/monitor-cog";
 import { MoonIcon as MoonIconRaw } from "@/components/icons/moon";
 import { PanelLeftOpenIcon as PanelLeftOpenIconRaw } from "@/components/icons/panel-left-open";
-import { PanelRightOpenIcon as PanelRightOpenIconRaw } from "@/components/icons/panel-right-open";
 import { PlugZapIcon as PlugZapIconRaw } from "@/components/icons/plug-zap";
 import { PlusIcon as PlusIconRaw } from "@/components/icons/plus";
 import { ReceiptTextIcon as ReceiptTextIconRaw } from "@/components/icons/receipt-text";
@@ -88,7 +87,6 @@ import {
   Focus as FocusStatic,
   Gift as GiftStatic,
   ImageIcon as ImageIconStatic,
-  Lightbulb as LightbulbStatic,
   List as ListStatic,
   Loader2 as Loader2Static,
   Minus as MinusStatic,
@@ -169,7 +167,6 @@ export const Monitor = adaptAnimatedIcon(MonitorCogIconRaw, "Monitor");
 export const Moon = adaptAnimatedIcon(MoonIconRaw, "Moon");
 export const Package = adaptAnimatedIcon(BoxIconRaw, "Package");
 export const PanelLeftIcon = adaptAnimatedIcon(PanelLeftOpenIconRaw, "PanelLeftIcon");
-export const PanelRight = adaptAnimatedIcon(PanelRightOpenIconRaw, "PanelRight");
 export const Paperclip = adaptAnimatedIcon(AttachFileIconRaw, "Paperclip");
 export const PenLine = adaptAnimatedIcon(FilePenLineIconRaw, "PenLine");
 export const Pencil = adaptAnimatedIcon(SquarePenIconRaw, "Pencil");
@@ -202,7 +199,6 @@ export const Focus = adaptStaticIcon(FocusStatic, "Focus");
 export const Gift = adaptStaticIcon(GiftStatic, "Gift");
 export const ImageIcon = adaptStaticIcon(ImageIconStatic, "ImageIcon");
 export const Library = adaptAnimatedIcon(FoldersIconRaw, "Library");
-export const Lightbulb = adaptStaticIcon(LightbulbStatic, "Lightbulb");
 export const Link2 = adaptAnimatedIcon(Link2IconRaw, "Link2");
 export const List = adaptStaticIcon(ListStatic, "List");
 export const Loader2 = adaptStaticIcon(Loader2Static, "Loader2");

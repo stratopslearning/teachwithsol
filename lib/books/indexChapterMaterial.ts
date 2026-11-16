@@ -74,6 +74,3 @@ export async function indexBookAsMaterial(opts: {
     throw err;
   }
 }
-
-/** @deprecated Use indexBookAsMaterial — kept for any leftover imports. */
-export const indexChapterAsMaterial = indexBookAsMaterial;

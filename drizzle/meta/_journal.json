@@ -813,6 +813,13 @@
       "when": 1794848012235,
       "tag": "0115_student_tenant_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1794858502603,
+      "tag": "0116_drop_unused_lms_tables",
+      "breakpoints": true
     }
   ]
 }
