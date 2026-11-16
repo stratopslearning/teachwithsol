@@ -2,7 +2,9 @@
  * Staging/dev-only impersonation for k6 load tests.
  *
  * Enabled only when:
- *   - `VERCEL_ENV` is not `production` (unset locally / `preview` on Vercel)
+ *   - the runtime is a Vercel preview/development deploy, or a non-Vercel
+ *     process that isn't a production build (local dev, tests). A production
+ *     build off Vercel (VERCEL_ENV unset, NODE_ENV=production) is denied.
  *   - `LOAD_TEST_SECRET` is set (min 16 chars)
  *   - request headers match that secret and carry a UUID user id
  *
@@ -19,7 +21,9 @@ const UUID_RE =
 const MIN_SECRET_LENGTH = 16;
 
 export function isLoadTestRuntimeAllowed(): boolean {
-  return process.env.VERCEL_ENV !== 'production';
+  const vercelEnv = process.env.VERCEL_ENV;
+  if (vercelEnv) return vercelEnv === 'preview' || vercelEnv === 'development';
+  return process.env.NODE_ENV !== 'production';
 }
 
 export function getLoadTestSecret(): string | undefined {
