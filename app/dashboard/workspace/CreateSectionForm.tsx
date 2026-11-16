@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { apiUrl, withBasePath } from '@/lib/basePath';
+import { apiUrl, appPath, withBasePath } from '@/lib/basePath';
 
 export function CreateSectionForm({
   courseId,
@@ -91,7 +91,7 @@ export function CreateSectionForm({
         {createdId ? (
           <Button asChild variant="link" size="sm" className="h-auto px-0">
             <Link
-              href={withBasePath(
+              href={appPath(
                 `/dashboard/professor/courses/${courseId}/sections/${createdId}`,
               )}
             >

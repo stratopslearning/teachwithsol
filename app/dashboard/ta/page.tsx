@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 import { requireTeachingAccess } from '@/lib/authz/gates';
 import {
   isGrantOnlyTeachingAssistant,
@@ -103,7 +103,7 @@ export default async function TaGradingDeskPage() {
                       <QuickRegradeButton attemptId={item.attemptId} />
                       <Button asChild variant="outline" size="sm">
                         <Link
-                          href={withBasePath(
+                          href={appPath(
                             `/dashboard/professor/quiz/${item.quiz.id}/results/${item.attemptId}`,
                           )}
                         >

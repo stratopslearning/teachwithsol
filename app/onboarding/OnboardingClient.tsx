@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { apiUrl, appPath, withBasePath } from '@/lib/basePath';
+import { apiUrl, appPath } from '@/lib/basePath';
 import { FOUNDERS_EMAIL } from '@/lib/legal';
 
 type Path = 'teach' | 'student' | 'department';
@@ -227,7 +227,7 @@ export function OnboardingClient({
               See how materials, assignments, and the student view fit together.
             </p>
             <Button asChild variant="outline" size="sm" className="mt-3">
-              <Link href={withBasePath('/docs/about-sol')} target="_blank">
+              <Link href={appPath('/docs/about-sol')} target="_blank">
                 Open sample walkthrough
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
               </Link>

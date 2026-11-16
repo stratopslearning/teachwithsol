@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalShell } from "@/components/legal/LegalShell";
-import { withBasePath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 import { CAL_BOOKING_URL } from "@/lib/calBooking";
 import { publicPrivacyContactEmail } from "@/lib/legal";
 import { socialMetadata, titledPage } from "@/lib/pageMeta";
@@ -78,10 +78,10 @@ export default function SecurityPage() {
       <h2>Related</h2>
       <ul>
         <li>
-          <Link href={withBasePath("/privacy")}>Privacy policy</Link>
+          <Link href={appPath("/privacy")}>Privacy policy</Link>
         </li>
         <li>
-          <Link href={withBasePath("/terms")}>Terms</Link>
+          <Link href={appPath("/terms")}>Terms</Link>
         </li>
         <li>
           <a

@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
-
-import { withBasePath } from "@/lib/basePath";
+import { appRedirect } from "@/lib/serverRedirect";
 
 export default function StudentDiscussionsRedirect() {
-  redirect(withBasePath("/dashboard/student/assignments?type=DISCUSSION"));
+  appRedirect("/dashboard/student/assignments?type=DISCUSSION");
 }

@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiUrl, withBasePath } from "@/lib/basePath";
+import { apiUrl, appPath, withBasePath } from "@/lib/basePath";
 import type { BookChapterTocItem, BookWithChapters } from "@/lib/books";
 import { uploadCourseBookFile } from "@/lib/books/clientUpload";
 import {
@@ -1420,7 +1420,7 @@ export default function MaterialsClient({
                         {b.status === "READY" ? (
                           <Button asChild size="sm" variant="outline">
                             <Link
-                              href={withBasePath(
+                              href={appPath(
                                 bookHref(b.id, { audience: "professor" }),
                               )}
                             >

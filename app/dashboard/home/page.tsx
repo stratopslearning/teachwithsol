@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { WorkspaceSwitcher } from '@/components/workspace/WorkspaceSwitcher';
-import { appPath, withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 import {
   getDashboardAreas,
   requireTeachingAccess,
@@ -97,7 +97,7 @@ export default async function DashboardHomePage() {
                 </div>
               </div>
               <Button asChild variant="outline" size="sm">
-                <Link href={withBasePath('/dashboard/professor')}>
+                <Link href={appPath('/dashboard/professor')}>
                   Open desk
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                 </Link>

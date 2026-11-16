@@ -9,7 +9,7 @@ import {
   type BookContentsItem,
 } from '@/components/books/BookContentsNav';
 import { AppShell } from '@/components/layout/AppShell';
-import { withBasePath } from '@/lib/basePath';
+import { appPath, withBasePath } from '@/lib/basePath';
 import { bookHref } from '@/lib/books/toc';
 import { cn } from '@/lib/utils';
 
@@ -176,7 +176,7 @@ export function StudentBookReaderShell({
             <footer className="z-20 flex h-12 shrink-0 items-center justify-between gap-3 border-t border-ink/20 bg-ink px-3 text-paper sm:px-5">
               {prev ? (
                 <Link
-                  href={withBasePath(
+                  href={appPath(
                     bookHref(book.id, {
                       sectionId: section?.id,
                       chapterId: prev.id,
@@ -197,7 +197,7 @@ export function StudentBookReaderShell({
               )}
               {next ? (
                 <Link
-                  href={withBasePath(
+                  href={appPath(
                     bookHref(book.id, {
                       sectionId: section?.id,
                       chapterId: next.id,

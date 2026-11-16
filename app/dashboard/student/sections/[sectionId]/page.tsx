@@ -6,7 +6,7 @@ import { StatCard } from '@/components/patterns/StatCard';
 import { SectionHubShell } from '@/components/student/SectionHubShell';
 import { listStudentActivities } from '@/lib/assignments';
 import { requireStudent } from '@/lib/auth';
-import { withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 import { listStudentBooks } from '@/lib/books';
 import { loadCourseNav } from '@/lib/lms/loadCourseNav';
 import { requireStudentSectionAccess } from '@/lib/student/sectionAccess';
@@ -70,7 +70,7 @@ export default async function StudentSectionOverviewPage({
 
         <div className="flex flex-wrap gap-2">
           <Link
-            href={withBasePath(
+            href={appPath(
               `/dashboard/student/sections/${sectionId}/books`,
             )}
             className="rounded-lg border border-rule px-3 py-2 text-sm text-ink transition-colors hover:border-rule-strong hover:bg-surface"
@@ -78,7 +78,7 @@ export default async function StudentSectionOverviewPage({
             Browse books
           </Link>
           <Link
-            href={withBasePath(
+            href={appPath(
               `/dashboard/student/sections/${sectionId}/assignments`,
             )}
             className="rounded-lg border border-rule px-3 py-2 text-sm text-ink transition-colors hover:border-rule-strong hover:bg-surface"
@@ -86,7 +86,7 @@ export default async function StudentSectionOverviewPage({
             View assignments
           </Link>
           <Link
-            href={withBasePath(
+            href={appPath(
               `/dashboard/student/sections/${sectionId}/grades`,
             )}
             className="rounded-lg border border-rule px-3 py-2 text-sm text-ink transition-colors hover:border-rule-strong hover:bg-surface"
