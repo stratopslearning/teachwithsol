@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '@/app/db';
-import { users, workspaces } from '@/app/db/schema';
+import { getWorkspaceName } from '@/lib/workspace/name';
+import { users } from '@/app/db/schema';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import { parseEmailListFromCsv } from '@/lib/csv/parseEmailList';
@@ -70,10 +71,7 @@ export async function POST(req: NextRequest) {
 
   const baseUrl = appBaseUrl();
 
-  const workspace = await db.query.workspaces.findFirst({
-    where: eq(workspaces.id, workspaceId),
-    columns: { name: true },
-  });
+  const workspace = { name: await getWorkspaceName(workspaceId) };
 
   const results: Array<{
     email: string;

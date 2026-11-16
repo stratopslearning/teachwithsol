@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { workspaces } from '@/app/db/schema';
+import { getWorkspaceName } from '@/lib/workspace/name';
 import { ApiError, jsonError } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { readJsonBody } from '@/lib/api/readJsonBody';
@@ -63,10 +61,7 @@ export async function PATCH(
       result.email &&
       result.expiresAt
     ) {
-      const workspace = await db.query.workspaces.findFirst({
-        where: eq(workspaces.id, workspaceId),
-        columns: { name: true },
-      });
+      const workspace = { name: await getWorkspaceName(workspaceId) };
       const emailResult = await sendWorkspaceInviteMail({
         workspaceId,
         to: result.email,

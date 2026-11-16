@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import { users, workspaceLicenses, workspaces } from '@/app/db/schema';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { withBasePath } from '@/lib/basePath';
@@ -73,9 +74,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const workspace = await db.query.workspaces.findFirst({
-    where: eq(workspaces.id, parsed.data.workspaceId),
-  });
+  // FORCE RLS: a plain db read found no workspace, so checkout always
+  // failed with "Workspace not found". Read under the workspace's tenant.
+  const workspaceId = parsed.data.workspaceId;
+  const workspace = await withTenant(workspaceId, user.id, (tx) =>
+    tx.query.workspaces.findFirst({ where: eq(workspaces.id, workspaceId) }),
+  );
   if (!workspace) {
     return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
   }
@@ -122,15 +126,17 @@ export async function POST(req: NextRequest) {
       cancel_url: `${baseUrl}${withBasePath('/dashboard/workspace')}?billing=cancel`,
     });
 
-    await db
-      .update(workspaceLicenses)
-      .set({
-        status: 'trialing',
-        billingProvider: 'stripe',
-        plan: licensePlanForWorkspaceType(workspace.type),
-        updatedAt: new Date(),
-      })
-      .where(eq(workspaceLicenses.workspaceId, workspace.id));
+    await withTenant(workspace.id, user.id, (tx) =>
+      tx
+        .update(workspaceLicenses)
+        .set({
+          status: 'trialing',
+          billingProvider: 'stripe',
+          plan: licensePlanForWorkspaceType(workspace.type),
+          updatedAt: new Date(),
+        })
+        .where(eq(workspaceLicenses.workspaceId, workspace.id)),
+    );
 
     return NextResponse.json({ url: session.url });
   } catch (error) {

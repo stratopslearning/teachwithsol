@@ -13,8 +13,7 @@
  *
  * **Preferred write path for new uploads:** workspace library document +
  * `course_knowledge_links` row (see `addWorkspaceDocumentFromUpload` with
- * `courseId`, and legacy `course_materials` dual-write via
- * `mirrorCourseMaterialToKnowledge`). Legacy `course_materials` /
+ * `courseId`). Legacy `course_materials` /
  * `course_material_chunks` remain for books and pre-migration rows; retirement
  * is gated by `lib/knowledge/retireLegacyMaterials.ts` (no table drops).
  *
