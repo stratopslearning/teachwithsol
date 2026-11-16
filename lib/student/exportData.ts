@@ -1,33 +1,63 @@
 import { and, eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
 import {
   attempts,
   chatbotSessions,
   studentSections,
 } from '@/app/db/schema';
 import { maybeDecryptAttemptAnswers } from '@/lib/crypto/fieldEncryption';
+import { fetchStudentTenantIdsDefiner } from '@/lib/db/studentWriteDefiners';
+import { withTenant } from '@/lib/db/tenantContext';
 
+const MAX_ATTEMPTS = 500;
+const MAX_SESSIONS = 200;
+
+/**
+ * A student's own data across every tenant they belong to.
+ *
+ * These tables are FORCE RLS: a plain db read with no tenant set returns
+ * nothing, so the export used to come back empty. The student's tenants come
+ * from a SECURITY DEFINER lookup, and each tenant is read under withTenant.
+ */
 export async function exportStudentData(studentId: string) {
-  const enrollments = await db.query.studentSections.findMany({
-    where: and(
-      eq(studentSections.studentId, studentId),
-      eq(studentSections.status, 'ACTIVE'),
+  const tenantIds = await fetchStudentTenantIdsDefiner(studentId);
+
+  const perTenant = await Promise.all(
+    tenantIds.map((tenantId) =>
+      withTenant(tenantId, studentId, async (tx) => ({
+        enrollments: await tx.query.studentSections.findMany({
+          where: and(
+            eq(studentSections.studentId, studentId),
+            eq(studentSections.status, 'ACTIVE'),
+          ),
+          with: { section: true },
+        }),
+        attempts: await tx.query.attempts.findMany({
+          where: eq(attempts.studentId, studentId),
+          orderBy: (t, { desc }) => [desc(t.submittedAt)],
+          limit: MAX_ATTEMPTS,
+        }),
+        sessions: await tx.query.chatbotSessions.findMany({
+          where: eq(chatbotSessions.studentId, studentId),
+          orderBy: (t, { desc }) => [desc(t.startedAt)],
+          limit: MAX_SESSIONS,
+        }),
+      })),
     ),
-    with: { section: true },
-  });
+  );
 
-  const attemptRows = await db.query.attempts.findMany({
-    where: eq(attempts.studentId, studentId),
-    orderBy: (t, { desc }) => [desc(t.submittedAt)],
-    limit: 500,
-  });
-
-  const sessions = await db.query.chatbotSessions.findMany({
-    where: eq(chatbotSessions.studentId, studentId),
-    orderBy: (t, { desc }) => [desc(t.startedAt)],
-    limit: 200,
-  });
+  const enrollments = perTenant.flatMap((t) => t.enrollments);
+  // Same caps and ordering as before (Postgres DESC puts NULLs first, so
+  // in-progress attempts lead), applied across all tenants.
+  const time = (d: Date | null | undefined) => (d ? new Date(d).getTime() : Infinity);
+  const attemptRows = perTenant
+    .flatMap((t) => t.attempts)
+    .sort((a, b) => time(b.submittedAt) - time(a.submittedAt))
+    .slice(0, MAX_ATTEMPTS);
+  const sessions = perTenant
+    .flatMap((t) => t.sessions)
+    .sort((a, b) => time(b.startedAt) - time(a.startedAt))
+    .slice(0, MAX_SESSIONS);
 
   return {
     exportedAt: new Date().toISOString(),
