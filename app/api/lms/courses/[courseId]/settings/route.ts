@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/api/errors';
 import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingAccess } from '@/lib/authz/gates';
+import { requireTeachingApi } from '@/lib/api/sessionAuth';
 import { updateCourseLmsSettingsDefiner } from '@/lib/db/lmsDefiners';
 import { assertCanManageCourse } from '@/lib/knowledge';
 import { normalizeCourseNav } from '@/lib/lms/courseNav';
@@ -14,7 +14,7 @@ export async function PATCH(
   ctx: { params: Promise<{ courseId: string }> },
 ) {
   try {
-    const user = await requireTeachingAccess();
+    const user = await requireTeachingApi();
     const { courseId } = await ctx.params;
     await assertCanManageCourse(user, courseId);
     const body = (await readJsonBody(req)) as {

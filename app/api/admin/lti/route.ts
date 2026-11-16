@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { requireAdmin } from '@/lib/auth';
+import { apiErrorResponse } from '@/lib/api/errors';
+import { requirePlatformStaffApi } from '@/lib/api/sessionAuth';
 import { getLtiConfig } from '@/lib/lti/config';
 import { listSectionLinksWithMeta } from '@/lib/lti/links';
 import {
@@ -11,7 +12,11 @@ import {
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  await requireAdmin();
+  try {
+    await requirePlatformStaffApi();
+  } catch (err) {
+    return apiErrorResponse(err);
+  }
   const cfg = getLtiConfig();
 
   let platform: {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/api/errors';
-import { requireStudent } from '@/lib/auth';
+import { requireLearnerApi } from '@/lib/api/sessionAuth';
 import { markModuleItemComplete } from '@/lib/lms/modules';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export async function POST(
   ctx: { params: Promise<{ itemId: string }> },
 ) {
   try {
-    const user = await requireStudent();
+    const user = await requireLearnerApi();
     const { itemId } = await ctx.params;
     const row = await markModuleItemComplete({
       moduleItemId: itemId,

@@ -12,6 +12,21 @@ const legacyAllowlist = JSON.parse(
   readFileSync(join(__dirname, "eslint-legacy-authz-allowlist.json"), "utf8"),
 );
 
+// Wave 4 (24): lib/ai/gateway.ts is the sole OpenAI entry point.
+const openAiRestrictedPaths = [
+  {
+    name: "@/lib/ai/openai",
+    message:
+      "Use getAiClient()/runAi() from '@/lib/ai/gateway' — createOpenAIClient is gateway-only.",
+  },
+  {
+    name: "openai",
+    message:
+      "Construct OpenAI clients via '@/lib/ai/gateway' only (use `import type` for types).",
+    allowTypeImports: true,
+  },
+];
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
@@ -54,30 +69,46 @@ export default [
       "prefer-const": "warn",
       "react-hooks/exhaustive-deps": "warn",
       "sol/no-legacy-authz": ["error", { allowlist: legacyAllowlist }],
-      // Wave 4 (24): lib/ai/gateway.ts is the sole OpenAI entry point.
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "@/lib/ai/openai",
-              message:
-                "Use getAiClient()/runAi() from '@/lib/ai/gateway' — createOpenAIClient is gateway-only.",
-            },
-            {
-              name: "openai",
-              message:
-                "Construct OpenAI clients via '@/lib/ai/gateway' only (use `import type` for types).",
-              allowTypeImports: true,
-            },
-          ],
-        },
-      ],
+      "no-restricted-imports": ["error", { paths: openAiRestrictedPaths }],
     },
   },
   {
     // The gateway and its factory are the only legitimate importers.
     files: ["lib/ai/gateway.ts", "lib/ai/openai.ts"],
     rules: { "no-restricted-imports": "off" },
+  },
+  {
+    // Page gates redirect; inside an API route the redirect is caught and
+    // becomes a 500. API routes use '@/lib/api/sessionAuth' (or
+    // requireProfessorApi), which throw ApiError → 401/402/403.
+    files: ["app/api/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            ...openAiRestrictedPaths,
+            {
+              name: "@/lib/auth",
+              message:
+                "Page gates redirect. Use '@/lib/api/sessionAuth' in API routes.",
+              allowTypeImports: true,
+            },
+            {
+              name: "@/lib/authz/gates",
+              importNames: [
+                "requireTeachingAccess",
+                "requireLearningAccess",
+                "requireWorkspaceAdminAccess",
+                "requirePlatformStaff",
+                "requirePermission",
+              ],
+              message:
+                "Page gates redirect. Use '@/lib/api/sessionAuth' in API routes.",
+            },
+          ],
+        },
+      ],
+    },
   },
 ];

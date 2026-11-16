@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/api/errors';
 import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingAccess } from '@/lib/authz/gates';
+import { requireTeachingApi } from '@/lib/api/sessionAuth';
 import { updateLesson } from '@/lib/learning/lessons';
 import type { InteractiveChapterBody } from '@/lib/lms/interactiveChapter';
 
@@ -13,7 +13,7 @@ export async function PATCH(
   ctx: { params: Promise<{ lessonId: string }> },
 ) {
   try {
-    const user = await requireTeachingAccess();
+    const user = await requireTeachingApi();
     const { lessonId } = await ctx.params;
     const body = (await readJsonBody(req)) as {
       title?: string;

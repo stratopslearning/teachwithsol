@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessor } from '@/lib/auth';
+import { requireTeachingApi } from '@/lib/api/sessionAuth';
 import { assertCanManageBook } from '@/lib/books/access';
 import { getMaterialObjectBytes } from '@/lib/knowledge/storage';
 
@@ -11,7 +11,7 @@ export async function GET(
   ctx: { params: Promise<{ bookId: string }> },
 ) {
   try {
-    const user = await requireProfessor();
+    const user = await requireTeachingApi();
     const { bookId } = await ctx.params;
     const book = await assertCanManageBook(user, bookId);
     if (book.sourceKind !== 'PDF') {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { apiErrorResponse, ApiError } from '@/lib/api/errors';
-import { requireStudent } from '@/lib/auth';
+import { requireLearnerApi } from '@/lib/api/sessionAuth';
 import { submitChapterSectionCheck } from '@/lib/lms/chapterProgress';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireStudent();
+    const user = await requireLearnerApi();
     const { id: lessonId } = await ctx.params;
     const body = (await req.json().catch(() => ({}))) as {
       sectionId?: string;

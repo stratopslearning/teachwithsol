@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/api/errors';
-import { requireAuth } from '@/lib/auth';
+import { requireApiUser } from '@/lib/api/sessionAuth';
 import {
   archiveInteractive,
   setInteractiveVisibility,
@@ -13,7 +13,7 @@ export async function PATCH(
   ctx: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireAuth();
+    const user = await requireApiUser();
     const { id } = await ctx.params;
     const body = await req.json();
     if (typeof body.isActive === 'boolean' && Object.keys(body).length === 1) {
@@ -37,7 +37,7 @@ export async function DELETE(
   ctx: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireAuth();
+    const user = await requireApiUser();
     const { id } = await ctx.params;
     await archiveInteractive(user, id);
     return NextResponse.json({ ok: true });

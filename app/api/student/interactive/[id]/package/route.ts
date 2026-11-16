@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
-import { requireAuth } from '@/lib/auth';
+import { requireApiUser } from '@/lib/api/sessionAuth';
 import { assertStudentCanAccessInteractive } from '@/lib/interactives/access';
 import { getInteractivePackageBuffer } from '@/lib/interactives/storage';
 
@@ -11,7 +11,7 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireAuth();
+    const user = await requireApiUser();
     const { id } = await ctx.params;
     const interactive = await assertStudentCanAccessInteractive(user, id);
     if (interactive.kind !== 'H5P_PACKAGE' || !interactive.packageStorageKey) {

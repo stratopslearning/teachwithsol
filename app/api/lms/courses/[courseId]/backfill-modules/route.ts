@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import { listOutlinesForCourse } from '@/lib/authoring/outlines';
-import { requireTeachingAccess } from '@/lib/authz/gates';
+import { requireTeachingApi } from '@/lib/api/sessionAuth';
 import { assertCanManageCourse } from '@/lib/knowledge';
 import { backfillModulesFromOutline } from '@/lib/lms/modules';
 
@@ -14,7 +14,7 @@ export async function POST(
   ctx: { params: Promise<{ courseId: string }> },
 ) {
   try {
-    const user = await requireTeachingAccess();
+    const user = await requireTeachingApi();
     const { courseId } = await ctx.params;
     await assertCanManageCourse(user, courseId);
     const body = (await readJsonBody(req)) as { outlineId?: string };

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/api/errors';
-import { requireAuth } from '@/lib/auth';
+import { requireApiUser } from '@/lib/api/sessionAuth';
 import { assertStudentCanAccessInteractive } from '@/lib/interactives/access';
 import { upsertInteractiveProgress } from '@/lib/interactives/mutations';
 
@@ -10,7 +10,7 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireAuth();
+    const user = await requireApiUser();
     const { id } = await ctx.params;
     await assertStudentCanAccessInteractive(user, id);
     const body = await req.json();
