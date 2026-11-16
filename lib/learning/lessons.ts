@@ -14,11 +14,7 @@ import {
   fetchLessonByIdDefiner,
   fetchLessonSectionIdsDefiner,
 } from '@/lib/db/studentReadDefiners';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & {
-  platformStaff?: boolean | null;
-};
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export type CreateLessonInput = {
   courseId: string;

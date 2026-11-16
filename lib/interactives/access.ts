@@ -6,9 +6,7 @@ import { listTeachableSectionIdsForCourse } from '@/lib/authoring/access';
 import { fetchActiveSectionIdsForStudentDefiner } from '@/lib/db/bookWriteDefiners';
 import { fetchInteractiveSectionIdsDefiner } from '@/lib/db/facultyWriteDefiners';
 import { fetchInteractiveByIdDefiner } from '@/lib/db/studentReadDefiners';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id'> & { platformStaff?: boolean | null };
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 
 async function userCanWriteInteractive(
   user: AuthUser,

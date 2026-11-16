@@ -11,9 +11,7 @@ import {
 } from '@/app/db/schema';
 import { withCourseTenant } from '@/lib/authoring/tenant';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export type RolloverFinding = {
   code:

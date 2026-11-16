@@ -28,6 +28,7 @@ import {
 
 import type { TestDb } from './db';
 import { withPinnedTenantDb } from './rlsSetup';
+import { licensePlanForWorkspaceType } from '@/app/db/enums';
 
 export const randomSlug = () =>
   Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -53,8 +54,7 @@ export async function makeWorkspace(
   const parentWorkspaceId = overrides.parentWorkspaceId ?? null;
   const settings = (overrides.settings ?? {}) as Record<string, unknown>;
   const stripeBilled = type === 'creator' || type === 'business';
-  const plan =
-    type === 'business' ? 'business_team' : type === 'creator' ? 'creator' : type;
+  const plan = licensePlanForWorkspaceType(type);
   // Tests expect teaching-ready seats; keep active even for stripe SKUs.
   const licenseStatus = 'active';
   const billingProvider = stripeBilled ? 'stripe' : 'manual';

@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { SECTION_STAFF_INVITE_ROLES } from '@/app/db/enums';
+
 describe('wf.enroll.coInstructor.contract', () => {
   it('professor enroll route does not bind co_instructor inline', () => {
     const src = fs.readFileSync(
@@ -26,6 +28,8 @@ describe('wf.enroll.coInstructor.contract', () => {
   });
 
   it('staff API accepts co_instructor role', () => {
+    // The route validates `role` with z.enum(SECTION_STAFF_INVITE_ROLES).
+    expect([...SECTION_STAFF_INVITE_ROLES]).toEqual(['co_instructor', 'ta', 'grader']);
     const src = fs.readFileSync(
       path.join(
         process.cwd(),
@@ -33,7 +37,7 @@ describe('wf.enroll.coInstructor.contract', () => {
       ),
       'utf8',
     );
-    expect(src).toMatch(/co_instructor/);
+    expect(src).toMatch(/z\.enum\(SECTION_STAFF_INVITE_ROLES\)/);
     expect(src).toMatch(/fetchSectionById/);
   });
 });

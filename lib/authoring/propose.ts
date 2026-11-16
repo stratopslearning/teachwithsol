@@ -13,6 +13,7 @@ import {
   buildAuthoringMaterialsContext,
   getCourseAuthoringMaterialStats,
 } from '@/lib/authoring/context';
+import { OUTLINE_ITEM_TYPES } from '@/app/db/enums';
 import {
   assembleFaithfulItemBodies,
   type FaithfulItemPatch,
@@ -42,12 +43,10 @@ import {
 } from '@/lib/authoring/tenant';
 import { applyOutlineBuildDefiner } from '@/lib/db/entityScopedReads';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 const skeletonItemSchema = z.object({
-  type: z.enum(['LESSON', 'QUIZ', 'DISCUSSION', 'INTERACTIVE']),
+  type: z.enum(OUTLINE_ITEM_TYPES),
   title: z.string().min(1).max(200),
   interactiveKind: z
     .enum(['FILL_BLANKS', 'DRAG_WORDS', 'IMAGE_HOTSPOTS', 'ACCORDION'])

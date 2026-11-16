@@ -29,12 +29,8 @@ import {
 } from '@/lib/authoring/revisions';
 import { applyOutlineBuildDefiner } from '@/lib/db/entityScopedReads';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { isInteractiveChapterReady } from '@/lib/lms/interactiveChapter';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & {
-  platformStaff?: boolean | null;
-};
 
 export function moduleNeedsInteractiveLesson(mod: {
   items: Array<{ type: string; body?: { chapter?: unknown } | null }>;

@@ -1,9 +1,7 @@
 import { ApiError } from '@/lib/api/errors';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import { getCourseWorkspaceId } from '@/lib/workspace';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 /**
  * When a library document advances currentVersionId, mark attached courses

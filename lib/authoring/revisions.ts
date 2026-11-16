@@ -19,9 +19,7 @@ import {
   fetchOutlineById,
   insertAuthoringRevisionDefiner,
 } from '@/lib/db/entityScopedReads';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export type AuthoringRevisionSummary = {
   id: string;

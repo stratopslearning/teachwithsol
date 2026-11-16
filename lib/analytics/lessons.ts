@@ -8,9 +8,7 @@ import {
 } from '@/app/db/schema';
 import { resolveAnalyticsSectionIds } from '@/lib/analytics/access';
 import { suppressLessonRows } from '@/lib/analytics/kAnonymity';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export type LessonCompletionRow = {
   lessonId: string;

@@ -28,10 +28,8 @@ import {
   withOutlineTenant,
 } from '@/lib/authoring/tenant';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import type { OutlineSnapshot } from '@/lib/authoring/revisions';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export type AuthoringSessionSummary = {
   id: string;

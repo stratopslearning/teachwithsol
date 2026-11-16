@@ -2,9 +2,7 @@ import { listBindingsForUser } from '@/lib/authz/authorize';
 import {
   fetchUserTeachingSectionIds,
 } from '@/lib/db/entityScopedReads';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id'> & { platformStaff?: boolean | null };
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 
 /** Section ids where the user may grade via scoped bindings (DEFINER). */
 export async function listGradeableSectionIdsFromGrants(

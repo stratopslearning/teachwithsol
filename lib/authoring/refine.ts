@@ -1,8 +1,6 @@
 import { runAuthoringAgent } from '@/lib/authoring/agent/run';
 import type { OutlineDetail } from '@/lib/authoring/outlines';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export type RefineChatResult = {
   assistantMessage: string;

@@ -6,18 +6,14 @@ import {
 } from '@/lib/authz/bindings';
 import type { BindingRole } from '@/lib/authz/permissions';
 import { ensureWorkspaceMembership } from '@/lib/workspace/access';
+import { SECTION_TEACHING_ROLES } from '@/app/db/enums';
 
 export type StaffGrantRole = Extract<
   BindingRole,
   'lead_instructor' | 'co_instructor' | 'ta' | 'grader'
 >;
 
-const STAFF_ROLES: StaffGrantRole[] = [
-  'lead_instructor',
-  'co_instructor',
-  'ta',
-  'grader',
-];
+const STAFF_ROLES: readonly StaffGrantRole[] = SECTION_TEACHING_ROLES;
 
 export function isStaffGrantRole(role: string): role is StaffGrantRole {
   return STAFF_ROLES.includes(role as StaffGrantRole);

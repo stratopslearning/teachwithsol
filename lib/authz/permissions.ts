@@ -1,3 +1,5 @@
+import { BINDING_ROLES, type BindingRole } from '@/app/db/enums';
+
 /**
  * Permission catalog and role bundles for scoped role bindings.
  * Membership seats carry no power — only bindings (and student_sections) do.
@@ -40,14 +42,7 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number];
 
-export type BindingRole =
-  | 'owner'
-  | 'admin'
-  | 'faculty'
-  | 'lead_instructor'
-  | 'co_instructor'
-  | 'ta'
-  | 'grader';
+export type { BindingRole };
 
 /** Implicit via student_sections — not stored on role_bindings. */
 export type StudentRole = 'student';
@@ -178,15 +173,7 @@ export function roleIsSupersetOf(a: AuthzRole, b: AuthzRole): boolean {
 }
 
 /** Teaching-area roles (dashboard chips). */
-export const TEACHING_ROLES: BindingRole[] = [
-  'owner',
-  'admin',
-  'faculty',
-  'lead_instructor',
-  'co_instructor',
-  'ta',
-  'grader',
-];
+export const TEACHING_ROLES: BindingRole[] = [...BINDING_ROLES];
 
 /** Workspace admin-area roles. */
 export const WORKSPACE_ADMIN_ROLES: BindingRole[] = ['owner', 'admin'];

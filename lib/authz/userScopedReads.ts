@@ -8,6 +8,7 @@ import { sql } from 'drizzle-orm';
 import { db } from '@/app/db';
 import type { AuthzScopeType } from '@/lib/authz/authorize';
 import type { BindingRole } from '@/lib/authz/permissions';
+import { type LicensePlan } from '@/app/db/enums';
 
 type BindingRow = {
   tenant_id: string;
@@ -158,11 +159,7 @@ export async function fetchUserActiveMembershipsDetail(userId: string) {
             {
               id: r.license_id,
               workspaceId: r.workspace_id,
-              plan: r.license_plan as
-                | 'creator'
-                | 'business_team'
-                | 'department'
-                | 'institution',
+              plan: r.license_plan as LicensePlan,
               seatCap: r.license_seat_cap ?? 0,
               status: (r.license_status ?? 'active') as
                 | 'trialing'

@@ -5,9 +5,7 @@ import {
   fetchLessonSectionIdsDefiner,
 } from '@/lib/db/studentReadDefiners';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id'> & { platformStaff?: boolean | null };
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 
 export async function assertCanManageLesson(user: AuthUser, lessonId: string) {
   const lesson = await fetchLessonByIdDefiner(lessonId);

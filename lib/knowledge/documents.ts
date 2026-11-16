@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { knowledgeDocuments } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import {
   ALLOWED_UPLOAD_MIME,
@@ -42,8 +42,6 @@ export {
   acceptLinkedDocumentUpdate,
   dismissLinkedDocumentUpdate,
 } from '@/lib/knowledge/linkVersions';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export type KnowledgeDocumentSummary = {
   id: string;

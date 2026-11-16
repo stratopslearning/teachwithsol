@@ -4,10 +4,8 @@ import { courseOfferings, courses } from '@/app/db/schema';
 import { withCourseTenant } from '@/lib/authoring/tenant';
 import { withTenant } from '@/lib/db/tenantContext';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { getCourseWorkspaceId } from '@/lib/workspace';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export type OfferingCopySource = {
   offeringId: string;

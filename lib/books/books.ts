@@ -36,7 +36,7 @@ import {
   fetchHostedBooksForCourseDefiner,
   updateHostedBookDefiner,
 } from '@/lib/db/bookWriteDefiners';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import {
   buildMaterialS3Key,
@@ -47,8 +47,6 @@ import {
 } from '@/lib/knowledge/storage';
 import { assertSafeMaterialUrl } from '@/lib/knowledge/urlSafety';
 import { getCourseWorkspaceId } from '@/lib/workspace';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 function toSummary(
   row: typeof hostedBooks.$inferSelect,

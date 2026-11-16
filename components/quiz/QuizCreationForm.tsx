@@ -5,6 +5,7 @@ import {
   downloadCsvTemplate,
   QUIZ_QUESTIONS_CSV_TEMPLATE,
 } from '@/lib/csv/downloadTemplate';
+import { QUESTION_TYPES } from '@/app/db/enums';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -81,7 +82,7 @@ const quizBasicSchema = z.object({
 
 const questionSchema = z.object({
   question: z.string().min(1, 'Question text is required'),
-  type: z.enum(['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER']),
+  type: z.enum(QUESTION_TYPES),
   points: z.number().min(1, 'Points must be at least 1'),
   options: z.array(z.string()).optional(),
   correctAnswer: z.string().optional(),
@@ -254,7 +255,7 @@ export function QuizCreationForm({
             return;
           }
 
-          if (!['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER'].includes(type)) {
+          if (!(QUESTION_TYPES as readonly string[]).includes(type)) {
             setCsvError(`Row ${i + 1}: Invalid type. Must be MULTIPLE_CHOICE, TRUE_FALSE, or SHORT_ANSWER`);
             return;
           }

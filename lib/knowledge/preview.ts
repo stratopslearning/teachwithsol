@@ -5,15 +5,13 @@ import { courseMaterials, knowledgeChunks } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
 import { fetchKnowledgeDocumentById } from '@/lib/db/entityScopedReads';
 import { withTenant } from '@/lib/db/tenantContext';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import {
   assertWorkspaceFacultyRead,
   isWorkspaceKnowledgeCoordinator,
 } from '@/lib/knowledge/workspaceAccess';
 import { getMaterialObjectBytes } from '@/lib/knowledge/storage';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export type KnowledgePreviewMeta = {
   id: string;

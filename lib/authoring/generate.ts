@@ -8,6 +8,7 @@ import {
   AUTHORING_MODEL,
   AUTHORING_PROMPT_VERSION,
 } from '@/lib/authoring/constants';
+import { OUTLINE_ITEM_TYPES, QUESTION_TYPES } from '@/app/db/enums';
 import {
   assertCourseHasReadyMaterials,
   buildAuthoringMaterialsContext,
@@ -22,9 +23,7 @@ import {
   defaultAuthoringQuery,
 } from '@/lib/authoring/prompts';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 const rubricCriterionSchema = z.object({
   id: z.string().min(1).max(40),
@@ -39,7 +38,7 @@ const sourceCitationSchema = z.object({
 });
 
 const questionSchema = z.object({
-  type: z.enum(['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER']),
+  type: z.enum(QUESTION_TYPES),
   question: z.string().min(1),
   options: z.array(z.string()).optional(),
   correctAnswer: z.string().optional(),
@@ -198,7 +197,7 @@ const interactiveChapterSchema = z.object({
 
 const generatedItemSchema = z
   .object({
-    type: z.enum(['LESSON', 'QUIZ', 'DISCUSSION', 'INTERACTIVE']),
+    type: z.enum(OUTLINE_ITEM_TYPES),
     title: z.string().min(1).max(200),
     markdown: z.string().optional(),
     description: z.string().optional(),
@@ -246,7 +245,7 @@ const generatedOutlineSchema = z.object({
 
 export type GeneratedOutlinePayload = z.infer<typeof generatedOutlineSchema>;
 
-const ITEM_TYPES = new Set(['LESSON', 'QUIZ', 'DISCUSSION', 'INTERACTIVE']);
+const ITEM_TYPES = new Set<string>(OUTLINE_ITEM_TYPES);
 const INTERACTIVE_KINDS = new Set([
   'FILL_BLANKS',
   'DRAG_WORDS',

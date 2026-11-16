@@ -13,6 +13,7 @@ import {
   tiersForSku,
 } from '@/lib/workspace/pricing';
 import { getRequiredBaseUrl } from '@/lib/stripe';
+import { LICENSE_PLANS, licensePlanForWorkspaceType, WORKSPACE_TYPES } from '@/app/db/enums';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,14 +24,12 @@ const createSchema = z.object({
     .max(64)
     .regex(/^[a-z0-9-]+$/, 'slug must be lowercase alphanumeric with hyphens'),
   name: z.string().min(1).max(120),
-  type: z.enum(['creator', 'business', 'department', 'institution']),
+  type: z.enum(WORKSPACE_TYPES),
   parentWorkspaceId: z.string().uuid().optional().nullable(),
   seatCap: z.number().int().min(1).max(10_000_000).optional(),
   pricingTierId: z.string().min(1).max(64).optional(),
   ownerEmail: z.string().email(),
-  plan: z
-    .enum(['creator', 'business_team', 'department', 'institution'])
-    .optional(),
+  plan: z.enum(LICENSE_PLANS).optional(),
 });
 
 async function requireAdminUser() {
@@ -107,13 +106,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const plan =
-      data.plan ??
-      (data.type === 'business'
-        ? 'business_team'
-        : data.type === 'creator'
-          ? 'creator'
-          : data.type);
+    const plan = data.plan ?? licensePlanForWorkspaceType(data.type);
 
     const { workspace, license } = await provisionWorkspace({
       slug: data.slug,

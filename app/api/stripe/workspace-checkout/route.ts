@@ -13,6 +13,7 @@ import {
   stripe,
 } from '@/lib/stripe';
 import { userCanManageWorkspaceBilling } from '@/lib/workspace/entitlement';
+import { licensePlanForWorkspaceType } from '@/app/db/enums';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
       .set({
         status: 'trialing',
         billingProvider: 'stripe',
-        plan: workspace.type === 'business' ? 'business_team' : 'creator',
+        plan: licensePlanForWorkspaceType(workspace.type),
         updatedAt: new Date(),
       })
       .where(eq(workspaceLicenses.workspaceId, workspace.id));

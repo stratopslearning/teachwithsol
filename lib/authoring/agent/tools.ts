@@ -11,9 +11,7 @@ import {
 } from '@/lib/authoring/bodyMerge';
 import type { OutlineDetail, OutlineItemSummary } from '@/lib/authoring/outlines';
 import { publishOutlineItems, releaseOutlineItem } from '@/lib/authoring/publish';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export const TOOL_NAMES = [
   'list_outline',

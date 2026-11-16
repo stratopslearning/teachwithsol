@@ -60,10 +60,8 @@ import {
 } from '@/lib/authoring/outlines';
 import { buildAuthoringAgentPlannerPrompt } from '@/lib/authoring/prompts';
 import { authoringScheduleContext } from '@/lib/authoring/schedule';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { hashId, logAiSpan } from '@/lib/ai/tracing';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export type AuthoringAgentResult = {
   assistantMessage: string;

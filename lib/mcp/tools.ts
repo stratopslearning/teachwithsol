@@ -15,6 +15,7 @@ import {
   getProfessorSectionDetail,
   listProfessorSections,
 } from '@/lib/professor/sections';
+import { QUESTION_TYPES } from '@/app/db/enums';
 import {
   getProfessorQuiz,
   listProfessorQuizzes,
@@ -119,7 +120,7 @@ const confirmField = z
 
 const questionSchema = z.object({
   id: z.string().uuid().optional().describe('Existing question id (updates only)'),
-  type: z.enum(['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER']),
+  type: z.enum(QUESTION_TYPES),
   question: z.string().min(1).describe('The question text / stem'),
   options: z
     .array(z.string())

@@ -15,14 +15,12 @@ import {
   isFrontMatterChapterTitle,
 } from '@/lib/books/frontMatter';
 import { fetchCourseById } from '@/lib/db/entityScopedReads';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export {
   isFrontMatterChapterTitle,
   isBookTitleChapter,
 } from '@/lib/books/frontMatter';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 function buildBookAuthoringContext(
   bookTitle: string,
