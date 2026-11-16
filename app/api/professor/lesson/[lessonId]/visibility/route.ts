@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/api/errors';
 import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingAccess } from '@/lib/authz/gates';
+import { requireTeachingApi } from '@/lib/api/sessionAuth';
 import { setLessonVisibility } from '@/lib/learning/lessons';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export async function POST(
   ctx: { params: Promise<{ lessonId: string }> },
 ) {
   try {
-    const user = await requireTeachingAccess();
+    const user = await requireTeachingApi();
     const { lessonId } = await ctx.params;
     const body = (await readJsonBody(req)) as { isActive?: boolean };
     if (typeof body.isActive !== 'boolean') {

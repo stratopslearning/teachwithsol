@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/api/errors';
 import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingAccess } from '@/lib/authz/gates';
+import { requireTeachingApi } from '@/lib/api/sessionAuth';
 import { assertCanManageCourse } from '@/lib/knowledge';
 import { deleteModuleItem, updateModuleItem } from '@/lib/lms/modules';
 
@@ -15,7 +15,7 @@ export async function PATCH(
   },
 ) {
   try {
-    const user = await requireTeachingAccess();
+    const user = await requireTeachingApi();
     const { courseId, moduleId, itemId } = await ctx.params;
     await assertCanManageCourse(user, courseId);
     const body = (await readJsonBody(req)) as {
@@ -41,7 +41,7 @@ export async function DELETE(
   },
 ) {
   try {
-    const user = await requireTeachingAccess();
+    const user = await requireTeachingApi();
     const { courseId, moduleId, itemId } = await ctx.params;
     await assertCanManageCourse(user, courseId);
     const id = await deleteModuleItem(moduleId, itemId);

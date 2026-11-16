@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
-import { requireAuth } from '@/lib/auth';
+import { requireApiUser } from '@/lib/api/sessionAuth';
 import { assertStudentCanAccessBook } from '@/lib/books/access';
 import { getMaterialObjectBytes } from '@/lib/knowledge/storage';
 
@@ -11,7 +11,7 @@ export async function GET(
   ctx: { params: Promise<{ bookId: string }> },
 ) {
   try {
-    const user = await requireAuth();
+    const user = await requireApiUser();
     const { bookId } = await ctx.params;
     const book = await assertStudentCanAccessBook(user.id, bookId);
     if (book.sourceKind !== 'PDF') {

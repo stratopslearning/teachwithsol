@@ -7,6 +7,7 @@
  *   - Internal error details NEVER leak to the client in production. We
  *     attach them to the server log (Sentry) instead.
  */
+import { unstable_rethrow } from 'next/navigation';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
@@ -93,6 +94,9 @@ export function jsonError(err: ApiError): NextResponse<ApiErrorBody> {
  *   try { ... } catch (err) { return apiErrorResponse(err); }
  */
 export function apiErrorResponse(err: unknown): NextResponse<ApiErrorBody> {
+  // Next's redirect()/notFound() signal by throwing; let the framework handle
+  // them instead of logging a 500.
+  unstable_rethrow(err);
   if (err instanceof ApiError) {
     return jsonError(err);
   }
