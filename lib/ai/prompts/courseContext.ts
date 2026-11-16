@@ -3,7 +3,7 @@
  */
 import { eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withCourseTenant } from '@/lib/db/sectionTenants';
 import { courses } from '@/app/db/schema';
 import { getAuthoringPolicyForCourse } from '@/lib/authoring/policies';
 import { formatAuthoringPolicyPrompt } from '@/lib/ai/prompts/authoring';
@@ -33,17 +33,21 @@ const DEFAULTS = {
 export async function loadCoursePromptContext(
   courseId: string,
 ): Promise<CoursePromptContext> {
-  const course = await db.query.courses.findFirst({
-    where: eq(courses.id, courseId),
-    columns: {
-      id: true,
-      title: true,
-      subject: true,
-      level: true,
-      feedbackTone: true,
-      aiPolicy: true,
-    },
-  });
+  // FORCE RLS: a plain db read found no course, so prompts silently ignored
+  // the course's subject, level, tone and tutor policy. Read under its tenant.
+  const course = await withCourseTenant(courseId, null, (tx) =>
+    tx.query.courses.findFirst({
+      where: eq(courses.id, courseId),
+      columns: {
+        id: true,
+        title: true,
+        subject: true,
+        level: true,
+        feedbackTone: true,
+        aiPolicy: true,
+      },
+    }),
+  );
 
   const policy = await getAuthoringPolicyForCourse(courseId).catch(() => null);
   const tutorPolicy = parseAiPolicy(course?.aiPolicy) ?? { mode: DEFAULTS.tutorMode };

@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withCourseTenant } from '@/lib/db/sectionTenants';
 import {
   lessonProgress,
   lessonSections,
@@ -34,21 +34,26 @@ export async function getLessonCompletion(
   );
   if (sectionIds.length === 0) return [];
 
-  const enrollments = await db.query.studentSections.findMany({
-    where: and(
-      inArray(studentSections.sectionId, sectionIds),
-      eq(studentSections.status, 'ACTIVE'),
-    ),
-    columns: { studentId: true, sectionId: true },
-  });
+  // FORCE RLS: plain db reads return nothing (lesson completion was always
+  // empty). Everything here belongs to the course's tenant.
+  const read = await withCourseTenant(courseId, user.id, async (tx) => ({
+    enrollments: await tx.query.studentSections.findMany({
+      where: and(
+        inArray(studentSections.sectionId, sectionIds),
+        eq(studentSections.status, 'ACTIVE'),
+      ),
+      columns: { studentId: true, sectionId: true },
+    }),
+    assignments: await tx.query.lessonSections.findMany({
+      where: inArray(lessonSections.sectionId, sectionIds),
+      with: {
+        lesson: true,
+      },
+    }),
+  }));
+  if (!read) return [];
+  const { enrollments, assignments } = read;
   const rosterIds = [...new Set(enrollments.map((e) => e.studentId))];
-
-  const assignments = await db.query.lessonSections.findMany({
-    where: inArray(lessonSections.sectionId, sectionIds),
-    with: {
-      lesson: true,
-    },
-  });
 
   const byLesson = new Map<
     string,
@@ -71,12 +76,14 @@ export async function getLessonCompletion(
   const lessonIds = [...byLesson.keys()];
   const progressRows =
     rosterIds.length > 0
-      ? await db.query.lessonProgress.findMany({
-          where: and(
-            inArray(lessonProgress.lessonId, lessonIds),
-            inArray(lessonProgress.studentId, rosterIds),
-          ),
-        })
+      ? ((await withCourseTenant(courseId, user.id, (tx) =>
+          tx.query.lessonProgress.findMany({
+            where: and(
+              inArray(lessonProgress.lessonId, lessonIds),
+              inArray(lessonProgress.studentId, rosterIds),
+            ),
+          }),
+        )) ?? [])
       : [];
 
   const progressByLesson = new Map<string, Map<string, string>>();

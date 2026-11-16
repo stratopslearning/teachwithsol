@@ -12,4 +12,3 @@ export {
   toOpenAiMessages,
   truncateHistory,
 } from '@/lib/chatbot/safeQuizContext';
-export { ensureCh1TemplateChatbot } from '@/lib/chatbot/seed';

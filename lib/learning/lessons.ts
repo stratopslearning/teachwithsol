@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import { lessons } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
 import {
@@ -15,6 +15,11 @@ import {
   fetchLessonSectionIdsDefiner,
 } from '@/lib/db/studentReadDefiners';
 import type { AuthUser } from '@/lib/getOrCreateUser';
+
+function lessonTenantId(lesson: { tenantId?: string | null }): string {
+  if (!lesson.tenantId) throw ApiError.badRequest('Lesson is missing tenant');
+  return lesson.tenantId;
+}
 
 export type CreateLessonInput = {
   courseId: string;
@@ -124,16 +129,20 @@ export async function updateLesson(
     throw ApiError.badRequest('Lesson content is required');
   }
 
-  const [updated] = await db
-    .update(lessons)
-    .set({
-      title,
-      markdown: markdown ?? '',
-      chapter,
-      updatedAt: new Date(),
-    })
-    .where(eq(lessons.id, lessonId))
-    .returning();
+  // FORCE RLS: a plain update matched no rows (edits were silently lost and
+  // `updated` was undefined). Write under the lesson's tenant.
+  const [updated] = await withTenant(lessonTenantId(existing), user.id, (tx) =>
+    tx
+      .update(lessons)
+      .set({
+        title,
+        markdown: markdown ?? '',
+        chapter,
+        updatedAt: new Date(),
+      })
+      .where(eq(lessons.id, lessonId))
+      .returning(),
+  );
 
   await upsertActivityForLesson(updated.id, {
     courseId: updated.courseId,
@@ -183,11 +192,13 @@ export async function setLessonVisibility(
     throw ApiError.forbidden('Only teaching staff can change lesson visibility');
   }
 
-  const [updated] = await db
-    .update(lessons)
-    .set({ isActive, updatedAt: new Date() })
-    .where(eq(lessons.id, lessonId))
-    .returning();
+  const [updated] = await withTenant(lessonTenantId(existing), user.id, (tx) =>
+    tx
+      .update(lessons)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(lessons.id, lessonId))
+      .returning(),
+  );
 
   await setActivityActiveByEntity({ lessonId }, isActive);
 

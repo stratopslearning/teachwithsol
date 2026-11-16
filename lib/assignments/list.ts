@@ -1,6 +1,8 @@
 import { and, eq, inArray, isNotNull, isNull, or } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import type { withTenant } from '@/lib/db/tenantContext';
+import { readInUserTenants } from '@/lib/db/userTenants';
+
 import {
   attempts,
   chatbotAssignments,
@@ -18,6 +20,8 @@ import type {
   ActivityListItem,
   ActivityType,
 } from '@/lib/assignments/types';
+
+type TenantTx = Parameters<Parameters<typeof withTenant>[2]>[0];
 
 function hrefFor(row: {
   type: string;
@@ -78,6 +82,7 @@ function professorHrefFor(row: {
 }
 
 async function sectionMapForActivities(
+  tx: TenantTx,
   activities: Array<{
     type: string;
     quizId: string | null;
@@ -101,25 +106,25 @@ async function sectionMapForActivities(
 
   const [qs, ls, cs, is] = await Promise.all([
     quizIds.length
-      ? db.query.quizSections.findMany({
+      ? tx.query.quizSections.findMany({
           where: inArray(quizSections.quizId, quizIds),
           with: { section: true },
         })
       : Promise.resolve([]),
     lessonIds.length
-      ? db.query.lessonSections.findMany({
+      ? tx.query.lessonSections.findMany({
           where: inArray(lessonSections.lessonId, lessonIds),
           with: { section: true },
         })
       : Promise.resolve([]),
     chatbotIds.length
-      ? db.query.chatbotSections.findMany({
+      ? tx.query.chatbotSections.findMany({
           where: inArray(chatbotSections.chatbotId, chatbotIds),
           with: { section: true },
         })
       : Promise.resolve([]),
     interactiveIds.length
-      ? db.query.interactiveSections.findMany({
+      ? tx.query.interactiveSections.findMany({
           where: inArray(interactiveSections.interactiveId, interactiveIds),
           with: { section: true },
         })
@@ -220,20 +225,29 @@ export async function listProfessorActivities(opts: {
   const { professorId, sectionIds, type = 'ALL' } = opts;
   if (sectionIds.length === 0) return [];
 
-  const rows = await db.query.courseActivities.findMany({
-    where: and(
-      eq(courseActivities.professorId, professorId),
-      isNull(courseActivities.deletedAt),
-      type !== 'ALL' ? eq(courseActivities.type, type) : undefined,
-    ),
-    with: {
-      course: true,
-      interactive: true,
-    },
-    orderBy: (t, { desc }) => desc(t.updatedAt),
+  // FORCE RLS: plain db reads return nothing (the professor's activity
+  // list was always empty). Read each of their workspaces; section links are
+  // read in the same tenant as the activity.
+  const sectionsByEntity = new Map<string, { ids: string[]; names: string[] }>();
+  const found = await readInUserTenants(professorId, async (tx) => {
+    const tenantRows = await tx.query.courseActivities.findMany({
+      where: and(
+        eq(courseActivities.professorId, professorId),
+        isNull(courseActivities.deletedAt),
+        type !== 'ALL' ? eq(courseActivities.type, type) : undefined,
+      ),
+      with: {
+        course: true,
+        interactive: true,
+      },
+    });
+    const tenantMap = await sectionMapForActivities(tx, tenantRows);
+    for (const [key, value] of tenantMap) sectionsByEntity.set(key, value);
+    return tenantRows;
   });
-
-  const sectionsByEntity = await sectionMapForActivities(rows);
+  const rows = found.sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
   const filtered = rows.filter((row) => {
     const secs = sectionsByEntity.get(entityKey(row));
     if (!secs) return false;

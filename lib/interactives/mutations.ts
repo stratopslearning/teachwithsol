@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 
 import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import {
   interactiveSections,
   interactives,
@@ -19,6 +20,13 @@ import {
   assertCanManageInteractive,
   listTeachableSectionsForCourse,
 } from '@/lib/interactives/access';
+
+// FORCE RLS: plain db updates matched no rows, so edits, visibility and
+// deletes were silently lost. Writes run under the interactive's tenant.
+function interactiveTenantId(row: { tenantId?: string | null }): string {
+  if (!row.tenantId) throw ApiError.badRequest('Interactive is missing tenant');
+  return row.tenantId;
+}
 
 export async function createInteractive(
   user: AuthUser,
@@ -96,20 +104,22 @@ export async function updateInteractive(
   },
 ) {
   const existing = await assertCanManageInteractive(user, interactiveId);
-  const [row] = await db
-    .update(interactives)
-    .set({
-      title: input.title?.trim() ?? existing.title,
-      description:
-        input.description !== undefined
-          ? input.description
-          : existing.description,
-      body: input.body ?? existing.body,
-      kind: input.kind ?? existing.kind,
-      updatedAt: new Date(),
-    })
-    .where(eq(interactives.id, interactiveId))
-    .returning();
+  const [row] = await withTenant(interactiveTenantId(existing), user.id, (tx) =>
+    tx
+      .update(interactives)
+      .set({
+        title: input.title?.trim() ?? existing.title,
+        description:
+          input.description !== undefined
+            ? input.description
+            : existing.description,
+        body: input.body ?? existing.body,
+        kind: input.kind ?? existing.kind,
+        updatedAt: new Date(),
+      })
+      .where(eq(interactives.id, interactiveId))
+      .returning(),
+  );
 
   await upsertActivityForInteractive(row.id, {
     courseId: row.courseId,
@@ -136,15 +146,17 @@ export async function setInteractivePackageStorageKey(
   if (!packageStorageKey.startsWith(expectedPrefix)) {
     throw ApiError.badRequest('Invalid package storage key for this course');
   }
-  const [row] = await db
-    .update(interactives)
-    .set({
-      packageStorageKey,
-      body: body ?? existing.body,
-      updatedAt: new Date(),
-    })
-    .where(eq(interactives.id, interactiveId))
-    .returning();
+  const [row] = await withTenant(interactiveTenantId(existing), user.id, (tx) =>
+    tx
+      .update(interactives)
+      .set({
+        packageStorageKey,
+        body: body ?? existing.body,
+        updatedAt: new Date(),
+      })
+      .where(eq(interactives.id, interactiveId))
+      .returning(),
+  );
   return row;
 }
 
@@ -153,12 +165,14 @@ export async function setInteractiveVisibility(
   interactiveId: string,
   isActive: boolean,
 ) {
-  await assertCanManageInteractive(user, interactiveId);
-  const [row] = await db
-    .update(interactives)
-    .set({ isActive, updatedAt: new Date() })
-    .where(eq(interactives.id, interactiveId))
-    .returning();
+  const existing = await assertCanManageInteractive(user, interactiveId);
+  const [row] = await withTenant(interactiveTenantId(existing), user.id, (tx) =>
+    tx
+      .update(interactives)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(interactives.id, interactiveId))
+      .returning(),
+  );
   await setActivityActiveByEntity({ interactiveId }, isActive);
   if (isActive) {
     const { onActivityReleased } = await import('@/lib/lti/lineItems');
@@ -171,11 +185,13 @@ export async function archiveInteractive(
   user: AuthUser,
   interactiveId: string,
 ) {
-  await assertCanManageInteractive(user, interactiveId);
-  await db
-    .update(interactives)
-    .set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() })
-    .where(eq(interactives.id, interactiveId));
+  const existing = await assertCanManageInteractive(user, interactiveId);
+  await withTenant(interactiveTenantId(existing), user.id, (tx) =>
+    tx
+      .update(interactives)
+      .set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() })
+      .where(eq(interactives.id, interactiveId)),
+  );
   await softDeleteActivityByEntity({ interactiveId });
 }
 
