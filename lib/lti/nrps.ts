@@ -114,6 +114,7 @@ export async function syncRosterForSectionLink(
     const hint: LtiSolRoleHint = mapLtiRolesToSolHint(member.roles);
     const { user } = await resolveOrCreateLtiUser({
       platformId: platformMeta.platform.id,
+      tenantId: platformMeta.platform.tenantId ?? platformMeta.platform.workspaceId,
       ltiUserId: member.user_id,
       email: member.email,
       claims: {

@@ -140,6 +140,7 @@ export async function linkSectionToCanvas(
       .insert(ltiSectionLinks)
       .values({
         sectionId: input.sectionId,
+        tenantId: section.tenantId ?? section.workspaceId ?? workspaceId,
         deploymentId: deployment.id,
         canvasCourseId,
         canvasSectionId: input.canvasSectionId?.trim() || null,

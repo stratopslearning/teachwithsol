@@ -107,6 +107,7 @@ export async function ensurePlatformFromEnv(
       .insert(ltiDeployments)
       .values({
         platformId: platform.id,
+        tenantId: platform.tenantId ?? workspaceId,
         deploymentId: config.deploymentId,
         status: 'ACTIVE',
       })

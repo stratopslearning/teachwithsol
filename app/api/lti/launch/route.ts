@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
 
     const { user, roleHint } = await resolveOrCreateLtiUser({
       platformId: platform.id,
+      tenantId: platform.tenantId ?? platform.workspaceId,
       ltiUserId: claims.sub,
       email: emailFromClaims,
       claims: {
