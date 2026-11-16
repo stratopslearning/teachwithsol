@@ -9,6 +9,7 @@ import { professorSections, roleBindings, sections } from '@/app/db/schema';
 import { clearBindingCache } from '@/lib/authz/authorize';
 import { upsertRoleBinding } from '@/lib/authz/bindings';
 import type { BindingRole } from '@/lib/authz/permissions';
+import { hasTeachingAssistantRole } from '@/lib/lti/roles';
 import { ensureWorkspaceMembership } from '@/lib/workspace/access';
 
 const SECTION_TEACHING_ROLES: BindingRole[] = [
@@ -22,15 +23,7 @@ const SECTION_TEACHING_ROLES: BindingRole[] = [
 export function mapLtiRolesToBindingRole(
   roles: string[] | undefined | null,
 ): BindingRole {
-  const list = roles ?? [];
-  const isTa = list.some(
-    (r) =>
-      r.includes('TeachingAssistant') ||
-      r.includes('TaEnrollment') ||
-      r.includes('membership#TeachingAssistant'),
-  );
-  if (isTa) return 'ta';
-  return 'co_instructor';
+  return hasTeachingAssistantRole(roles) ? 'ta' : 'co_instructor';
 }
 
 async function resolveSectionTenantId(
