@@ -1,10 +1,10 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 import {
   COURSE_TOOL_IDS,
   COURSE_TOOL_LABELS,
@@ -52,7 +52,7 @@ export function CourseSettingsNavClient({
 
   async function save() {
     setMessage(null);
-    const res = await fetch(apiUrl(`/api/lms/courses/${courseId}/settings`), {
+    const res = await apiFetch(`/api/lms/courses/${courseId}/settings`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

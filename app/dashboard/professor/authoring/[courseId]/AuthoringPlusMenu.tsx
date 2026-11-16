@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
@@ -26,7 +27,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { apiUrl } from '@/lib/basePath';
 import { cn } from '@/lib/utils';
 
 import type { AttachableDoc, CourseCorpusItem } from './AuthoringMaterialsPanel';
@@ -179,7 +179,7 @@ export function AuthoringPlusMenu({
     if (!zip) fd.set('title', file.name.replace(/\.[^.]+$/, ''));
     setUploading(true);
     try {
-      const res = await fetch(apiUrl('/api/professor/materials'), {
+      const res = await apiFetch('/api/professor/materials', {
         method: 'POST',
         body: fd,
         credentials: 'same-origin',
@@ -234,7 +234,7 @@ export function AuthoringPlusMenu({
   async function attachDoc(documentId: string) {
     setAttachingId(documentId);
     try {
-      const res = await fetch(apiUrl('/api/professor/knowledge/links'), {
+      const res = await apiFetch('/api/professor/knowledge/links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ courseId, documentId }),

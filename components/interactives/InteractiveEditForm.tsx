@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type ComponentType } from 'react';
@@ -19,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { InteractiveBody, InteractiveKind } from '@/app/db/schema';
-import { apiUrl, appPath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 
 type BuiltInKind = Exclude<InteractiveKind, 'H5P_PACKAGE'>;
 
@@ -239,8 +240,7 @@ export function InteractiveEditForm({
         nextBody = body;
       }
 
-      const res = await fetch(
-        apiUrl(`/api/professor/interactive/${interactive.id}`),
+      const res = await apiFetch(`/api/professor/interactive/${interactive.id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },

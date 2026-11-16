@@ -1,10 +1,10 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 export type AccessRequestRow = {
   id: string;
@@ -35,10 +35,8 @@ export function AccessRequestsPanel({
     setBusyId(requestId);
     setError(null);
     try {
-      const res = await fetch(
-        apiUrl(
+      const res = await apiFetch(
           `/api/workspaces/${workspaceId}/access-requests/${requestId}`,
-        ),
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },

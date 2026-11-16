@@ -1,12 +1,12 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiUrl } from "@/lib/basePath";
 
 export default function StudentEnrollForm({
   onEnrolled,
@@ -26,7 +26,7 @@ export default function StudentEnrollForm({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl("/api/student/enroll"), {
+      const res = await apiFetch("/api/student/enroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enrollmentCode: code.trim() }),

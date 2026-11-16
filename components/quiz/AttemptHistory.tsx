@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useEffect, useState } from "react";
 import { AlertCircle, Award, Clock, RefreshCw } from "@/components/icons";
 
@@ -7,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/patterns/LoadingState";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
-import { apiUrl } from "@/lib/basePath";
 
 interface Attempt {
   id: string;
@@ -47,8 +47,7 @@ export function AttemptHistory({
   const fetchAttemptHistory = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        apiUrl(`/api/quiz/${quizId}/attempts?assignmentId=${assignmentId}`),
+      const response = await apiFetch(`/api/quiz/${quizId}/attempts?assignmentId=${assignmentId}`,
       );
       const data = await response.json();
 

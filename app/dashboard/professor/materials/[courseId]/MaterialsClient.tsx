@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
@@ -48,7 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiUrl, appPath, withBasePath } from "@/lib/basePath";
+import { appPath, withBasePath } from "@/lib/basePath";
 import type { BookChapterTocItem, BookWithChapters } from "@/lib/books";
 import { uploadCourseBookFile } from "@/lib/books/clientUpload";
 import {
@@ -218,7 +219,7 @@ export default function MaterialsClient({
     action: "accept_update" | "dismiss_update",
   ) {
     try {
-      const res = await fetch(apiUrl("/api/professor/knowledge/links"), {
+      const res = await apiFetch("/api/professor/knowledge/links", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, courseId, documentId }),
@@ -247,7 +248,7 @@ export default function MaterialsClient({
     }
     setAttaching(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/knowledge/links"), {
+      const res = await apiFetch("/api/professor/knowledge/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courseId, documentId: attachId }),
@@ -272,7 +273,7 @@ export default function MaterialsClient({
       return;
     }
     try {
-      const res = await fetch(apiUrl("/api/professor/knowledge/links"), {
+      const res = await apiFetch("/api/professor/knowledge/links", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courseId, documentId }),
@@ -292,10 +293,8 @@ export default function MaterialsClient({
   async function onRetryDocument(documentId: string) {
     setRetryingId(documentId);
     try {
-      const res = await fetch(
-        apiUrl(
+      const res = await apiFetch(
           `/api/professor/knowledge/documents/${documentId}?action=reprocess`,
-        ),
         { method: "POST" },
       );
       const data = await res.json().catch(() => ({}));
@@ -326,7 +325,7 @@ export default function MaterialsClient({
     authoringCorpus: "prior_course" | "this_term",
   ) {
     try {
-      const res = await fetch(apiUrl("/api/professor/knowledge/links"), {
+      const res = await apiFetch("/api/professor/knowledge/links", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courseId, documentId, authoringCorpus }),
@@ -356,8 +355,7 @@ export default function MaterialsClient({
     authoringCorpus: "prior_course" | "this_term",
   ) {
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/materials/${materialId}/corpus`),
+      const res = await apiFetch(`/api/professor/materials/${materialId}/corpus`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -458,7 +456,7 @@ export default function MaterialsClient({
     if (!zip && fileTitle.trim()) fd.set("title", fileTitle.trim());
     setUploading(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/materials"), {
+      const res = await apiFetch("/api/professor/materials", {
         method: "POST",
         body: fd,
         credentials: "same-origin",
@@ -505,7 +503,7 @@ export default function MaterialsClient({
     e.preventDefault();
     setAddingLink(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/materials"), {
+      const res = await apiFetch("/api/professor/materials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -534,7 +532,7 @@ export default function MaterialsClient({
     e.preventDefault();
     setImportingBook(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/books"), {
+      const res = await apiFetch("/api/professor/books", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -599,8 +597,7 @@ export default function MaterialsClient({
       description: "Usually under a minute — hang tight.",
     });
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/books/${bookId}/outline`),
+      const res = await apiFetch(`/api/professor/books/${bookId}/outline`,
         { method: "POST" },
       );
       const data = await res.json().catch(() => ({}));
@@ -650,8 +647,7 @@ export default function MaterialsClient({
       return;
     }
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/books/${bookId}/reprocess`),
+      const res = await apiFetch(`/api/professor/books/${bookId}/reprocess`,
         { method: "POST" },
       );
       const data = await res.json().catch(() => ({}));
@@ -675,8 +671,7 @@ export default function MaterialsClient({
       return;
     }
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/books/${bookId}/release`),
+      const res = await apiFetch(`/api/professor/books/${bookId}/release`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -698,7 +693,7 @@ export default function MaterialsClient({
   async function onDelete(id: string) {
     if (!confirm("Remove this material from the course library?")) return;
     try {
-      const res = await fetch(apiUrl(`/api/professor/materials/${id}`), {
+      const res = await apiFetch(`/api/professor/materials/${id}`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
@@ -727,7 +722,7 @@ export default function MaterialsClient({
     }
     setBulkDeleting(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/materials/bulk-delete"), {
+      const res = await apiFetch("/api/professor/materials/bulk-delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courseId, materialIds: ids }),
@@ -770,7 +765,7 @@ export default function MaterialsClient({
     }
     setDeletingBookId(book.id);
     try {
-      const res = await fetch(apiUrl(`/api/professor/books/${book.id}`), {
+      const res = await apiFetch(`/api/professor/books/${book.id}`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
@@ -806,7 +801,7 @@ export default function MaterialsClient({
     }
     setBulkDeleting(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/books/bulk-delete"), {
+      const res = await apiFetch("/api/professor/books/bulk-delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookIds: ids }),
@@ -853,8 +848,7 @@ export default function MaterialsClient({
     if (!confirm(`Remove chapter “${chapter.title}” from this book?`)) return;
     setDeletingChapterId(chapter.id);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/books/${bookId}/chapters/${chapter.id}`),
+      const res = await apiFetch(`/api/professor/books/${bookId}/chapters/${chapter.id}`,
         { method: "DELETE" },
       );
       const data = await res.json().catch(() => ({}));
@@ -897,8 +891,7 @@ export default function MaterialsClient({
     }
     setBulkDeleting(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/books/${book.id}/chapters/bulk-delete`),
+      const res = await apiFetch(`/api/professor/books/${book.id}/chapters/bulk-delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

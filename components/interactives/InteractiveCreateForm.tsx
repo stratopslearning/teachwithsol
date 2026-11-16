@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ComponentType } from "react";
@@ -18,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { apiUrl, appPath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 import type { InteractiveKind } from "@/app/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -238,7 +239,7 @@ export function InteractiveCreateForm({
         body = { imageUrl: imageUrl.trim(), hotspots: cleaned };
       }
 
-      const res = await fetch(apiUrl("/api/professor/interactive"), {
+      const res = await apiFetch("/api/professor/interactive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import React, { useState } from "react";
 import { Edit, Plus, Trash2 } from "@/components/icons";
 import Link from "next/link";
@@ -26,7 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { apiUrl } from "@/lib/basePath";
 
 export type Section = {
   id: string;
@@ -112,7 +112,7 @@ export function SectionFormModal({
           setLoading(false);
           return;
         }
-        const res = await fetch(apiUrl(`/api/admin/section/bulk`), {
+        const res = await apiFetch(`/api/admin/section/bulk`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ names, courseId }),
@@ -126,7 +126,7 @@ export function SectionFormModal({
         }
       } else if (isCreate) {
         const endsAt = combineLocalDateTime(endsDate, endsTime);
-        const res = await fetch(apiUrl(`/api/admin/section`), {
+        const res = await apiFetch(`/api/admin/section`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, courseId, endsAt }),
@@ -142,7 +142,7 @@ export function SectionFormModal({
         if (!data.section?.id) setOpen(false);
       } else if (isEdit && section) {
         const endsAt = combineLocalDateTime(endsDate, endsTime);
-        const res = await fetch(apiUrl(`/api/admin/section/${section.id}`), {
+        const res = await apiFetch(`/api/admin/section/${section.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, endsAt }),
@@ -155,7 +155,7 @@ export function SectionFormModal({
         setOpen(false);
         router.refresh();
       } else if (isDelete && section) {
-        const res = await fetch(apiUrl(`/api/admin/section/${section.id}`), {
+        const res = await apiFetch(`/api/admin/section/${section.id}`, {
           method: "DELETE",
         });
         if (!res.ok) {

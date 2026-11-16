@@ -1,11 +1,11 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { apiUrl } from '@/lib/basePath';
 
 type Props = {
   workspaceId: string;
@@ -36,7 +36,7 @@ export function LtiRegisterForm({ workspaceId, initial }: Props) {
     setError(null);
     setNote(null);
     try {
-      const res = await fetch(apiUrl('/api/lti/register'), {
+      const res = await apiFetch('/api/lti/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

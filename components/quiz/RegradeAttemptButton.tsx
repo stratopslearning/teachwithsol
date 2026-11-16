@@ -1,11 +1,11 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 import { RefreshCw } from '@/components/icons';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 type RegradeAttemptButtonProps = {
   attemptId: string;
@@ -39,8 +39,7 @@ export function RegradeAttemptButton({
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        apiUrl(`/api/professor/attempt/${attemptId}/regrade`),
+      const response = await apiFetch(`/api/professor/attempt/${attemptId}/regrade`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

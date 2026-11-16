@@ -1,6 +1,7 @@
 'use client';
 
-import { apiUrl, withBasePath } from '@/lib/basePath';
+import { apiFetch } from '@/lib/api/client';
+import { withBasePath } from '@/lib/basePath';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -263,7 +264,7 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(apiUrl(apiEndpoint), {
+      const response = await apiFetch(apiEndpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

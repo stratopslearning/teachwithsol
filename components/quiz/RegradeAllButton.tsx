@@ -1,12 +1,12 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 import { RefreshCw } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 type RegradeAllButtonProps = {
   /** How many attempts are currently in the queue, for the confirm copy. */
@@ -34,8 +34,7 @@ export function RegradeAllButton({ count }: RegradeAllButtonProps) {
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        apiUrl('/api/professor/attention/regrade-all'),
+      const response = await apiFetch('/api/professor/attention/regrade-all',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

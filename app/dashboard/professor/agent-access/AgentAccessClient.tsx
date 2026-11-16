@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, KeyRound, Sparkles, Trash2 } from "@/components/icons";
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiUrl } from "@/lib/basePath";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 
 const SCOPE_OPTIONS: { id: string; label: string; hint: string }[] = [
@@ -73,7 +73,7 @@ export default function AgentAccessClient({
     mintInFlight.current = true;
     setLoading(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/tokens"), {
+      const res = await apiFetch("/api/professor/tokens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), scopes }),
@@ -101,7 +101,7 @@ export default function AgentAccessClient({
   };
 
   const revoke = async (tokenId: string) => {
-    const res = await fetch(apiUrl(`/api/professor/tokens/${tokenId}`), {
+    const res = await apiFetch(`/api/professor/tokens/${tokenId}`, {
       method: "DELETE",
     });
     if (!res.ok) {

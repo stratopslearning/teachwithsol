@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { Loader2, Upload } from "@/components/icons";
@@ -7,7 +8,6 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { apiUrl } from "@/lib/basePath";
 import type { KnowledgeDocumentSummary } from "@/lib/knowledge";
 import { cn } from "@/lib/utils";
 import {
@@ -88,7 +88,7 @@ export function AuthoringMaterialsPanel({
     if (!zip) fd.set("title", file.name.replace(/\.[^.]+$/, ""));
     setUploading(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/materials"), {
+      const res = await apiFetch("/api/professor/materials", {
         method: "POST",
         body: fd,
         credentials: "same-origin",
@@ -139,7 +139,7 @@ export function AuthoringMaterialsPanel({
   async function attachDoc(documentId: string) {
     setAttachingId(documentId);
     try {
-      const res = await fetch(apiUrl("/api/professor/knowledge/links"), {
+      const res = await apiFetch("/api/professor/knowledge/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courseId, documentId }),

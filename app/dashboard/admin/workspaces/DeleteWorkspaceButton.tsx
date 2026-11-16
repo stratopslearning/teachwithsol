@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Trash2 } from '@/components/icons';
@@ -17,7 +18,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { apiUrl } from '@/lib/basePath';
 
 export function DeleteWorkspaceButton({
   workspaceId,
@@ -51,7 +51,7 @@ export function DeleteWorkspaceButton({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl(`/api/admin/workspaces/${workspaceId}`), {
+      const res = await apiFetch(`/api/admin/workspaces/${workspaceId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirmSlug: typed.trim() }),

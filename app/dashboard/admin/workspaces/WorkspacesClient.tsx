@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -13,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { apiUrl } from '@/lib/basePath';
 import {
   defaultTierForSku,
   tiersForSku,
@@ -79,7 +79,7 @@ export function WorkspacesClient({ parentOptions }: Props) {
     setError(null);
     setClaimUrl(null);
     try {
-      const res = await fetch(apiUrl('/api/admin/workspaces'), {
+      const res = await apiFetch('/api/admin/workspaces', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

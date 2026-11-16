@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -32,7 +33,6 @@ import {
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { useFilteredSortedPage } from '@/hooks/useFilteredSortedPage';
-import { apiUrl } from '@/lib/basePath';
 import { compareDates, compareStringsIgnoreCase } from '@/lib/listSort';
 import {
   comparePersonsByLastName,
@@ -94,10 +94,8 @@ function DropStudentButton({
     if (!confirm(`Remove ${name} from this section?`)) return;
     setBusy(true);
     try {
-      const res = await fetch(
-        apiUrl(
+      const res = await apiFetch(
           `/api/professor/section/${sectionId}/roster/${enrollmentId}`,
-        ),
         { method: 'DELETE' },
       );
       const data = await res.json().catch(() => ({}));

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState, type ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -19,7 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { apiUrl, withBasePath } from "@/lib/basePath";
+import { withBasePath } from "@/lib/basePath";
 import {
   quizLibraryActionLabels,
   quizVisibilityApiPath,
@@ -63,8 +64,7 @@ export function QuizActions({
   const handleCreateEditableCopy = async () => {
     setCopyingForEdit(true);
     try {
-      const response = await fetch(
-        apiUrl(`/api/professor/quiz/${quizId}/section-copy`),
+      const response = await apiFetch(`/api/professor/quiz/${quizId}/section-copy`,
         { method: "POST" },
       );
       const data = await response.json();
@@ -92,8 +92,7 @@ export function QuizActions({
   const handleDuplicate = async () => {
     if (!confirm("Duplicate this quiz?")) return;
     try {
-      const response = await fetch(
-        apiUrl(`/api/professor/quiz/${quizId}/duplicate`),
+      const response = await apiFetch(`/api/professor/quiz/${quizId}/duplicate`,
         { method: "POST" },
       );
       if (response.ok) window.location.reload();
@@ -115,8 +114,7 @@ export function QuizActions({
     )
       return;
     try {
-      const response = await fetch(
-        apiUrl(quizVisibilityApiPath(quizId)),
+      const response = await apiFetch(quizVisibilityApiPath(quizId),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

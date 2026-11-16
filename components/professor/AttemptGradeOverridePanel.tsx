@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -15,7 +16,6 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { apiUrl } from '@/lib/basePath';
 import type { RubricCriterion } from '@/lib/gradingTypes';
 
 export type OverrideHistoryEntry = {
@@ -123,7 +123,7 @@ export function AttemptGradeOverridePanel({
       if (hasNumeric) body.numericScore = parsedNumeric;
       if (hasCriteria) body.criteriaOverrides = criteriaOverrides;
 
-      const res = await fetch(apiUrl(`/api/professor/attempt/${attemptId}`), {
+      const res = await apiFetch(`/api/professor/attempt/${attemptId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

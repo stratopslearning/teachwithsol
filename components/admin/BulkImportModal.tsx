@@ -1,5 +1,5 @@
 "use client";
-import { apiUrl } from '@/lib/basePath';
+import { apiFetch } from "@/lib/api/client";
 import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -126,7 +126,7 @@ export default function BulkImportModal() {
     setImportResults([]);
 
     try {
-      const response = await fetch(apiUrl('/api/admin/users/bulk-import'), {
+      const response = await apiFetch('/api/admin/users/bulk-import', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -35,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ActivityListItem, ActivityType } from "@/lib/assignments";
-import { apiUrl, appPath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 import { entityIdForActivity } from "@/lib/professor/activityEntity";
 import { cn } from "@/lib/utils";
 
@@ -140,8 +141,7 @@ export function CourseAssignmentsClient({
     try {
       let res: Response;
       if (item.type === "QUIZ" && item.quizId) {
-        res = await fetch(
-          apiUrl(`/api/professor/quiz/${item.quizId}/visibility`),
+        res = await apiFetch(`/api/professor/quiz/${item.quizId}/visibility`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -149,8 +149,7 @@ export function CourseAssignmentsClient({
           },
         );
       } else if (item.type === "DISCUSSION" && item.chatbotId) {
-        res = await fetch(
-          apiUrl(`/api/professor/chatbot/${item.chatbotId}/update`),
+        res = await apiFetch(`/api/professor/chatbot/${item.chatbotId}/update`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -158,8 +157,7 @@ export function CourseAssignmentsClient({
           },
         );
       } else if (item.type === "INTERACTIVE" && item.interactiveId) {
-        res = await fetch(
-          apiUrl(`/api/professor/interactive/${item.interactiveId}`),
+        res = await apiFetch(`/api/professor/interactive/${item.interactiveId}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -167,8 +165,7 @@ export function CourseAssignmentsClient({
           },
         );
       } else if (item.type === "LESSON" && item.lessonId) {
-        res = await fetch(
-          apiUrl(`/api/professor/lesson/${item.lessonId}/visibility`),
+        res = await apiFetch(`/api/professor/lesson/${item.lessonId}/visibility`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

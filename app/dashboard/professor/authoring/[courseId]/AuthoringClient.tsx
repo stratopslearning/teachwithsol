@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -10,7 +11,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { apiUrl } from "@/lib/basePath";
 import type { OutlineDetail, OutlineItemSummary } from "@/lib/authoring";
 import { buildAuthoringFollowUps } from "@/lib/authoring/agent/followUps";
 import { buildOutlineInventory } from "@/lib/authoring/agent/inventory";
@@ -238,11 +238,9 @@ export default function AuthoringClient({
     void (async () => {
       try {
         const [revRes, checkRes] = await Promise.all([
-          fetch(
-            apiUrl(`/api/professor/authoring/outlines/${outline.id}/revisions`),
+          apiFetch(`/api/professor/authoring/outlines/${outline.id}/revisions`,
           ),
-          fetch(
-            apiUrl(`/api/professor/authoring/courses/${courseId}/checks`),
+          apiFetch(`/api/professor/authoring/courses/${courseId}/checks`,
           ),
         ]);
         if (revRes.ok) {
@@ -273,10 +271,8 @@ export default function AuthoringClient({
 
   async function refreshSessions() {
     try {
-      const res = await fetch(
-        apiUrl(
+      const res = await apiFetch(
           `/api/professor/authoring/outlines?courseId=${encodeURIComponent(courseId)}&includeArchived=1`,
-        ),
       );
       if (!res.ok) return;
       const data = await res.json().catch(() => ({}));
@@ -343,8 +339,7 @@ export default function AuthoringClient({
     try {
       const session = sessions.find((s) => s.id === sessionId);
       const needsRestore = session?.status === "ARCHIVED";
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/outlines/${sessionId}${needsRestore ? "" : "?messages=1"}`),
+      const res = await apiFetch(`/api/professor/authoring/outlines/${sessionId}${needsRestore ? "" : "?messages=1"}`,
         needsRestore
           ? {
               method: "PATCH",
@@ -385,8 +380,7 @@ export default function AuthoringClient({
     setHistoryBusy(true);
     try {
       if (outline) {
-        const res = await fetch(
-          apiUrl(`/api/professor/authoring/outlines/${outline.id}`),
+        const res = await apiFetch(`/api/professor/authoring/outlines/${outline.id}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -490,8 +484,7 @@ export default function AuthoringClient({
     if (!trimmed) return;
     setActing(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/items/${itemId}`),
+      const res = await apiFetch(`/api/professor/authoring/items/${itemId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -530,8 +523,7 @@ export default function AuthoringClient({
   ) {
     setActing(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/items/${itemId}`),
+      const res = await apiFetch(`/api/professor/authoring/items/${itemId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -624,7 +616,7 @@ export default function AuthoringClient({
       setBuildProgress(authoringProgressAt(generateSteps, generateIndex));
     }, 1600);
     try {
-      const res = await fetch(apiUrl("/api/professor/authoring/outlines"), {
+      const res = await apiFetch("/api/professor/authoring/outlines", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: ac.signal,
@@ -748,8 +740,7 @@ export default function AuthoringClient({
       showBuild(buildIndex);
     }, 900);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/outlines/${outline.id}/approve`),
+      const res = await apiFetch(`/api/professor/authoring/outlines/${outline.id}/approve`,
         { method: "POST", signal: ac.signal },
       );
       const data = await res.json().catch(() => ({}));
@@ -800,8 +791,7 @@ export default function AuthoringClient({
     }
     setActing(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/outlines/${outline.id}/revisions`),
+      const res = await apiFetch(`/api/professor/authoring/outlines/${outline.id}/revisions`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -835,8 +825,7 @@ export default function AuthoringClient({
     if (!outline) return;
     setActing(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/outlines/${outline.id}/switch-up`),
+      const res = await apiFetch(`/api/professor/authoring/outlines/${outline.id}/switch-up`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -874,8 +863,7 @@ export default function AuthoringClient({
     if (!outline || !switchDiffs?.length) return;
     setActing(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/outlines/${outline.id}/switch-up`),
+      const res = await apiFetch(`/api/professor/authoring/outlines/${outline.id}/switch-up`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -976,8 +964,7 @@ export default function AuthoringClient({
     });
 
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/outlines/${outline.id}/chat`),
+      const res = await apiFetch(`/api/professor/authoring/outlines/${outline.id}/chat`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1165,8 +1152,7 @@ export default function AuthoringClient({
     if (!selectedItem) return;
     setActing(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/items/${selectedItem.id}/preview`),
+      const res = await apiFetch(`/api/professor/authoring/items/${selectedItem.id}/preview`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1247,8 +1233,7 @@ export default function AuthoringClient({
     }
     setActing(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/items/${selectedItem.id}/publish`),
+      const res = await apiFetch(`/api/professor/authoring/items/${selectedItem.id}/publish`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1300,8 +1285,7 @@ export default function AuthoringClient({
     const ac = new AbortController();
     const kill = window.setTimeout(() => ac.abort(), 120_000);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/outlines/${outline.id}/publish`),
+      const res = await apiFetch(`/api/professor/authoring/outlines/${outline.id}/publish`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1386,8 +1370,7 @@ export default function AuthoringClient({
     }
     setActing(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/items/${selectedItem.id}/release`),
+      const res = await apiFetch(`/api/professor/authoring/items/${selectedItem.id}/release`,
         { method: "POST" },
       );
       const data = await res.json().catch(() => ({}));

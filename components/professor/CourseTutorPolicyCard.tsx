@@ -1,11 +1,11 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { TutorPolicySelect } from "@/components/professor/TutorPolicySelect";
-import { apiUrl } from "@/lib/basePath";
 import {
   DEFAULT_TUTOR_AI_POLICY,
   type TutorAiPolicyMode,
@@ -26,8 +26,7 @@ export function CourseTutorPolicyCard({
   async function onSave() {
     setSaving(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/courses/${courseId}/settings`),
+      const res = await apiFetch(`/api/professor/courses/${courseId}/settings`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,7 +18,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { apiUrl, appPath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 import { cn } from "@/lib/utils";
 import type { StudentChatbotPageData } from "@/lib/chatbot/loadStudentSession";
 
@@ -136,7 +137,7 @@ export function ChatbotSession({
     };
 
     try {
-      const res = await fetch(apiUrl(`/api/chatbot/${chatbotId}/message`), {
+      const res = await apiFetch(`/api/chatbot/${chatbotId}/message`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -261,7 +262,7 @@ export function ChatbotSession({
     if (!sessionId || completing) return;
     setCompleting(true);
     try {
-      const res = await fetch(apiUrl(`/api/chatbot/${chatbotId}/complete`), {
+      const res = await apiFetch(`/api/chatbot/${chatbotId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),

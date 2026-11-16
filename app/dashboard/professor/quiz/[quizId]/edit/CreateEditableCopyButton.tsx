@@ -1,12 +1,12 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Edit } from "@/components/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { apiUrl } from "@/lib/basePath";
 
 export function CreateEditableCopyButton({ quizId }: { quizId: string }) {
   const router = useRouter();
@@ -15,8 +15,7 @@ export function CreateEditableCopyButton({ quizId }: { quizId: string }) {
   const handleCreateCopy = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        apiUrl(`/api/professor/quiz/${quizId}/section-copy`),
+      const response = await apiFetch(`/api/professor/quiz/${quizId}/section-copy`,
         { method: "POST" },
       );
       const data = await response.json();
