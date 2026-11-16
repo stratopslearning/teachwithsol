@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { requireAuth } from "@/lib/auth";
 import { withBasePath } from "@/lib/basePath";
 import { assertStudentCanAccessInteractive } from "@/lib/interactives/access";
+import { withTenant } from "@/lib/db/tenantContext";
 
 export default async function InteractiveTakePage({
   params,
@@ -25,12 +26,17 @@ export default async function InteractiveTakePage({
     return notFound();
   }
 
-  const progress = await db.query.interactiveProgress.findFirst({
-    where: and(
-      eq(interactiveProgress.interactiveId, id),
-      eq(interactiveProgress.studentId, user.id),
-    ),
-  });
+  // FORCE RLS: a plain db read finds no progress row, so a completed
+  // interactive always showed as not completed. Read under its tenant.
+  const progressWhere = and(
+    eq(interactiveProgress.interactiveId, id),
+    eq(interactiveProgress.studentId, user.id),
+  );
+  const progress = interactive.tenantId
+    ? await withTenant(interactive.tenantId, user.id, (tx) =>
+        tx.query.interactiveProgress.findFirst({ where: progressWhere }),
+      )
+    : await db.query.interactiveProgress.findFirst({ where: progressWhere });
 
   return (
     <AppShell

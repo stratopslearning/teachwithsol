@@ -45,14 +45,12 @@ export async function GET(
     const includeAnswerKey = isStaff && (await userCanWriteQuiz(user, quizId));
     // Safe definer already strips keys; staff writers need full bank via separate path.
     if (includeAnswerKey) {
-      const { db } = await import('@/app/db');
-      const { eq } = await import('drizzle-orm');
-      const { questions } = await import('@/app/db/schema');
-      // Staff write path: faculty/admin roles typically use BYPASS or tenant GUC.
-      const full = await db.query.questions.findMany({
-        where: eq(questions.quizId, quizId),
-        orderBy: (q, { asc }) => [asc(q.order)],
-      });
+      // FORCE RLS: the runtime role can't bypass RLS, so a plain db read
+      // returned no questions. Read under the quiz's tenant.
+      const { fetchQuizById } = await import('@/lib/db/entityScopedReads');
+      const { loadQuizQuestions } = await import('@/lib/quiz/gradingData');
+      const tenantId = (await fetchQuizById(quizId))?.tenantId;
+      const full = tenantId ? await loadQuizQuestions(quizId, tenantId) : [];
       return NextResponse.json({ questions: full });
     }
 

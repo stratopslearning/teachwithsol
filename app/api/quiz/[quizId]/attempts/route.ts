@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
 import { attempts, assignments, quizzes } from '@/app/db/schema';
 import {
   professorCanAccessQuiz,
@@ -10,6 +9,8 @@ import {
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { shouldHideFeedbackForStudent } from '@/lib/utils';
+import { fetchQuizById } from '@/lib/db/entityScopedReads';
+import { withTenant } from '@/lib/db/tenantContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,12 +36,23 @@ export async function GET(
       return NextResponse.json({ error: 'Assignment ID is required' }, { status: 400 });
     }
 
-    const assignment = await db.query.assignments.findFirst({
-      where: and(
-        eq(assignments.id, assignmentId),
-        eq(assignments.quizId, quizId),
-      ),
-    });
+    // FORCE RLS: plain db reads return nothing here (students always saw
+    // "Assignment not found"). Resolve the quiz's tenant via the definer and
+    // read under it.
+    const quizMeta = await fetchQuizById(quizId);
+    const tenantId = quizMeta?.tenantId;
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
+    }
+
+    const assignment = await withTenant(tenantId, user.id, (tx) =>
+      tx.query.assignments.findFirst({
+        where: and(
+          eq(assignments.id, assignmentId),
+          eq(assignments.quizId, quizId),
+        ),
+      }),
+    );
     if (!assignment) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
@@ -54,19 +66,21 @@ export async function GET(
       }
     }
 
-    const allAttempts = await db.query.attempts.findMany({
-      where: and(
-        eq(attempts.assignmentId, assignmentId),
-        eq(attempts.quizId, quizId),
-      ),
-      orderBy: (attempts, { desc }) => [desc(attempts.submittedAt)],
-    });
+    const { allAttempts, quiz } = await withTenant(tenantId, user.id, async (tx) => ({
+      allAttempts: await tx.query.attempts.findMany({
+        where: and(
+          eq(attempts.assignmentId, assignmentId),
+          eq(attempts.quizId, quizId),
+        ),
+        orderBy: (attempts, { desc }) => [desc(attempts.submittedAt)],
+      }),
+      quiz: await tx.query.quizzes.findFirst({
+        where: eq(quizzes.id, quizId),
+      }),
+    }));
 
     const submittedAttempts = allAttempts.filter((a) => a.submittedAt != null);
 
-    const quiz = await db.query.quizzes.findFirst({
-      where: eq(quizzes.id, quizId),
-    });
     const maxAttempts = quiz?.maxAttempts || 1;
 
     if (submittedAttempts.length === 0) {

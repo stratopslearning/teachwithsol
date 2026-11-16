@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import { courseOfferings } from '@/app/db/schema';
 import {
   isOfferingEnded,
@@ -125,20 +125,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Wave 3 (23): ended / archived offerings accept no new enrollments.
-    if (section.offeringId) {
-      const offering = await db.query.courseOfferings.findFirst({
-        where: eq(courseOfferings.id, section.offeringId),
-        columns: { status: true, endsAt: true },
-      });
-      if (isOfferingEnded(offering)) {
-        return NextResponse.json(
-          { error: OFFERING_ENDED_MESSAGE },
-          { status: 409 },
-        );
-      }
-    }
-
     const tenantId =
       section.tenantId ??
       section.workspaceId ??
@@ -148,6 +134,25 @@ export async function POST(req: NextRequest) {
         { error: 'Section tenant could not be resolved' },
         { status: 500 },
       );
+    }
+
+    // Wave 3 (23): ended / archived offerings accept no new enrollments.
+    // Read under the tenant: under FORCE RLS a plain db read returned no
+    // offering, so this check never blocked anything.
+    if (section.offeringId) {
+      const offeringId = section.offeringId;
+      const offering = await withTenant(tenantId, user.id, (tx) =>
+        tx.query.courseOfferings.findFirst({
+          where: eq(courseOfferings.id, offeringId),
+          columns: { status: true, endsAt: true },
+        }),
+      );
+      if (isOfferingEnded(offering)) {
+        return NextResponse.json(
+          { error: OFFERING_ENDED_MESSAGE },
+          { status: 409 },
+        );
+      }
     }
 
     try {
