@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchAdminWorkspaceDirectory } from '@/lib/admin/platformReads';
 import { auth } from '@clerk/nextjs/server';
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '@/app/db';
-import { users, workspaces } from '@/app/db/schema';
+import { users } from '@/app/db/schema';
 import { provisionWorkspace } from '@/lib/workspace';
 import { createWorkspaceOwnerInvite } from '@/lib/workspace/invites';
 import {
@@ -48,19 +49,11 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const rows = await db.query.workspaces.findMany({
-      orderBy: [desc(workspaces.createdAt)],
-      with: { licenses: true, invites: true },
-    });
-    // Never return tokenHash to clients (offline-guess surface).
-    const sanitized = rows.map((ws) => ({
-      ...ws,
-      invites: (ws.invites ?? []).map(
-        ({ tokenHash: _tokenHash, ...invite }) => invite,
-      ),
-    }));
+    // Metadata-only directory via the SECURITY DEFINER lookup. Under FORCE
+    // RLS the old plain db read returned no workspaces at all.
+    const directory = await fetchAdminWorkspaceDirectory();
     return NextResponse.json({
-      workspaces: sanitized,
+      workspaces: directory,
       pricingCatalog: {
         creator: tiersForSku('creator'),
         business: tiersForSku('business'),

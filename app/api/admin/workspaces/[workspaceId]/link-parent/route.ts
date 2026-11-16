@@ -8,6 +8,7 @@ import { apiErrorResponse } from '@/lib/api/errors';
 import { logAudit } from '@/lib/audit';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
+import { withTenant } from '@/lib/db/tenantContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,9 +41,11 @@ export async function POST(
     const { workspaceId } = await ctx.params;
     const body = bodySchema.parse(await readJsonBody(req));
 
-    const child = await db.query.workspaces.findFirst({
-      where: eq(workspaces.id, workspaceId),
-    });
+    // FORCE RLS: a workspace row is visible under its own tenant only; a
+    // plain db read found nothing (always "Workspace not found").
+    const child = await withTenant(workspaceId, admin.id, (tx) =>
+      tx.query.workspaces.findFirst({ where: eq(workspaces.id, workspaceId) }),
+    );
     if (!child) {
       return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
     }
@@ -68,9 +71,10 @@ export async function POST(
           { status: 400 },
         );
       }
-      const parent = await db.query.workspaces.findFirst({
-        where: eq(workspaces.id, body.parentWorkspaceId),
-      });
+      const parentId = body.parentWorkspaceId;
+      const parent = await withTenant(parentId, admin.id, (tx) =>
+        tx.query.workspaces.findFirst({ where: eq(workspaces.id, parentId) }),
+      );
       if (!parent) {
         return NextResponse.json(
           { error: 'Parent workspace not found' },
@@ -79,14 +83,16 @@ export async function POST(
       }
     }
 
-    const [updated] = await db
-      .update(workspaces)
-      .set({
-        parentWorkspaceId: body.parentWorkspaceId,
-        updatedAt: new Date(),
-      })
-      .where(eq(workspaces.id, workspaceId))
-      .returning();
+    const [updated] = await withTenant(workspaceId, admin.id, (tx) =>
+      tx
+        .update(workspaces)
+        .set({
+          parentWorkspaceId: body.parentWorkspaceId,
+          updatedAt: new Date(),
+        })
+        .where(eq(workspaces.id, workspaceId))
+        .returning(),
+    );
 
     await logAudit({
       actorUserId: admin.id,

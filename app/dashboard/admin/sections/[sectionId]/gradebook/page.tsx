@@ -1,7 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 
-import { db } from '@/app/db';
+import { hasActiveSupportAccess } from '@/lib/authz/supportAccess';
+import { fetchSectionById } from '@/lib/db/entityScopedReads';
+import { withTenant } from '@/lib/db/tenantContext';
 import {
   quizSections,
   sections,
@@ -29,6 +31,15 @@ export default async function AdminSectionGradebookPage({
   const admin = await requireAdmin();
   const { sectionId } = await params;
 
+  // FORCE RLS: plain db reads return nothing. Resolve the section's tenant via
+  // the definer; grades are student records, so platform staff need an active
+  // support grant for that tenant (no global bypass).
+  const sectionMeta = await fetchSectionById(sectionId);
+  const tenantId = sectionMeta?.tenantId ?? sectionMeta?.workspaceId;
+  if (!tenantId || !(await hasActiveSupportAccess(admin.id, tenantId))) {
+    return notFound();
+  }
+
   await logGradebookAccess({
     actorUserId: admin.id,
     actorClerkId: admin.clerkId,
@@ -36,27 +47,33 @@ export default async function AdminSectionGradebookPage({
     role: 'ADMIN',
   });
 
-  const section = await db.query.sections.findFirst({
-    where: and(eq(sections.id, sectionId), activeOnly(sections.deletedAt)),
-    with: { course: true },
-  });
+  const { section, studentEnrollments, quizSectionAssignments } = await withTenant(
+    tenantId,
+    admin.id,
+    async (tx) => ({
+      section: await tx.query.sections.findFirst({
+        where: and(eq(sections.id, sectionId), activeOnly(sections.deletedAt)),
+        with: { course: true },
+      }),
+      studentEnrollments: await tx.query.studentSections.findMany({
+        where: and(
+          eq(studentSections.sectionId, sectionId),
+          eq(studentSections.status, 'ACTIVE'),
+        ),
+        with: { student: true },
+      }),
+      quizSectionAssignments: await tx.query.quizSections.findMany({
+        where: eq(quizSections.sectionId, sectionId),
+        with: { quiz: true },
+      }),
+    }),
+  );
   if (!section) return notFound();
 
-  const studentEnrollments = await db.query.studentSections.findMany({
-    where: and(
-      eq(studentSections.sectionId, sectionId),
-      eq(studentSections.status, 'ACTIVE'),
-    ),
-    with: { student: true },
-  });
   const students = studentEnrollments
     .map((e) => e.student)
     .sort((a, b) => comparePersonsByLastName(a, b));
 
-  const quizSectionAssignments = await db.query.quizSections.findMany({
-    where: eq(quizSections.sectionId, sectionId),
-    with: { quiz: true },
-  });
   const sectionQuizzes = quizSectionAssignments
     .map((qs) => qs.quiz)
     .filter((q): q is NonNullable<(typeof quizSectionAssignments)[0]['quiz']> =>

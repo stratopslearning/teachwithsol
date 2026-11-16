@@ -4,6 +4,8 @@ import { auth } from '@clerk/nextjs/server';
 
 import { db } from '@/app/db';
 import { quizzes, users } from '@/app/db/schema';
+import { loadAdminRecord } from '@/lib/admin/records';
+import { withTenant } from '@/lib/db/tenantContext';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
@@ -40,9 +42,8 @@ export async function DELETE(
       );
     }
 
-    const targetQuiz = await db.query.quizzes.findFirst({
-      where: eq(quizzes.id, quizId),
-    });
+    // FORCE RLS: a plain db read finds no quiz; load it via the definer.
+    const targetQuiz = await loadAdminRecord('quiz', quizId);
     if (!targetQuiz) {
       return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
     }
@@ -63,10 +64,12 @@ export async function DELETE(
       return NextResponse.json({ success: true, alreadyDeleted: true });
     }
 
-    await db
-      .update(quizzes)
-      .set({ deletedAt: new Date(), isActive: false })
-      .where(eq(quizzes.id, quizId));
+    await withTenant(targetQuiz.tenantId, user.id, (tx) =>
+      tx
+        .update(quizzes)
+        .set({ deletedAt: new Date(), isActive: false })
+        .where(eq(quizzes.id, quizId)),
+    );
 
     const meta = extractRequestMeta(request);
     await logAudit({
@@ -75,7 +78,7 @@ export async function DELETE(
       action: 'admin.quiz.delete',
       targetType: 'quiz',
       targetId: quizId,
-      metadata: { title: targetQuiz?.title ?? null, soft: true },
+      metadata: { title: targetQuiz.label, soft: true },
       ip: meta.ip,
       userAgent: meta.userAgent,
     });

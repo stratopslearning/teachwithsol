@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 import { db } from '@/app/db';
 import { sections, users } from '@/app/db/schema';
+import { loadAdminRecord } from '@/lib/admin/records';
+import { withTenant } from '@/lib/db/tenantContext';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
@@ -36,13 +38,12 @@ export async function PUT(
         { status: 403 },
       );
     }
-    const targetSection = await db.query.sections.findFirst({
-      where: eq(sections.id, sectionId),
-    });
+    // FORCE RLS: a plain db read finds no section; load it via the definer.
+    const targetSection = await loadAdminRecord('section', sectionId);
     if (!targetSection) {
       return NextResponse.json({ error: 'Section not found' }, { status: 404 });
     }
-    const tenantId = targetSection.tenantId ?? targetSection.workspaceId;
+    const tenantId = targetSection.tenantId;
     if (!tenantId) {
       return NextResponse.json({ error: 'Section missing tenant' }, { status: 400 });
     }
@@ -68,11 +69,10 @@ export async function PUT(
       }
       patch.endsAt = endsAtResult.endsAt;
     }
-    const [updatedSection] = await db
-      .update(sections)
-      .set(patch)
-      .where(eq(sections.id, sectionId))
-      .returning();
+    // Under the section's tenant: a plain update matched no rows.
+    const [updatedSection] = await withTenant(tenantId, user.id, (tx) =>
+      tx.update(sections).set(patch).where(eq(sections.id, sectionId)).returning(),
+    );
     return NextResponse.json({ success: true, section: updatedSection });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -106,13 +106,12 @@ export async function DELETE(
     }
     const { sectionId } = await params;
 
-    const targetSection = await db.query.sections.findFirst({
-      where: eq(sections.id, sectionId),
-    });
+    // FORCE RLS: a plain db read finds no section; load it via the definer.
+    const targetSection = await loadAdminRecord('section', sectionId);
     if (!targetSection) {
       return NextResponse.json({ error: 'Section not found' }, { status: 404 });
     }
-    const tenantId = targetSection.tenantId ?? targetSection.workspaceId;
+    const tenantId = targetSection.tenantId;
     if (!tenantId) {
       return NextResponse.json({ error: 'Section missing tenant' }, { status: 400 });
     }
@@ -131,10 +130,12 @@ export async function DELETE(
 
     // Soft delete: keep the row + dependents so admins can audit/restore.
     // Hard delete with full cascade is at /api/admin/section/[id]/purge.
-    await db
-      .update(sections)
-      .set({ deletedAt: new Date(), isActive: false })
-      .where(eq(sections.id, sectionId));
+    await withTenant(tenantId, user.id, (tx) =>
+      tx
+        .update(sections)
+        .set({ deletedAt: new Date(), isActive: false })
+        .where(eq(sections.id, sectionId)),
+    );
 
     const meta = extractRequestMeta(req);
     await logAudit({
@@ -143,7 +144,7 @@ export async function DELETE(
       action: 'admin.section.delete',
       targetType: 'section',
       targetId: sectionId,
-      metadata: { name: targetSection?.name ?? null, soft: true },
+      metadata: { name: targetSection.label, soft: true },
       ip: meta.ip,
       userAgent: meta.userAgent,
     });

@@ -4,6 +4,8 @@ import { auth } from '@clerk/nextjs/server';
 
 import { db } from '@/app/db';
 import { courses, sections, users } from '@/app/db/schema';
+import { loadAdminRecord } from '@/lib/admin/records';
+import { withTenant } from '@/lib/db/tenantContext';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
@@ -35,13 +37,12 @@ export async function DELETE(
     }
     const { courseId } = await params;
 
-    const targetCourse = await db.query.courses.findFirst({
-      where: eq(courses.id, courseId),
-    });
+    // FORCE RLS: a plain db read finds no course; load it via the definer.
+    const targetCourse = await loadAdminRecord('course', courseId);
     if (!targetCourse) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
-    const tenantId = targetCourse.tenantId ?? targetCourse.workspaceId;
+    const tenantId = targetCourse.tenantId;
     if (!tenantId) {
       return NextResponse.json({ error: 'Course missing tenant' }, { status: 400 });
     }
@@ -59,7 +60,8 @@ export async function DELETE(
     }
 
     const cascadedSectionIds: string[] = [];
-    await db.transaction(async (tx) => {
+    // Under the course's tenant: plain db writes match no rows under FORCE RLS.
+    await withTenant(tenantId, user.id, async (tx) => {
       const now = new Date();
       const liveSections = await tx.query.sections.findMany({
         where: and(eq(sections.courseId, courseId), isNull(sections.deletedAt)),
@@ -85,7 +87,7 @@ export async function DELETE(
       targetType: 'course',
       targetId: courseId,
       metadata: {
-        title: targetCourse?.title ?? null,
+        title: targetCourse.label,
         cascadedSections: cascadedSectionIds,
         soft: true,
       },

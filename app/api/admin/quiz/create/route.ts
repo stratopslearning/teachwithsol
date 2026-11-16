@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/app/db';
-import { sections, users } from '@/app/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { users } from '@/app/db/schema';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { auth } from '@clerk/nextjs/server';
 
@@ -12,6 +12,7 @@ import {
   createQuizDefiner,
   fetchOfferingIdsForCourse,
   fetchSectionById,
+  fetchSectionsByIds,
 } from '@/lib/db/entityScopedReads';
 import { quizCreateBaseSchema } from '@/lib/quizSchemas';
 
@@ -39,10 +40,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const assignedSections = await db.query.sections.findMany({
-      where: inArray(sections.id, validatedData.sectionIds),
-      columns: { id: true, tenantId: true, workspaceId: true },
-    });
+    // FORCE RLS: a plain db read finds no sections; use the definer.
+    const assignedSections = await fetchSectionsByIds(validatedData.sectionIds);
     if (assignedSections.length !== validatedData.sectionIds.length) {
       return NextResponse.json({ error: 'One or more sections not found' }, { status: 404 });
     }

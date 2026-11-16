@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/app/db';
-import { quizzes, users } from '@/app/db/schema';
+import { users } from '@/app/db/schema';
 import { eq } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 
+import { loadAdminRecord } from '@/lib/admin/records';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
 import { unassignQuizSectionDefiner } from '@/lib/db/facultyWriteDefiners';
@@ -24,10 +25,8 @@ export async function DELETE(
     if (!user || !user.platformStaff) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
     }
-    const quiz = await db.query.quizzes.findFirst({
-      where: eq(quizzes.id, quizId),
-      columns: { tenantId: true },
-    });
+    // FORCE RLS: a plain db read finds no quiz; load it via the definer.
+    const quiz = await loadAdminRecord('quiz', quizId);
     if (!quiz) {
       return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
     }
