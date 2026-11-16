@@ -6,13 +6,7 @@ import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import { asUuidArray } from '@/lib/db/sqlArrays';
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
+import { asDate, rowsFromExecute } from '@/lib/db/rows';
 
 type CourseRow = {
   id: string;
@@ -34,10 +28,6 @@ type SectionRow = {
   is_active: boolean;
   created_at: Date | string;
 };
-
-function asDate(value: Date | string): Date {
-  return value instanceof Date ? value : new Date(value);
-}
 
 export async function fetchWorkspaceCoursesWithSections(workspaceId: string) {
   const [courseResult, sectionResult] = await Promise.all([

@@ -5,18 +5,7 @@
 import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
-
-function asDate(value: Date | string | null | undefined): Date | null {
-  if (value == null) return null;
-  return value instanceof Date ? value : new Date(value);
-}
+import { asDate, rowsFromExecute } from '@/lib/db/rows';
 
 export async function fetchAdminOverviewStats() {
   const result = await db.execute(sql`SELECT * FROM sol_admin_overview_stats()`);

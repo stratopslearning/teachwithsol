@@ -5,19 +5,7 @@ import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import { asUuidArray } from '@/lib/db/sqlArrays';
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
-
-function parseJsonb<T>(raw: unknown): T | null {
-  if (raw == null) return null;
-  if (typeof raw === 'string') return JSON.parse(raw) as T;
-  return raw as T;
-}
+import { parseJsonb, rowsFromExecute } from '@/lib/db/rows';
 
 export type ClaimedKnowledgeDocument = {
   id: string;

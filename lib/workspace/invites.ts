@@ -7,6 +7,7 @@ import { upsertRoleBinding } from '@/lib/authz/bindings';
 import type { BindingRole } from '@/lib/authz/permissions';
 import { withBasePath } from '@/lib/basePath';
 import { ensureWorkspaceMembership } from '@/lib/workspace/access';
+import { rowsFromExecute } from '@/lib/db/rows';
 
 const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
@@ -38,13 +39,6 @@ type WorkspaceInviteRow = {
   created_at: Date;
   workspace_name: string | null;
 };
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
 
 /**
  * Mint a one-time claim invite. Used by platform admin (owner provision) and

@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import { comparePersonsByLastName } from '@/lib/personName';
+import { asDate, rowsFromExecute } from '@/lib/db/rows';
 
 export type SectionEnrollmentRow = {
   id: string;
@@ -53,18 +54,6 @@ export type SectionDetailData = {
   quizzes: SectionQuizRow[];
   discussions: SectionDiscussionRow[];
 };
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
-
-function asDate(value: Date | string | null | undefined): Date | null {
-  if (value == null) return null;
-  return value instanceof Date ? value : new Date(value);
-}
 
 function asDateRequired(value: Date | string | null | undefined): Date {
   return asDate(value) ?? new Date(0);

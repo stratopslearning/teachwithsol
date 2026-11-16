@@ -9,6 +9,7 @@ import { db } from '@/app/db';
 import type { AuthzScopeType } from '@/lib/authz/authorize';
 import type { BindingRole } from '@/lib/authz/permissions';
 import { type LicensePlan } from '@/app/db/enums';
+import { asDate, rowsFromExecute } from '@/lib/db/rows';
 
 type BindingRow = {
   tenant_id: string;
@@ -16,13 +17,6 @@ type BindingRow = {
   scope_type: string;
   scope_id: string;
 };
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
 
 export async function fetchUserRoleBindings(
   userId: string,
@@ -109,10 +103,6 @@ type MembershipDetailRow = {
   license_stripe_subscription_id: string | null;
   license_period_end: Date | string | null;
 };
-
-function asDate(value: Date | string): Date {
-  return value instanceof Date ? value : new Date(value);
-}
 
 /**
  * Active memberships + workspace (+ latest license) without app.tenant_id.

@@ -11,6 +11,7 @@ import {
   assertWorkspaceFacultyRead,
   isWorkspaceKnowledgeCoordinator,
 } from '@/lib/knowledge/workspaceAccess';
+import { rowsFromExecute } from '@/lib/db/rows';
 import { getMaterialObjectBytes } from '@/lib/knowledge/storage';
 
 export type KnowledgePreviewMeta = {
@@ -39,13 +40,6 @@ type PreviewVersion = {
   mimeType: string | null;
   byteSize: number | null;
 };
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
 
 /** Version row via SECURITY DEFINER (BYPASSRLS owner) — includes s3_key. */
 async function fetchVersionById(
