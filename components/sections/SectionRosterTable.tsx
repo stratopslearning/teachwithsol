@@ -9,14 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -41,6 +33,7 @@ import {
 } from '@/lib/personName';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 import { confirmAction } from '@/components/feedback/ConfirmDialog';
+import { PageControls } from '@/components/patterns/PageControls';
 
 export type RosterEnrollmentRow = {
   id: string;
@@ -279,49 +272,7 @@ export function SectionRosterTable({
         </Table>
       </div>
 
-      {totalPages > 1 ? (
-        <Pagination>
-          <PaginationContent className="gap-1">
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (page > 1) setPage(page - 1);
-                }}
-                className={page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <PaginationItem key={p}>
-                <PaginationLink
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setPage(p);
-                  }}
-                  isActive={p === page}
-                  className="cursor-pointer"
-                >
-                  {p}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (page < totalPages) setPage(page + 1);
-                }}
-                className={
-                  page >= totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      ) : null}
+      <PageControls page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }
