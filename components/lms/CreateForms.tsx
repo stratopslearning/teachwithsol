@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { apiUrl } from '@/lib/basePath';
 import { Input } from '@/components/ui/input';
 
 function useCreate(courseId: string, path: string) {
@@ -15,7 +16,7 @@ function useCreate(courseId: string, path: string) {
 
   async function submit(body: Record<string, unknown>) {
     setError(null);
-    const res = await fetch(`/api/lms/courses/${courseId}/${path}`, {
+    const res = await fetch(apiUrl(`/api/lms/courses/${courseId}/${path}`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

@@ -18,6 +18,7 @@ import {
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { withBasePath } from '@/lib/basePath';
+import { apiUrl } from '@/lib/basePath';
 import { cn } from '@/lib/utils';
 
 type Item = {
@@ -123,7 +124,7 @@ export function StudentModulesClient({
   }, [modules]);
 
   async function markViewed(itemId: string) {
-    await fetch(`/api/lms/module-items/${itemId}/complete`, {
+    await fetch(apiUrl(`/api/lms/module-items/${itemId}/complete`), {
       method: 'POST',
     });
     startTransition(() => router.refresh());
