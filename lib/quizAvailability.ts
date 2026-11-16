@@ -42,6 +42,21 @@ export function getQuizAvailability(
 }
 
 /**
+ * When submissions close for this student: `quiz.endDate`, else the
+ * assignment due date (same precedence as `getQuizAvailability`). Use this for
+ * client countdowns / auto-submit so they match what the server enforces.
+ */
+export function effectiveQuizCloseDate(
+  quiz: { endDate?: Date | string | null },
+  assignment: { dueDate?: Date | string | null },
+): Date | null {
+  return (
+    normalizeDatabaseDate(quiz.endDate) ??
+    normalizeDatabaseDate(assignment.dueDate)
+  );
+}
+
+/**
  * Whether a published quiz should appear in student lists (dashboard, My
  * quizzes). Taking is gated separately by `getQuizAvailability`.
  *

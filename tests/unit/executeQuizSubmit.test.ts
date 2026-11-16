@@ -253,3 +253,64 @@ describe('executeQuizSubmit', () => {
     expect(getOrDeriveRubric).not.toHaveBeenCalled();
   });
 });
+
+describe('executeQuizSubmit: availability rules match start/page', () => {
+  const submit = () =>
+    executeQuizSubmit({
+      quizId: 'quiz-1',
+      assignmentId: 'asg-1',
+      studentId: 'stu-1',
+      answers: {},
+      autoSubmitted: false,
+    });
+
+  beforeEach(() => {
+    mocks.scoreSubmittedQuestions.mockResolvedValue({
+      totalScore: 0,
+      maxScore: 0,
+      gptFeedback: {},
+      pendingQuestionIds: [],
+    });
+  });
+
+  function withSectionEndingAt(endsAt: Date) {
+    const row = { id: 'sec-1', endsAt, tenantId: 'tenant-1', workspaceId: 'tenant-1' };
+    mocks.fetchSectionById.mockResolvedValue(row);
+  }
+
+  it('rejects submits to an archived quiz', async () => {
+    mocks.loadExamContext.mockResolvedValue({
+      assignment,
+      quiz: { ...quiz, isActive: false },
+      inProgressAttempt: inProgress,
+      submittedCount: 0,
+      quizSectionLinks: [{ sectionId: 'sec-1' }],
+    });
+    await expect(submit()).rejects.toMatchObject({
+      status: 400,
+      extras: { quizArchived: true },
+    });
+  });
+
+  it('accepts an attempt started before the section ended', async () => {
+    withSectionEndingAt(new Date(inProgress.startedAt.getTime() + 60_000));
+    await expect(submit()).resolves.toMatchObject({ gradingStatus: 'complete' });
+  });
+
+  it('rejects an attempt started after the section ended', async () => {
+    withSectionEndingAt(new Date(inProgress.startedAt.getTime() - 60_000));
+    await expect(submit()).rejects.toThrow(/section has ended/i);
+  });
+
+  it('rejects a fresh submit (no saved attempt) after the section ended', async () => {
+    withSectionEndingAt(new Date('2020-01-01T00:00:00.000Z'));
+    mocks.loadExamContext.mockResolvedValue({
+      assignment,
+      quiz,
+      inProgressAttempt: undefined,
+      submittedCount: 0,
+      quizSectionLinks: [{ sectionId: 'sec-1' }],
+    });
+    await expect(submit()).rejects.toThrow(/section has ended/i);
+  });
+});
