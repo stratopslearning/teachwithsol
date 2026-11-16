@@ -5,25 +5,7 @@ import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import type { hostedBooks } from '@/app/db/schema';
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
-
-function parseJsonb<T>(raw: unknown): T | null {
-  if (raw == null) return null;
-  if (typeof raw === 'string') return JSON.parse(raw) as T;
-  return raw as T;
-}
-
-function asDate(value: Date | string | null | undefined): Date {
-  if (value instanceof Date) return value;
-  if (value == null) return new Date(0);
-  return new Date(value);
-}
+import { asDateOr, parseJsonb, rowsFromExecute } from '@/lib/db/rows';
 
 type HostedBookRow = typeof hostedBooks.$inferSelect;
 
@@ -57,9 +39,9 @@ function mapBook(raw: RawBook): HostedBookRow {
     status: raw.status,
     errorMessage: raw.error_message ?? null,
     isReleased: Boolean(raw.is_released),
-    deletedAt: raw.deleted_at ? asDate(raw.deleted_at) : null,
-    createdAt: asDate(raw.created_at),
-    updatedAt: asDate(raw.updated_at),
+    deletedAt: raw.deleted_at ? asDateOr(raw.deleted_at, new Date(0)) : null,
+    createdAt: asDateOr(raw.created_at, new Date(0)),
+    updatedAt: asDateOr(raw.updated_at, new Date(0)),
   };
 }
 

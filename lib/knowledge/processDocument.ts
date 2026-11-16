@@ -12,6 +12,7 @@ import {
   supersedeKnowledgeChunksDefiner,
   updateKnowledgeVersionMetaDefiner,
 } from '@/lib/db/knowledgeJobDefiners';
+import { rowsFromExecute } from '@/lib/db/rows';
 import { chunkText } from '@/lib/knowledge/chunk';
 import { embedTexts } from '@/lib/knowledge/embed';
 import {
@@ -20,13 +21,6 @@ import {
 } from '@/lib/knowledge/extract';
 import { ocrBufferWithTextract, shouldTryOcr } from '@/lib/knowledge/ocr';
 import { getMaterialObjectBytes } from '@/lib/knowledge/storage';
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
 
 async function fetchVersionById(versionId: string) {
   const result = await db.execute(sql`

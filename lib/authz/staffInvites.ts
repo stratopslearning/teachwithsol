@@ -6,6 +6,7 @@ import {
   grantSectionStaff,
   type SectionStaffInviteRole,
 } from '@/lib/authz/staffGrants';
+import { rowsFromExecute } from '@/lib/db/rows';
 import { withBasePath } from '@/lib/basePath';
 
 const STAFF_INVITE_ROLES: SectionStaffInviteRole[] = [
@@ -51,13 +52,6 @@ type StaffInviteRow = {
   claimed_by_user_id: string | null;
   created_at: Date;
 };
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
 
 export async function createSectionStaffInvite(opts: {
   tenantId: string;

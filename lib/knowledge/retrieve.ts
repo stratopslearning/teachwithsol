@@ -6,6 +6,7 @@ import {
   MATERIALS_RETRIEVE_TOP_K,
   SAFE_MATERIALS_CONTEXT_CHAR_BUDGET,
 } from '@/lib/knowledge/constants';
+import { rowsFromExecute } from '@/lib/db/rows';
 import {
   includeLegacyCourseMaterialChunks,
   includeSharedKnowledgeChunks,
@@ -21,13 +22,6 @@ export type RetrievedChunk = {
   origin: 'course' | 'shared';
   versionId?: string | null;
 };
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
 
 function mapRetrievedRows(
   list: Array<{

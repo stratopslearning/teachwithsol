@@ -11,6 +11,7 @@ import {
   workspaceMemberships,
   workspaces,
 } from '@/app/db/schema';
+import { asDateOr } from '@/lib/db/rows';
 import { logAudit } from '@/lib/audit';
 import {
   DEFAULT_ONBOARDING_CHECKLIST,
@@ -248,14 +249,6 @@ export async function provisionWorkspace(
 
 type Tx = Parameters<Parameters<typeof withTenant>[2]>[0];
 
-function asDate(value: unknown): Date {
-  if (value instanceof Date) return value;
-  if (typeof value === 'string' || typeof value === 'number') {
-    return new Date(value);
-  }
-  return new Date();
-}
-
 function mapJsonWorkspace(
   raw: unknown,
 ): typeof workspaces.$inferSelect {
@@ -268,8 +261,8 @@ function mapJsonWorkspace(
     status: w.status as typeof workspaces.$inferSelect.status,
     parentWorkspaceId: (w.parent_workspace_id as string | null) ?? null,
     settings: (w.settings as Record<string, unknown>) ?? {},
-    createdAt: asDate(w.created_at),
-    updatedAt: asDate(w.updated_at),
+    createdAt: asDateOr(w.created_at, () => new Date()),
+    updatedAt: asDateOr(w.updated_at, () => new Date()),
   };
 }
 
@@ -288,10 +281,10 @@ function mapJsonLicense(
       l.billing_provider as typeof workspaceLicenses.$inferSelect.billingProvider,
     stripeCustomerId: (l.stripe_customer_id as string | null) ?? null,
     stripeSubscriptionId: (l.stripe_subscription_id as string | null) ?? null,
-    periodStart: l.period_start ? asDate(l.period_start) : null,
-    periodEnd: l.period_end ? asDate(l.period_end) : null,
-    createdAt: asDate(l.created_at),
-    updatedAt: asDate(l.updated_at),
+    periodStart: l.period_start ? asDateOr(l.period_start, () => new Date()) : null,
+    periodEnd: l.period_end ? asDateOr(l.period_end, () => new Date()) : null,
+    createdAt: asDateOr(l.created_at, () => new Date()),
+    updatedAt: asDateOr(l.updated_at, () => new Date()),
   };
 }
 

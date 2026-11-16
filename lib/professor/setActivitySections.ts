@@ -14,6 +14,7 @@ import {
   assignQuizSectionsDefiner,
   updateChatbotDefiner,
 } from '@/lib/db/facultyWriteDefiners';
+import { rowsFromExecute } from '@/lib/db/rows';
 import type { AuthUser } from '@/lib/getOrCreateUser';
 import { assignInteractiveSections } from '@/lib/interactives/mutations';
 import { userCanWriteQuiz } from '@/lib/quizAccess';
@@ -22,12 +23,6 @@ import {
   userCanWriteChatbot,
 } from '@/lib/chatbot/access';
 
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
 
 async function assertWriteOnSections(
   user: AuthUser,

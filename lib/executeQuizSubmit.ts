@@ -13,25 +13,13 @@ import {
   isSectionConcluded,
   SECTION_CONCLUDED_MESSAGE,
 } from '@/lib/sectionAvailability';
+import { parseJsonb, rowsFromExecute } from '@/lib/db/rows';
 import { maybeEncryptAttemptAnswers } from '@/lib/crypto/fieldEncryption';
 import { getLatestQuizVersionId } from '@/lib/quiz/versions';
 import { assertOfferingWritable } from '@/lib/offerings/lifecycle';
 import { ApiError } from '@/lib/api/errors';
 import { normalizeDatabaseDate } from '@/lib/utils';
 import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
-
-function parseJsonb<T>(raw: unknown): T | null {
-  if (raw == null) return null;
-  if (typeof raw === 'string') return JSON.parse(raw) as T;
-  return raw as T;
-}
 
 export class MaxAttemptsExceededError extends Error {
   constructor(public readonly maxAttempts: number) {

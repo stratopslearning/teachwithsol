@@ -7,6 +7,7 @@ import { withBasePath } from '@/lib/basePath';
 import { withTenant } from '@/lib/db/tenantContext';
 import { activeOnly } from '@/lib/db/filters';
 import { upsertStudentEnrollment } from '@/lib/enrollment/sources';
+import { rowsFromExecute } from '@/lib/db/rows';
 
 const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -38,13 +39,6 @@ type InviteRow = {
   claimed_by_user_id: string | null;
   created_at: Date;
 };
-
-function rowsFromExecute<T>(result: unknown): T[] {
-  return (
-    (result as { rows?: T[] }).rows ??
-    (Array.isArray(result) ? (result as T[]) : [])
-  );
-}
 
 export async function createSectionStudentInvite(opts: {
   tenantId: string;
