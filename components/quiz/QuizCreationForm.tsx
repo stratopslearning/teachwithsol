@@ -6,6 +6,7 @@ import {
   QUIZ_QUESTIONS_CSV_TEMPLATE,
 } from '@/lib/csv/downloadTemplate';
 import { QUESTION_TYPES } from '@/app/db/enums';
+import { QUIZ_LIMITS } from '@/lib/quizSchemas';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -68,10 +69,16 @@ const quizWindowRefine = {
 // Form validation: the settings step validates `quizBasicFields`, the final
 // submit validates the same fields plus questions.
 const quizBasicFields = z.object({
-  title: z.string().min(1, 'Quiz title is required').max(100, 'Title must be less than 100 characters'),
-  description: z.string().optional(),
+  title: z
+    .string()
+    .min(1, 'Quiz title is required')
+    .max(QUIZ_LIMITS.titleMax, `Title must be at most ${QUIZ_LIMITS.titleMax} characters`),
+  description: z.string().max(QUIZ_LIMITS.descriptionMax).optional(),
   maxAttempts: z.number().min(1, 'Max attempts must be at least 1').max(10, 'Max attempts cannot exceed 10'),
-  timeLimit: z.number().min(1, 'Time limit must be at least 1 minute').max(180, 'Time limit cannot exceed 3 hours'),
+  timeLimit: z
+    .number()
+    .min(1, 'Time limit must be at least 1 minute')
+    .max(QUIZ_LIMITS.timeLimitMaxMinutes, 'Time limit cannot exceed 24 hours'),
   passingScore: z
     .number()
     .int('Passing score must be a whole number')
