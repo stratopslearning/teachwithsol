@@ -9,7 +9,6 @@ import {
   aiCapOwnerAlertEmail,
   workspaceTeamUrl,
 } from '@/lib/email/templates';
-import { getRequiredBaseUrl } from '@/lib/stripe';
 
 function utcDayKey(d = new Date()): string {
   return d.toISOString().slice(0, 10);
@@ -49,18 +48,11 @@ export async function maybeNotifyAiCapOwners(opts: {
       columns: { name: true },
     });
 
-    let baseUrl: string | undefined;
-    try {
-      baseUrl = getRequiredBaseUrl();
-    } catch {
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-    }
-
     const tpl = aiCapOwnerAlertEmail({
       workspaceName: workspace?.name ?? 'Your workspace',
       used: opts.used,
       cap: opts.cap,
-      workspaceUrl: workspaceTeamUrl(baseUrl),
+      workspaceUrl: workspaceTeamUrl(),
     });
 
     const sent = await sendTransactionalEmail({
