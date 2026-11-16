@@ -1,6 +1,6 @@
 # ADR 0001: Tenant data access under FORCE RLS
 
-Status: proposed (needs a decision)
+Status: accepted (2026-11-16): typed definers
 Date: 2026-11-16
 
 ## Context
@@ -39,7 +39,7 @@ Findings:
    `PG_POOL_MAX=1` (the serverless default), concurrent requests in one instance
    serialize behind each other's transactions (30 s vs 78 ms above).
 
-## Decision (recommended)
+## Decision
 
 **Keep SECURITY DEFINER functions as the request-path data layer, and make them
 cheap to maintain (plan branch B).** Use `withTenant` only where a multi-statement
