@@ -1,6 +1,4 @@
-import { redirect } from 'next/navigation';
-
-import { withBasePath } from '@/lib/basePath';
+import { appRedirect } from '@/lib/serverRedirect';
 
 export default async function StudentSectionWorkRedirect({
   params,
@@ -8,7 +6,5 @@ export default async function StudentSectionWorkRedirect({
   params: Promise<{ sectionId: string }>;
 }) {
   const { sectionId } = await params;
-  redirect(
-    withBasePath(`/dashboard/student/sections/${sectionId}/assignments`),
-  );
+  appRedirect(`/dashboard/student/sections/${sectionId}/assignments`);
 }

@@ -83,6 +83,18 @@ export default [
             "CallExpression[callee.name='fetch'] > TemplateLiteral.arguments:first-child[quasis.0.value.raw=/^\\/api\\//]",
           message: "Wrap API paths with apiUrl() from '@/lib/basePath'.",
         },
+        // Next adds basePath to redirect() and next/link itself, so these
+        // produce /learning/learning/... on the /learning deploy.
+        {
+          selector:
+            "CallExpression[callee.name=/^(redirect|permanentRedirect)$/] > CallExpression.arguments:first-child[callee.name='withBasePath']",
+          message: "Use appRedirect(path) from '@/lib/serverRedirect' (Next adds basePath).",
+        },
+        {
+          selector:
+            "JSXOpeningElement[name.name='Link'] > JSXAttribute[name.name='href'] CallExpression[callee.name='withBasePath']",
+          message: "Use appPath() for next/link hrefs (Next adds basePath).",
+        },
       ],
       "no-restricted-imports": ["error", { paths: openAiRestrictedPaths }],
     },

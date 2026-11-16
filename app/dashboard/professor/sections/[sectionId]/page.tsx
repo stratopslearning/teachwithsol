@@ -1,8 +1,8 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 import { requireTeachingAccess } from '@/lib/authz/gates';
-import { withBasePath } from '@/lib/basePath';
 import { assertTeachesSection } from '@/lib/professor/sections';
+import { appRedirect } from '@/lib/serverRedirect';
 import { loadSectionDetailData } from '@/lib/sectionDetailData';
 
 export const dynamic = 'force-dynamic';
@@ -31,9 +31,5 @@ export default async function SectionDetailsPage({
   const courseId = data.section.course?.id;
   if (!courseId) return notFound();
 
-  redirect(
-    withBasePath(
-      `/dashboard/professor/courses/${courseId}/sections/${sectionId}`,
-    ),
-  );
+  appRedirect(`/dashboard/professor/courses/${courseId}/sections/${sectionId}`);
 }
