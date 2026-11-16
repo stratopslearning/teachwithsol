@@ -5,6 +5,8 @@ import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { withBasePath } from '@/lib/basePath';
+import { LocalDateTime } from '@/components/timezone/LocalDateTime';
+import { formatBytes } from '@/lib/format';
 
 type FileRow = {
   id: string;
@@ -13,13 +15,6 @@ type FileRow = {
   createdAt?: string | Date | null;
   byteSize?: number | null;
 };
-
-function formatBytes(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n) || n <= 0) return '—';
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export function FilesPanel({
   courseId,
@@ -98,12 +93,10 @@ export function FilesPanel({
                       {f.title}
                     </td>
                     <td className="px-4 py-3 text-ink-muted">
-                      {when && !Number.isNaN(when.getTime())
-                        ? when.toLocaleDateString()
-                        : '—'}
+                      <LocalDateTime value={when} dateOnly fallback="—" />
                     </td>
                     <td className="px-4 py-3 text-ink-muted">
-                      {formatBytes(f.byteSize)}
+                      {formatBytes(f.byteSize) ?? '—'}
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">

@@ -24,19 +24,9 @@ import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { getAttentionItemsForProfessor } from "@/lib/professorAttention";
 import { listTutorEscalationsForProfessor } from "@/lib/professor/tutorEscalations";
 import { listOpenRegradeRequestsForProfessor } from "@/lib/regradeRequests";
+import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 
 export const dynamic = "force-dynamic";
-
-function formatTimestamp(value: Date | null): string {
-  if (!value) return "-";
-  return new Date(value).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export default async function AttentionPage() {
   const user = await requireTeachingAccess();
@@ -128,9 +118,11 @@ export default async function AttentionPage() {
                 {tutorEscalations.map((e) => (
                   <TableRow key={e.sessionId}>
                     <TableCell>
-                      {e.escalatedAt
-                        ? formatTimestamp(new Date(e.escalatedAt))
-                        : "—"}
+                      {e.escalatedAt ? (
+                        <LocalDateTime value={e.escalatedAt} />
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell>
                       {[e.student.firstName, e.student.lastName]
@@ -173,7 +165,9 @@ export default async function AttentionPage() {
               <TableBody>
                 {regradeRequests.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell>{formatTimestamp(r.createdAt)}</TableCell>
+                    <TableCell>
+                      <LocalDateTime value={r.createdAt} />
+                    </TableCell>
                     <TableCell>
                       {[r.studentFirstName, r.studentLastName]
                         .filter(Boolean)
@@ -340,7 +334,7 @@ export default async function AttentionPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-ink-muted tnum">
-                        {formatTimestamp(item.submittedAt)}
+                        <LocalDateTime value={item.submittedAt} />
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1.5">{badges}</div>

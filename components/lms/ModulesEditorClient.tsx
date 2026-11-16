@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/tooltip';
 import { withBasePath } from '@/lib/basePath';
 import { cn } from '@/lib/utils';
+import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 
 type Item = {
   id: string;
@@ -429,7 +430,7 @@ export function ModulesEditorClient({
                       ) : null}
                       {m.unlockAt ? (
                         <span>
-                          Unlocks {new Date(m.unlockAt).toLocaleDateString()}
+                          Unlocks <LocalDateTime value={m.unlockAt} dateOnly />
                         </span>
                       ) : null}
                     </div>

@@ -36,6 +36,7 @@ import {
   professorCanAccessQuiz,
 } from "@/lib/quizAccess";
 import { computeQuestionStatsForAttempts } from "@/lib/quizQuestionStats";
+import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 
 export default async function QuizResultsPage({
   params,
@@ -266,9 +267,7 @@ export default async function QuizResultsPage({
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-ink-muted tnum">
-                      {attempt.submittedAt
-                        ? new Date(attempt.submittedAt).toLocaleDateString()
-                        : "—"}
+                      <LocalDateTime value={attempt.submittedAt} dateOnly fallback="—" />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="ghost" size="sm">

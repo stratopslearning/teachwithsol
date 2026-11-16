@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 
 type StudentRegradeRequestFormProps = {
   attemptId: string;
@@ -26,7 +27,7 @@ export function StudentRegradeRequestForm({
         <span className="eyebrow text-ink-faint">Regrade request</span>
         <p className="text-sm text-ink-muted mt-2">
           Your instructor received your request on{' '}
-          {new Date(existingOpenRequest.createdAt).toLocaleString()}. They will
+          <LocalDateTime value={existingOpenRequest.createdAt} />. They will
           review and respond in the gradebook.
         </p>
         <p className="text-sm text-ink mt-3 border-l-2 border-rule pl-3">

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { CreateAnnouncementForm } from '@/components/lms/CreateForms';
 import { Input } from '@/components/ui/input';
+import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 
 type AnnouncementRow = {
   id: string;
@@ -71,11 +72,7 @@ export function AnnouncementsPanel({
                       className="text-xs text-ink-muted"
                       dateTime={when.toISOString()}
                     >
-                      {when.toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      <LocalDateTime value={when} dateOnly />
                     </time>
                   ) : null}
                 </div>

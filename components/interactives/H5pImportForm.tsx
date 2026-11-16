@@ -11,14 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appPath } from "@/lib/basePath";
 import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
 
 type SectionOpt = { id: string; title: string; courseId: string };
-
-function formatBytes(n: number) {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export function H5pImportForm({ sections }: { sections: SectionOpt[] }) {
   const router = useRouter();
@@ -189,7 +184,7 @@ export function H5pImportForm({ sections }: { sections: SectionOpt[] }) {
                 {file.name}
               </p>
               <p className="text-xs text-muted-foreground">
-                {formatBytes(file.size)}
+                {formatBytes(file.size) ?? '0 B'}
               </p>
             </div>
             <button

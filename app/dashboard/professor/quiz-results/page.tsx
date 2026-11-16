@@ -25,6 +25,7 @@ import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
 import { listTeachingSectionIds } from '@/lib/professor/graderSections';
 import { fetchSectionsByIds } from '@/lib/db/entityScopedReads';
 import { cleanQuizDescription } from "@/lib/utils";
+import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 
 export default async function QuizResultsPage() {
   const user = await requireTeachingAccess();
@@ -306,9 +307,7 @@ export default async function QuizResultsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-ink-muted tnum">
-                      {stat.lastAttempt
-                        ? stat.lastAttempt.toLocaleDateString()
-                        : "-"}
+                      <LocalDateTime value={stat.lastAttempt} dateOnly />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="ghost" size="sm">

@@ -39,6 +39,7 @@ import {
   formatPersonName,
   type PersonNameFields,
 } from '@/lib/personName';
+import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 
 export type RosterEnrollmentRow = {
   id: string;
@@ -250,7 +251,7 @@ export function SectionRosterTable({
                     {row.person.email ?? '-'}
                   </TableCell>
                   <TableCell className="text-sm text-ink-muted tnum">
-                    {new Date(row.enrolledAt).toLocaleDateString()}
+                    <LocalDateTime value={row.enrolledAt} dateOnly />
                   </TableCell>
                   <TableCell>
                     <Badge

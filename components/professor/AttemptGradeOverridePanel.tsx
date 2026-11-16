@@ -17,6 +17,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { RubricCriterion } from '@/lib/gradingTypes';
+import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 
 export type OverrideHistoryEntry = {
   id: string;
@@ -315,7 +316,7 @@ export function AttemptGradeOverridePanel({
                       ) : null}
                     </span>
                     <span className="text-xs text-ink-faint tnum">
-                      {new Date(entry.createdAt).toLocaleString()}
+                      <LocalDateTime value={entry.createdAt} />
                     </span>
                   </div>
                   <p className="text-xs text-ink-faint mt-1">{entry.actorLabel}</p>
