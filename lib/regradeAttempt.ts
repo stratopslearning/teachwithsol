@@ -1,8 +1,10 @@
-import { and, eq } from 'drizzle-orm';
-
-import { db } from '@/app/db';
-import { attempts, questions, quizzes, sections } from '@/app/db/schema';
-import { activeOnly } from '@/lib/db/filters';
+import { fetchSectionById } from '@/lib/db/entityScopedReads';
+import {
+  loadActiveQuiz,
+  loadAttemptForGrading,
+  loadQuizQuestions,
+  saveAttemptGrading,
+} from '@/lib/quiz/gradingData';
 import {
   buildLegacyQuestionKeyMap,
   resolveAttemptAnswer,
@@ -95,9 +97,9 @@ export async function regradeAttempt(
   attemptId: string,
   options: RegradeAttemptOptions = {},
 ): Promise<RegradeAttemptResult> {
-  const attempt = await db.query.attempts.findFirst({
-    where: eq(attempts.id, attemptId),
-  });
+  // FORCE RLS: plain db reads/updates see no rows without a tenant, so load
+  // the attempt via a SECURITY DEFINER lookup and work under its tenant.
+  const attempt = await loadAttemptForGrading(attemptId);
 
   if (!attempt) {
     throw new Error('Attempt not found');
@@ -107,24 +109,22 @@ export async function regradeAttempt(
     throw new Error('Only submitted attempts can be re-graded');
   }
 
-  const quiz = await db.query.quizzes.findFirst({
-    where: and(eq(quizzes.id, attempt.quizId), activeOnly(quizzes.deletedAt)),
-  });
+  const tenantId = attempt.tenantId;
+  if (!tenantId) {
+    throw new Error(`Attempt ${attemptId} has no tenant`);
+  }
+
+  const quiz = await loadActiveQuiz(attempt.quizId, tenantId);
 
   if (!quiz) {
     throw new Error('Quiz not found');
   }
 
-  const quizQuestions = await db.query.questions.findMany({
-    where: eq(questions.quizId, attempt.quizId),
-  });
+  const quizQuestions = await loadQuizQuestions(attempt.quizId, tenantId);
 
   let courseId: string | undefined;
   if (attempt.sectionId) {
-    const section = await db.query.sections.findFirst({
-      where: eq(sections.id, attempt.sectionId),
-      columns: { courseId: true },
-    });
+    const section = await fetchSectionById(attempt.sectionId);
     courseId = section?.courseId;
   }
 
@@ -303,17 +303,14 @@ export async function regradeAttempt(
         ? 'failed'
         : 'partial';
 
-  await db
-    .update(attempts)
-    .set({
-      score: totalScore,
-      maxScore,
-      percentage,
-      passed,
-      gptFeedback: nextFeedback,
-      gradingStatus,
-    })
-    .where(eq(attempts.id, attemptId));
+  await saveAttemptGrading(tenantId, attemptId, {
+    score: totalScore,
+    maxScore,
+    percentage,
+    passed,
+    gptFeedback: nextFeedback,
+    gradingStatus,
+  });
 
   if (gradingStatus === 'complete') {
     const { enqueueQuizPassback } = await import('@/lib/lti/passback');
