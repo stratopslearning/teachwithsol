@@ -15,14 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { db } from '@/app/db';
-import { quizzes } from '@/app/db/schema';
-import { activeOnly } from '@/lib/db/filters';
+import { fetchQuizById } from '@/lib/db/entityScopedReads';
 import { appPath, withBasePath } from '@/lib/basePath';
 import { userCanWriteQuiz } from '@/lib/quizAccess';
 import { getCalibrationStubForQuiz } from '@/lib/quiz/calibrationStub';
 import { appRedirect } from '@/lib/serverRedirect';
-import { and, eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,10 +31,9 @@ export default async function QuizCalibrationPage({
   const user = await requireTeachingAccess();
 
   const { quizId } = await params;
-  const quiz = await db.query.quizzes.findFirst({
-    where: and(eq(quizzes.id, quizId), activeOnly(quizzes.deletedAt)),
-    columns: { id: true, title: true, professorId: true },
-  });
+  // FORCE RLS: a plain db read finds no quiz (the page was always a 404).
+  // The definer lookup skips deleted quizzes.
+  const quiz = await fetchQuizById(quizId);
   if (!quiz) notFound();
   // professorId is metadata; access = content.write on a section the quiz is assigned to.
   if (!(await userCanWriteQuiz(user, quizId))) notFound();

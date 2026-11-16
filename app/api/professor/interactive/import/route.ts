@@ -1,8 +1,6 @@
-import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
-import { db } from '@/app/db';
-import { courses } from '@/app/db/schema';
+import { fetchCourseById } from '@/lib/db/entityScopedReads';
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
@@ -72,10 +70,8 @@ export async function POST(req: Request) {
       isActive: false,
     });
 
-    const course = await db.query.courses.findFirst({
-      where: eq(courses.id, courseId),
-      columns: { tenantId: true, workspaceId: true },
-    });
+    // FORCE RLS: a plain db read finds no course (tenantId was always null).
+    const course = await fetchCourseById(courseId);
     const tenantId = course?.tenantId ?? course?.workspaceId ?? null;
     const key = buildInteractivePackageKey(
       courseId,

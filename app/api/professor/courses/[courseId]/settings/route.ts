@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
+import { withCourseTenant } from '@/lib/db/sectionTenants';
 import { courses } from '@/app/db/schema';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
@@ -33,17 +33,20 @@ export async function GET(
     const { courseId } = await ctx.params;
     await assertCanManageCourse(auth.user, courseId);
 
-    const course = await db.query.courses.findFirst({
-      where: eq(courses.id, courseId),
-      columns: {
-        id: true,
-        title: true,
-        subject: true,
-        level: true,
-        feedbackTone: true,
-        aiPolicy: true,
-      },
-    });
+    // FORCE RLS: plain db reads/updates see no rows; run under the course's tenant.
+    const course = await withCourseTenant(courseId, auth.user.id, (tx) =>
+      tx.query.courses.findFirst({
+        where: eq(courses.id, courseId),
+        columns: {
+          id: true,
+          title: true,
+          subject: true,
+          level: true,
+          feedbackTone: true,
+          aiPolicy: true,
+        },
+      }),
+    );
     if (!course) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
@@ -93,17 +96,24 @@ export async function PATCH(
       return NextResponse.json({ ok: true });
     }
 
-    const [updated] = await db
-      .update(courses)
-      .set(patch)
-      .where(eq(courses.id, courseId))
-      .returning({
-        id: courses.id,
-        aiPolicy: courses.aiPolicy,
-        subject: courses.subject,
-        level: courses.level,
-        feedbackTone: courses.feedbackTone,
-      });
+    // (A plain db update matched no rows, so settings were silently not saved.)
+    const rows = await withCourseTenant(courseId, auth.user.id, (tx) =>
+      tx
+        .update(courses)
+        .set(patch)
+        .where(eq(courses.id, courseId))
+        .returning({
+          id: courses.id,
+          aiPolicy: courses.aiPolicy,
+          subject: courses.subject,
+          level: courses.level,
+          feedbackTone: courses.feedbackTone,
+        }),
+    );
+    const updated = rows?.[0];
+    if (!updated) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
 
     return NextResponse.json({ ok: true, course: updated });
   } catch (error) {

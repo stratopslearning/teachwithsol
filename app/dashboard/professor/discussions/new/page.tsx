@@ -1,8 +1,6 @@
-import { eq, inArray } from 'drizzle-orm';
 import { requireTeachingAccess } from '@/lib/authz/gates';
 
-import { db } from '@/app/db';
-import { professorSections, quizSections, quizzes } from '@/app/db/schema';
+import { listDiscussionQuizOptions } from '@/lib/professor/discussionQuizOptions';
 import { ChatbotCreationForm } from '@/components/chatbot/ChatbotCreationForm';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -58,32 +56,9 @@ export default async function NewDiscussionPage(props: PageProps) {
 
   const enrolledSectionIds = enrolledSections.map((s) => s.id);
 
-  const ownedQuizzes = await db.query.quizzes.findMany({
-    where: eq(quizzes.professorId, user.id),
-  });
-
-  const sectionQuizLinks =
-    enrolledSectionIds.length > 0
-      ? await db.query.quizSections.findMany({
-          where: inArray(quizSections.sectionId, enrolledSectionIds),
-          with: { quiz: true },
-        })
-      : [];
-
-  const quizMap = new Map<string, { id: string; title: string }>();
-  for (const q of ownedQuizzes) {
-    if (!q.deletedAt) quizMap.set(q.id, { id: q.id, title: q.title });
-  }
-  for (const link of sectionQuizLinks) {
-    if (link.quiz && !link.quiz.deletedAt) {
-      quizMap.set(link.quiz.id, {
-        id: link.quiz.id,
-        title: link.quiz.title,
-      });
-    }
-  }
-  const quizOptions = Array.from(quizMap.values()).sort((a, b) =>
-    a.title.localeCompare(b.title),
+  const quizMap = await listDiscussionQuizOptions(user.id, enrolledSectionIds);
+  const quizOptions = Array.from(quizMap.values(), ({ id, title }) => ({ id, title })).sort(
+    (a, b) => a.title.localeCompare(b.title),
   );
 
   let initial:
@@ -98,12 +73,9 @@ export default async function NewDiscussionPage(props: PageProps) {
   if (quizId) {
     const quiz = quizMap.get(quizId);
     if (quiz) {
-      const full = await db.query.quizzes.findFirst({
-        where: eq(quizzes.id, quizId),
-      });
       initial = {
         title: `${quiz.title} Discussion`,
-        description: full?.description ?? undefined,
+        description: quiz.description ?? undefined,
         relatedQuizId: quizId,
         sectionIds: defaultSectionIds,
       };

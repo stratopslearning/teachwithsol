@@ -4,7 +4,7 @@ import { authorizeOnSection } from '@/lib/authz/courseAccess';
 import { Copy, Eye, ShieldCheck } from "@/components/icons";
 import { notFound } from "next/navigation";
 
-import { db } from "@/app/db";
+import { readBySectionTenants, withQuizTenant } from "@/lib/db/sectionTenants";
 import { questions, quizzes, sections } from "@/app/db/schema";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -40,24 +40,30 @@ export default async function EditQuizPage({
     }
   }
 
-  const teachingSections = await db.query.sections.findMany({
-    where: inArray(sections.id, teachingIds),
-    with: { course: true },
-  });
+  // FORCE RLS: plain db reads return nothing (the page was always a 404).
+  // Read sections under their tenants and the quiz under its own.
+  const teachingSections = await readBySectionTenants(teachingIds, user.id, (tx, ids) =>
+    tx.query.sections.findMany({
+      where: inArray(sections.id, ids),
+      with: { course: true },
+    }),
+  );
 
-  const quiz = await db.query.quizzes.findFirst({
-    where: and(
-      eq(quizzes.id, quizId),
-      activeOnly(quizzes.deletedAt),
-    ),
-    with: {
-      professor: true,
-      questions: { orderBy: questions.order },
-      sectionAssignments: {
-        with: { section: { with: { course: true } } },
+  const quiz = await withQuizTenant(quizId, user.id, (tx) =>
+    tx.query.quizzes.findFirst({
+      where: and(
+        eq(quizzes.id, quizId),
+        activeOnly(quizzes.deletedAt),
+      ),
+      with: {
+        professor: true,
+        questions: { orderBy: questions.order },
+        sectionAssignments: {
+          with: { section: { with: { course: true } } },
+        },
       },
-    },
-  });
+    }),
+  );
 
   if (!quiz) notFound();
 

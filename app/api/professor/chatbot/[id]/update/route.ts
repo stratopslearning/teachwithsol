@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
+import { fetchChatbotByIdDefiner } from '@/lib/db/studentReadDefiners';
+import { withTenant } from '@/lib/db/tenantContext';
 import { chatbots } from '@/app/db/schema';
 import { userCanWriteChatbot } from '@/lib/chatbot/access';
 import { ApiError, apiErrorResponse, jsonError } from '@/lib/api/errors';
@@ -81,10 +82,16 @@ export async function GET(
   }
 
   const { id } = await context.params;
-  const bot = await db.query.chatbots.findFirst({
-    where: and(eq(chatbots.id, id)),
-    with: { sectionAssignments: true, relatedQuiz: true },
-  });
+  // FORCE RLS: a plain db read finds nothing; read under the bot's tenant.
+  const meta = await fetchChatbotByIdDefiner(id);
+  const bot = meta?.tenantId
+    ? await withTenant(meta.tenantId, user.id, (tx) =>
+        tx.query.chatbots.findFirst({
+          where: eq(chatbots.id, id),
+          with: { sectionAssignments: true, relatedQuiz: true },
+        }),
+      )
+    : undefined;
   if (!bot) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }

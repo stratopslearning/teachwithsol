@@ -5,13 +5,15 @@
  * Format: `sol_pat_<40 hex chars>`. Only the SHA-256 hash is persisted; the
  * plaintext is returned exactly once at mint time. Tokens are tenant-scoped
  * (tenant_id NOT NULL). Lookup under FORCE RLS uses SECURITY DEFINER
- * resolve_api_token(hash); the request then sets app.tenant_id from the result.
+ * resolve_api_token(hash); later reads run under the returned tenant (withTenant).
  */
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import { professorApiTokens, users } from '@/app/db/schema';
+import { withTenant } from '@/lib/db/tenantContext';
+import { findInUserTenants, readInUserTenants } from '@/lib/db/userTenants';
 import { toUserData, type UserData } from '@/lib/getOrCreateUser';
 
 export const TOKEN_PREFIX = 'sol_pat_';
@@ -71,18 +73,21 @@ export async function mintProfessorApiToken(opts: {
     throw new Error('mintProfessorApiToken requires tenantId from the active workspace');
   }
   const secret = generateTokenSecret();
-  const [row] = await db
-    .insert(professorApiTokens)
-    .values({
-      userId: opts.userId,
-      tenantId: opts.tenantId,
-      name: opts.name,
-      tokenHash: hashToken(secret),
-      prefix: secret.slice(0, TOKEN_PREFIX.length + 4),
-      scopes: opts.scopes,
-      expiresAt: opts.expiresAt ?? null,
-    })
-    .returning();
+  // FORCE RLS: write under the token's tenant (a plain insert is rejected).
+  const [row] = await withTenant(opts.tenantId, opts.userId, (tx) =>
+    tx
+      .insert(professorApiTokens)
+      .values({
+        userId: opts.userId,
+        tenantId: opts.tenantId,
+        name: opts.name,
+        tokenHash: hashToken(secret),
+        prefix: secret.slice(0, TOKEN_PREFIX.length + 4),
+        scopes: opts.scopes,
+        expiresAt: opts.expiresAt ?? null,
+      })
+      .returning(),
+  );
 
   return {
     id: row.id,
@@ -111,10 +116,16 @@ export interface TokenListItem {
 export async function listProfessorApiTokens(
   userId: string,
 ): Promise<TokenListItem[]> {
-  const rows = await db.query.professorApiTokens.findMany({
-    where: eq(professorApiTokens.userId, userId),
-    orderBy: (t, { desc }) => [desc(t.createdAt)],
-  });
+  // FORCE RLS: a plain db read returns no tokens; read each of the user's
+  // tenants, newest first.
+  const found = await readInUserTenants(userId, (tx) =>
+    tx.query.professorApiTokens.findMany({
+      where: eq(professorApiTokens.userId, userId),
+    }),
+  );
+  const rows = found.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
@@ -133,17 +144,22 @@ export async function revokeProfessorApiToken(opts: {
   userId: string;
   tokenId: string;
 }): Promise<boolean> {
-  const [updated] = await db
-    .update(professorApiTokens)
-    .set({ revokedAt: new Date() })
-    .where(
-      and(
-        eq(professorApiTokens.id, opts.tokenId),
-        eq(professorApiTokens.userId, opts.userId),
-        isNull(professorApiTokens.revokedAt),
-      ),
-    )
-    .returning();
+  // FORCE RLS: a plain update matches nothing (revoke always "not found").
+  // Try each of the user's tenants; the token lives in exactly one.
+  const updated = await findInUserTenants(opts.userId, async (tx) => {
+    const [row] = await tx
+      .update(professorApiTokens)
+      .set({ revokedAt: new Date() })
+      .where(
+        and(
+          eq(professorApiTokens.id, opts.tokenId),
+          eq(professorApiTokens.userId, opts.userId),
+          isNull(professorApiTokens.revokedAt),
+        ),
+      )
+      .returning({ id: professorApiTokens.id });
+    return row;
+  });
   return Boolean(updated);
 }
 
@@ -184,24 +200,18 @@ export async function verifyProfessorApiToken(
   if (row.revoked_at) return null;
   if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) return null;
 
-  const a = Buffer.from(hashed);
-  const b = Buffer.from(hashed);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-
-  // Set tenant GUC for subsequent queries in this connection/transaction.
-  await db.execute(
-    sql`select set_config('app.tenant_id', ${row.tenant_id}, true)`,
-  );
-
   const owner = await db.query.users.findFirst({
     where: eq(users.id, row.user_id),
   });
   if (!owner) return null;
 
-  db.update(professorApiTokens)
-    .set({ lastUsedAt: new Date() })
-    .where(eq(professorApiTokens.id, row.token_id))
-    .catch((err) => console.error('PAT lastUsedAt update failed:', err));
+  // Under the token's tenant: a plain update matched no rows under FORCE RLS.
+  withTenant(row.tenant_id, row.user_id, (tx) =>
+    tx
+      .update(professorApiTokens)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(professorApiTokens.id, row.token_id)),
+  ).catch((err) => console.error('PAT lastUsedAt update failed:', err));
 
   const rawScopes = Array.isArray(row.scopes)
     ? row.scopes
