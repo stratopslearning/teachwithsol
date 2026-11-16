@@ -38,14 +38,12 @@ async function userCanWriteInteractive(
     }
   }
 
-  // Authorship is metadata: only counts with a teaching binding in the tenant,
-  // or (legacy rows without tenantId) when the author still teaches via sections.
+  // Authorship is metadata: it only counts with a teaching binding in the
+  // interactive's tenant. tenant_id is NOT NULL in the DB (0039); a row without
+  // one is treated as unowned rather than open to its author.
   const authorId = interactive.professorId;
-  if (authorId && authorId === user.id) {
-    if (interactive.tenantId) {
-      return userHasAnyBinding(user.id, interactive.tenantId, TEACHING_ROLES);
-    }
-    return true;
+  if (authorId && authorId === user.id && interactive.tenantId) {
+    return userHasAnyBinding(user.id, interactive.tenantId, TEACHING_ROLES);
   }
 
   return false;
