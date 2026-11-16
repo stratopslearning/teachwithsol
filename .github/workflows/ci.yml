@@ -68,7 +68,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run lint -- --max-warnings 0 || echo "lint configured manually; skipping non-zero failure"
+      # Errors fail the build. Warnings (unused vars etc.) are a tracked backlog.
+      - run: npm run lint
       - name: Legacy authz ratchet
         run: npm run check:legacy-authz
 
@@ -150,13 +151,3 @@ jobs:
         run: npm run test:db
       - name: Tenant schema check
         run: npm run check:tenant-schema
-
-  # Wave 4 (26): accessibility (axe) STUB — wire to Playwright + @axe-core/playwright
-  # once a seeded preview target exists. Intentionally non-blocking.
-  a11y-axe:
-    name: Accessibility (axe) — stub
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - run: echo "TODO(26) axe-core/playwright against a seeded preview; stub passes."
