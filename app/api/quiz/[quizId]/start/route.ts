@@ -12,12 +12,8 @@ import { logQuizAttemptAudit } from '@/lib/audit';
 import { loadExamContext, missingExamResource } from '@/lib/examContext';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { isStudentEntitled } from '@/lib/featureFlags';
-import { getQuizAvailability } from '@/lib/quizAvailability';
+import { assertQuizAccess, quizAccessError } from '@/lib/quiz/accessPolicy';
 import { resolveAttemptSectionId } from '@/lib/resolveAttemptSection';
-import {
-  isSectionConcluded,
-  SECTION_CONCLUDED_MESSAGE,
-} from '@/lib/sectionAvailability';
 import { shouldForceAutoSubmitInProgress } from '@/lib/shouldForceAutoSubmit';
 import {
   getRemainingSeconds,
@@ -67,13 +63,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ quizId
     if (missing === 'quiz') throw ApiError.notFound('Quiz not found');
     const assignment = ctx.assignment!;
     const quiz = ctx.quiz!;
-    if (!quiz.isActive) {
-      throw new ApiError({
-        status: 400,
-        message: 'This quiz is no longer available.',
-        extras: { quizArchived: true },
-      });
-    }
+    // Before resume / auto-submit: an archived quiz takes no new work.
+    if (!quiz.isActive) throw quizAccessError('archived', 'start');
 
     const now = new Date();
     const submittedCount = ctx.submittedCount;
@@ -118,20 +109,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ quizId
       }
     }
 
-    const availability = getQuizAvailability(quiz, assignment, now);
-    if (!availability.allowed) {
-      const messages = {
-        quizNotStarted: 'This quiz has not started yet.',
-        quizEnded: 'This quiz has ended.',
-        dueDatePassed: 'The due date for this assignment has passed.',
-      } as const;
-      throw new ApiError({
-        status: 400,
-        message: messages[availability.reason],
-        extras: { [availability.reason]: true },
-      });
-    }
-
     const quizSectionIds = ctx.quizSectionLinks.map((qs) => qs.sectionId);
     const sectionId = await resolveAttemptSectionId(user.id, quizSectionIds);
     if (!sectionId) {
@@ -141,13 +118,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ quizId
     const section = await db.query.sections.findFirst({
       where: eq(sections.id, sectionId),
     });
-    if (isSectionConcluded(section, now) && !inProgressAttempt) {
-      throw new ApiError({
-        status: 400,
-        message: SECTION_CONCLUDED_MESSAGE,
-        extras: { sectionConcluded: true },
-      });
-    }
+    assertQuizAccess(
+      { quiz, assignment, section, inProgressAttempt, submittedCount, now },
+      'start',
+    );
 
     if (inProgressAttempt) {
       if (submittedCount >= quiz.maxAttempts) {

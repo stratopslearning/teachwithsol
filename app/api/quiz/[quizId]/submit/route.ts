@@ -11,10 +11,7 @@ import {
 import { sanitizeAnswerRecord } from '@/lib/api/sanitizeStoredText';
 import { logQuizAttemptAudit } from '@/lib/audit';
 import { loadExamContext } from '@/lib/examContext';
-import {
-  executeQuizSubmit,
-  MaxAttemptsExceededError,
-} from '@/lib/executeQuizSubmit';
+import { executeQuizSubmit } from '@/lib/executeQuizSubmit';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { isStudentEntitled } from '@/lib/featureFlags';
 
@@ -95,62 +92,9 @@ export async function POST(
 
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
-    if (error instanceof MaxAttemptsExceededError) {
-      return apiErrorResponse(
-        new ApiError({
-          status: 400,
-          message: `Maximum attempts (${error.maxAttempts}) reached for this quiz. You cannot retake this quiz.`,
-          code: 'bad_request',
-          extras: { maxAttemptsReached: true },
-        }),
-      );
-    }
+    // Access-policy failures (archived, window, section ended, attempts,
+    // time limit) are ApiErrors already; only plain not-found errors map here.
     if (error instanceof Error && !(error instanceof ApiError)) {
-      if (error.message.includes('not started')) {
-        return apiErrorResponse(
-          new ApiError({
-            status: 400,
-            message: error.message,
-            extras: { quizNotStarted: true },
-          }),
-        );
-      }
-      if (error.message.includes('section has ended')) {
-        return apiErrorResponse(
-          new ApiError({
-            status: 400,
-            message: error.message,
-            extras: { sectionConcluded: true },
-          }),
-        );
-      }
-      if (error.message.includes('has ended')) {
-        return apiErrorResponse(
-          new ApiError({
-            status: 400,
-            message: error.message,
-            extras: { quizEnded: true },
-          }),
-        );
-      }
-      if (error.message.includes('due date')) {
-        return apiErrorResponse(
-          new ApiError({
-            status: 400,
-            message: error.message,
-            extras: { dueDatePassed: true },
-          }),
-        );
-      }
-      if (error.message.includes('Time limit exceeded')) {
-        return apiErrorResponse(
-          new ApiError({
-            status: 400,
-            message: error.message,
-            extras: { timeLimitExceeded: true },
-          }),
-        );
-      }
       if (
         error.message === 'Quiz not found' ||
         error.message === 'Assignment not found'
