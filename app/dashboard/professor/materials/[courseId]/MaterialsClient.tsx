@@ -632,7 +632,7 @@ export default function MaterialsClient({
         id: toastId,
         description: "Opening Authoring so you can review it.",
       });
-      router.push(withBasePath(`/dashboard/professor/authoring/${courseId}`));
+      router.push(appPath(`/dashboard/professor/authoring/${courseId}`));
     } catch {
       toast.error("Outline didn’t come together", {
         id: toastId,

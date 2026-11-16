@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { apiUrl, appPath, withBasePath } from "@/lib/basePath";
+import { apiUrl, appPath } from "@/lib/basePath";
 import type { InteractiveKind } from "@/app/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -253,7 +253,7 @@ export function InteractiveCreateForm({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to create");
       router.push(
-        withBasePath(
+        appPath(
           `/dashboard/professor/interactive/${data.interactive.id}/edit`,
         ),
       );

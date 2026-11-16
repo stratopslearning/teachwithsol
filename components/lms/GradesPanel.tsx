@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 
 type SectionRow = {
   id: string;
@@ -51,7 +51,7 @@ export function GradesPanel({
     if (studentPreview) params.set('as', 'student');
     params.set('section', sectionId);
     router.push(
-      withBasePath(
+      appPath(
         `/dashboard/professor/courses/${courseId}/grades?${params.toString()}`,
       ),
     );

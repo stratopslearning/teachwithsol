@@ -8,7 +8,7 @@ import { FileArchive, Loader2, Package, Upload, X } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiUrl, appPath, withBasePath } from "@/lib/basePath";
+import { apiUrl, appPath } from "@/lib/basePath";
 import { cn } from "@/lib/utils";
 
 type SectionOpt = { id: string; title: string; courseId: string };
@@ -77,7 +77,7 @@ export function H5pImportForm({ sections }: { sections: SectionOpt[] }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Import failed");
       router.push(
-        withBasePath("/dashboard/professor/assignments?type=INTERACTIVE"),
+        appPath("/dashboard/professor/assignments?type=INTERACTIVE"),
       );
       router.refresh();
     } catch (err) {
