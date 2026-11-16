@@ -118,6 +118,9 @@ export default async function OpenGraphImage() {
         </div>
       </div>
     ),
-    { ...size, fonts },
+    // An empty `fonts` array replaces the bundled default font and makes the
+    // render throw ("No fonts are loaded"), failing the build whenever the
+    // Google Fonts download fails. Only pass fonts when we have one.
+    fonts.length ? { ...size, fonts } : size,
   );
 }
