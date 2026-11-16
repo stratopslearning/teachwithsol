@@ -81,9 +81,17 @@ async function resolveLtiUserId(
   return link?.ltiUserId ?? null;
 }
 
+/** tenant_id is NOT NULL in the DB (0039); the TS schema still types it nullable. */
+function requireTenant(row: { id: string; tenantId: string | null }): string {
+  if (!row.tenantId) throw new Error(`LTI line item ${row.id} has no tenant`);
+  return row.tenantId;
+}
+
 async function enqueueJob(input: {
   idempotencyKey: string;
   lineItemRowId: string;
+  /** The line item's tenant; jobs are stamped with it (FORCE RLS). */
+  tenantId: string;
   userId: string;
   attemptId?: string | null;
   scoreGiven: number | null;
@@ -127,6 +135,7 @@ async function enqueueJob(input: {
 
   await db.insert(ltiPassbackJobs).values({
     idempotencyKey: input.idempotencyKey,
+    tenantId: input.tenantId,
     lineItemId: input.lineItemRowId,
     userId: input.userId,
     attemptId: input.attemptId ?? null,
@@ -174,6 +183,7 @@ export async function enqueueQuizPassback(opts: {
   await enqueueJob({
     idempotencyKey: `quiz:${attempt.quizId}:${attempt.studentId}:${attempt.sectionId}`,
     lineItemRowId: lineItem.id,
+    tenantId: requireTenant(lineItem),
     userId: attempt.studentId,
     attemptId: best.id,
     scoreGiven,
@@ -214,6 +224,7 @@ export async function enqueueCompletionPassback(opts: {
   await enqueueJob({
     idempotencyKey: `completion:${keyPart}:${opts.studentId}:${opts.sectionId}`,
     lineItemRowId: lineItem.id,
+    tenantId: requireTenant(lineItem),
     userId: opts.studentId,
     scoreGiven: 100,
     scoreMaximum: 100,

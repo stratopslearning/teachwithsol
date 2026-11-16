@@ -118,6 +118,7 @@ export async function ensureLineItemsForActivity(
 
       const values = {
         sectionLinkId: link.id,
+        tenantId: link.tenantId,
         courseActivityId: activity?.id ?? null,
         quizId: 'quizId' in ref ? ref.quizId : null,
         lessonId: 'lessonId' in ref ? ref.lessonId : null,

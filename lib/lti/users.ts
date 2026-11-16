@@ -41,6 +41,8 @@ function splitName(claims: {
  */
 export async function resolveOrCreateLtiUser(opts: {
   platformId: string;
+  /** The platform's tenant; user links are stamped with it (FORCE RLS). */
+  tenantId: string;
   ltiUserId: string;
   email: string | null | undefined;
   claims: {
@@ -139,6 +141,7 @@ export async function resolveOrCreateLtiUser(opts: {
     .values({
       userId: userRow.id,
       platformId: opts.platformId,
+      tenantId: opts.tenantId,
       ltiUserId: opts.ltiUserId,
       emailSnapshot: email || null,
     })
