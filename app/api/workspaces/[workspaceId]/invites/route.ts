@@ -8,7 +8,7 @@ import { apiErrorResponse } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { sendWorkspaceInviteMail } from '@/lib/email';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
-import { getRequiredBaseUrl } from '@/lib/stripe';
+import { appBaseUrl } from '@/lib/siteUrl';
 import {
   createWorkspaceInvite,
   userCanInviteWorkspaceFaculty,
@@ -80,12 +80,7 @@ export async function POST(
     );
   }
 
-  let baseUrl: string | undefined;
-  try {
-    baseUrl = getRequiredBaseUrl();
-  } catch {
-    baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-  }
+  const baseUrl = appBaseUrl();
 
   const role = parsed.data.role ?? 'instructor';
 

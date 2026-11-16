@@ -6,7 +6,7 @@ import { ApiError } from '@/lib/api/errors';
 import { withTenant } from '@/lib/db/tenantContext';
 import { createWorkspaceInvite } from '@/lib/workspace/invites';
 import { userCanInviteWorkspaceFaculty } from '@/lib/workspace/entitlement';
-import { getRequiredBaseUrl } from '@/lib/stripe';
+import { appBaseUrl } from '@/lib/siteUrl';
 
 export type AccessRequestRole = 'instructor' | 'admin';
 export type AccessRequestStatus =
@@ -121,12 +121,7 @@ export async function decideAccessRequest(opts: {
   const role: AccessRequestRole =
     opts.role === 'admin' ? 'admin' : 'instructor';
 
-  let baseUrl: string | undefined;
-  try {
-    baseUrl = getRequiredBaseUrl();
-  } catch {
-    baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-  }
+  const baseUrl = appBaseUrl();
 
   // Mint invite first so a failed invite leaves the request pending (retryable).
   const invite = await createWorkspaceInvite({

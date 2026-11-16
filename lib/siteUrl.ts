@@ -26,3 +26,11 @@ export function absoluteUrl(path: string = '/'): string {
   }
   return `${siteOrigin()}${withBasePath(path)}`;
 }
+
+/**
+ * Origin for links into the app (invite/claim links), or undefined when
+ * NEXT_PUBLIC_BASE_URL isn't configured; callers then build relative links.
+ */
+export function appBaseUrl(): string | undefined {
+  return process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') || undefined;
+}

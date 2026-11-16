@@ -37,3 +37,22 @@ describe('lib/siteUrl', () => {
     );
   });
 });
+
+describe('appBaseUrl', () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  it('trims the trailing slash from NEXT_PUBLIC_BASE_URL', async () => {
+    vi.stubEnv('NEXT_PUBLIC_BASE_URL', 'https://app.teachwithsol.com/');
+    const { appBaseUrl } = await import('@/lib/siteUrl');
+    expect(appBaseUrl()).toBe('https://app.teachwithsol.com');
+  });
+
+  it('is undefined when unset or empty (callers build relative links)', async () => {
+    vi.stubEnv('NEXT_PUBLIC_BASE_URL', '');
+    const { appBaseUrl } = await import('@/lib/siteUrl');
+    expect(appBaseUrl()).toBeUndefined();
+  });
+});

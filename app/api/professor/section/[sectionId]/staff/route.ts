@@ -14,7 +14,7 @@ import { createSectionStaffInvite } from '@/lib/authz/staffInvites';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { fetchCourseById, fetchSectionById } from '@/lib/db/entityScopedReads';
 import { sendStaffInviteMail } from '@/lib/email';
-import { getRequiredBaseUrl } from '@/lib/stripe';
+import { appBaseUrl } from '@/lib/siteUrl';
 import { SECTION_STAFF_INVITE_ROLES } from '@/app/db/enums';
 
 export const dynamic = 'force-dynamic';
@@ -77,12 +77,7 @@ export async function POST(
       where: sql`lower(${users.email}) = ${email}`,
     });
 
-    let baseUrl: string | undefined;
-    try {
-      baseUrl = getRequiredBaseUrl();
-    } catch {
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-    }
+    const baseUrl = appBaseUrl();
 
     const course = await fetchCourseById(section.courseId);
 
