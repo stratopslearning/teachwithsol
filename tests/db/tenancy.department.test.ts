@@ -8,8 +8,9 @@ import {
 import { withTenantGuc } from '../helpers/rlsSetup';
 import { workspaces } from '@/app/db/schema';
 import { eq } from 'drizzle-orm';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('tenancy.department', () => {
   let db: TestDb;

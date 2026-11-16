@@ -43,7 +43,11 @@ const UNIT_DB_STUB =
 if (!process.env.DATABASE_URL?.trim()) {
   process.env.DATABASE_URL = UNIT_DB_STUB;
 }
-if (!process.env.TEST_DATABASE_URL?.trim()) {
+// Record whether a real test database was provided BEFORE stubbing, so DB
+// suites can skip (locally) or fail (in CI) instead of hitting the stub.
+if (process.env.TEST_DATABASE_URL?.trim()) {
+  process.env.SOL_REAL_TEST_DB = '1';
+} else {
   process.env.TEST_DATABASE_URL = UNIT_DB_STUB;
 }
 
@@ -51,10 +55,4 @@ if (typeof globalThis.WebSocket === 'undefined') {
   neonConfig.webSocketConstructor = ws as any;
 }
 
-/**
- * Helper for integration tests: returns the active TEST_DATABASE_URL or
- * `null`. Tests that need a DB should call `if (!hasTestDb()) it.skip(...)`.
- */
-export function hasTestDb(): boolean {
-  return !!process.env.TEST_DATABASE_URL;
-}
+export { hasTestDb } from './helpers/testDb';

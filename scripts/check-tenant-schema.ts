@@ -11,7 +11,7 @@ import { Pool } from 'pg';
 loadEnv({ path: '.env', quiet: true });
 loadEnv({ path: '.env.local', override: true, quiet: true });
 
-import { TEACHING_TENANT_TABLES } from '../tests/helpers/teachingTenantTables';
+import { TEACHING_TENANT_TABLES } from '../lib/db/tenantTables';
 import { assertDevDatabaseOrExit } from './lib/assertDevDatabase';
 
 const EXTRA_REQUIRED = [

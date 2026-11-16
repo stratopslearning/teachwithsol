@@ -8,8 +8,9 @@ import {
   seedTenantGraph,
   type TenantGraph,
 } from '../helpers/seedTenantFixture';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('authz.scopes.offeringSection', () => {
   let db: TestDb;

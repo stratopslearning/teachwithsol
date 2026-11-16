@@ -29,8 +29,9 @@ import {
   makeUser,
   makeWorkspace,
 } from '../helpers/factories';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('admin CRUD soft-delete + audit', () => {
   let db: TestDb;

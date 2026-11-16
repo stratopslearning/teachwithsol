@@ -4,8 +4,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { Client } from 'pg';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('RLS visibility DEFINER smoke', () => {
   it('exposes teaching + course DEFINER functions', async () => {

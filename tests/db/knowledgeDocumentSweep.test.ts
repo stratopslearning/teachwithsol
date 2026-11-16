@@ -8,8 +8,9 @@ import { knowledgeDocuments } from '@/app/db/schema';
 import { closeTestDb, getTestDb, type TestDb } from '../helpers/db';
 import { makeWorkspace } from '../helpers/factories';
 import { withPinnedTenantDb } from '../helpers/rlsSetup';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('sol_list_pending_knowledge_documents', () => {
   let db: TestDb;

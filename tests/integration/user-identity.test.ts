@@ -8,8 +8,9 @@ import { quizzes, users } from '@/app/db/schema';
 
 import { closeTestDb, getTestDb, type TestDb } from '../helpers/db';
 import { makeQuiz, makeUser } from '../helpers/factories';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('user email uniqueness + delete reassignment', () => {
   let db: TestDb;

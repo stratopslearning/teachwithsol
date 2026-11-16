@@ -8,8 +8,9 @@ import {
 } from '../helpers/seedTenantFixture';
 import { makeMembership, makeUser } from '../helpers/factories';
 import { roleBindings } from '@/app/db/schema';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('tenancy.institution', () => {
   let db: TestDb;

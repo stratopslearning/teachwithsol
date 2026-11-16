@@ -1,0 +1,11 @@
+name: Setup
+description: Node 20 with npm cache, then npm ci. Run actions/checkout first.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+    - run: npm ci
+      shell: bash

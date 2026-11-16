@@ -35,10 +35,6 @@ jobs:
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: test_clerk_pub
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
       - name: Preflight secrets
         run: |
           missing=0
@@ -54,6 +50,6 @@ jobs:
             exit 1
           fi
           echo "Secrets present; project=$BRAINTRUST_PROJECT"
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - name: Run Braintrust evals
         run: npm run eval

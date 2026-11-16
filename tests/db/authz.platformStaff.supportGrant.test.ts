@@ -10,8 +10,9 @@ import {
 } from '../helpers/seedTenantFixture';
 import { supportAccessGrants } from '@/app/db/schema';
 import { eq } from 'drizzle-orm';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('authz.platformStaff.supportGrant', () => {
   let db: TestDb;
