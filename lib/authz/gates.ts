@@ -10,10 +10,6 @@ import {
   type Permission,
 } from '@/lib/authz/permissions';
 import {
-  legacyHasTeachingRole,
-  shadowCompare,
-} from '@/lib/authz/shadowAuthorize';
-import {
   fetchUserRoleBindings,
   userHasAnyActiveEnrollment,
 } from '@/lib/authz/userScopedReads';
@@ -74,15 +70,6 @@ export async function requireTeachingAccess(): Promise<UserData> {
   const user = await getOrCreateUser();
   if (!user) appRedirect('/login');
   const ok = await userCanAccessTeachingArea(user.id);
-  // Shadow: log disagreements between the legacy users.role gate and bindings.
-  // Enforcement is binding-based (unchanged); the legacy answer is evidence only.
-  await shadowCompare({
-    site: 'gates.requireTeachingAccess',
-    userId: user.id,
-    label: 'teaching_area',
-    legacy: legacyHasTeachingRole(user),
-    next: () => ok,
-  });
   if (!ok) {
     const learning = await userCanAccessLearningArea(user.id);
     appRedirect(learning ? '/dashboard/student' : '/onboarding');
@@ -138,13 +125,6 @@ export async function requirePermission(
   const user = await getOrCreateUser();
   if (!user) appRedirect('/login');
   const ok = await authorize(user, permission, resource);
-  await shadowCompare({
-    site: `gates.requirePermission:${permission}`,
-    userId: user.id,
-    label: permission,
-    legacy: legacyHasTeachingRole(user),
-    next: () => ok,
-  });
   if (!ok) appRedirect('/dashboard');
   return user;
 }

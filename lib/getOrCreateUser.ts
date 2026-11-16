@@ -53,22 +53,11 @@ export type PublicUserDto = Pick<
   'id' | 'platformStaff' | 'paid' | 'firstName' | 'lastName' | 'email'
 >;
 
-/**
- * Platform staff = `users.platform_staff` only.
- * Legacy role='ADMIN' fallback is off unless LEGACY_ADMIN_ROLE_FALLBACK=1
- * (escape hatch during rollback). Migration 0044 / backfill-platform-staff
- * must have run before relying on this.
- */
+/** Platform staff = `users.platform_staff` (users.role was dropped). */
 export function resolvePlatformStaff(row: {
   platformStaff?: boolean | null;
-  role?: string | null;
 }): boolean {
-  if (row.platformStaff) return true;
-  if (process.env.LEGACY_ADMIN_ROLE_FALLBACK === '1') {
-    const { role: legacyUsersRoleColumn } = row;
-    return legacyUsersRoleColumn === 'ADMIN';
-  }
-  return false;
+  return Boolean(row.platformStaff);
 }
 
 export function toUserData(row: {

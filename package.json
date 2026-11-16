@@ -11,8 +11,6 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "check:legacy-authz": "tsx scripts/count-legacy-authz.ts --check",
-    "count:legacy-authz": "tsx scripts/count-legacy-authz.ts --verbose",
     "check:tenant-schema": "tsx scripts/check-tenant-schema.ts",
     "migrate": "tsx scripts/guarded-drizzle-migrate.ts",
     "migrate:generate": "drizzle-kit generate",
