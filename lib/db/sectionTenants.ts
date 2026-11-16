@@ -1,6 +1,7 @@
 import {
   fetchCourseById,
   fetchQuizById,
+  fetchSectionById,
   fetchSectionsByIds,
 } from '@/lib/db/entityScopedReads';
 import { withTenant } from '@/lib/db/tenantContext';
@@ -73,6 +74,22 @@ export async function withCourseTenant<T>(
 ): Promise<T | undefined> {
   const course = await fetchCourseById(courseId);
   const tenantId = course?.tenantId ?? course?.workspaceId;
+  if (!tenantId) return undefined;
+  return withTenant(tenantId, userId, (tx) => run(tx, tenantId));
+}
+
+/**
+ * Run a read or write under the tenant that owns `sectionId` (resolved via a
+ * SECURITY DEFINER lookup). Returns undefined when the section or its tenant
+ * is missing.
+ */
+export async function withSectionTenant<T>(
+  sectionId: string,
+  userId: string | null,
+  run: (tx: TenantTx, tenantId: string) => Promise<T>,
+): Promise<T | undefined> {
+  const section = await fetchSectionById(sectionId);
+  const tenantId = section?.tenantId ?? section?.workspaceId;
   if (!tenantId) return undefined;
   return withTenant(tenantId, userId, (tx) => run(tx, tenantId));
 }

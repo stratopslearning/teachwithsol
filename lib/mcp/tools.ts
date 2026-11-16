@@ -95,7 +95,7 @@ import {
   getLessonCompletion,
 } from '@/lib/analytics';
 import { logAudit } from '@/lib/audit';
-import { db } from '@/app/db';
+import { withCourseTenant } from '@/lib/db/sectionTenants';
 import { lessons } from '@/app/db/schema';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 
@@ -805,21 +805,24 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     scope: 'read',
     handler: async (args, ctx) => {
       await assertCanManageCourse(ctx.auth.user, args.courseId as string);
-      const rows = await db.query.lessons.findMany({
-        where: and(
-          eq(lessons.courseId, args.courseId as string),
-          isNull(lessons.deletedAt),
-        ),
-        orderBy: [desc(lessons.updatedAt)],
-        columns: {
-          id: true,
-          title: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-      return { lessons: rows };
+      // FORCE RLS: a plain db read returned no lessons; read under the course's tenant.
+      const rows = await withCourseTenant(args.courseId as string, ctx.auth.user.id, (tx) =>
+        tx.query.lessons.findMany({
+          where: and(
+            eq(lessons.courseId, args.courseId as string),
+            isNull(lessons.deletedAt),
+          ),
+          orderBy: [desc(lessons.updatedAt)],
+          columns: {
+            id: true,
+            title: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+      );
+      return { lessons: rows ?? [] };
     },
   },
   {

@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withSectionTenant } from '@/lib/db/sectionTenants';
 import {
   chatbotAssignments,
   chatbotSections,
@@ -26,20 +26,24 @@ export type StudentCompletionMap = Record<
 export async function listSectionCompletionColumns(
   sectionId: string,
 ): Promise<CompletionColumn[]> {
-  const [ls, cs, is] = await Promise.all([
-    db.query.lessonSections.findMany({
-      where: eq(lessonSections.sectionId, sectionId),
-      with: { lesson: true },
-    }),
-    db.query.chatbotSections.findMany({
-      where: eq(chatbotSections.sectionId, sectionId),
-      with: { chatbot: true },
-    }),
-    db.query.interactiveSections.findMany({
-      where: eq(interactiveSections.sectionId, sectionId),
-      with: { interactive: true },
-    }),
-  ]);
+  // FORCE RLS: plain db reads return nothing (no completion columns ever
+  // showed). Read under the section's tenant.
+  const [ls, cs, is] = (await withSectionTenant(sectionId, null, (tx) =>
+    Promise.all([
+      tx.query.lessonSections.findMany({
+        where: eq(lessonSections.sectionId, sectionId),
+        with: { lesson: true },
+      }),
+      tx.query.chatbotSections.findMany({
+        where: eq(chatbotSections.sectionId, sectionId),
+        with: { chatbot: true },
+      }),
+      tx.query.interactiveSections.findMany({
+        where: eq(interactiveSections.sectionId, sectionId),
+        with: { interactive: true },
+      }),
+    ]),
+  )) ?? [[], [], []];
 
   const cols: CompletionColumn[] = [];
   for (const row of ls) {
@@ -98,32 +102,34 @@ export async function buildCompletionMapForSection(opts: {
     .filter((c) => c.type === 'INTERACTIVE')
     .map((c) => c.entityId);
 
-  const [lp, ca, ip] = await Promise.all([
-    lessonIds.length
-      ? db.query.lessonProgress.findMany({
-          where: and(
-            inArray(lessonProgress.lessonId, lessonIds),
-            inArray(lessonProgress.studentId, studentIds),
-          ),
-        })
-      : Promise.resolve([]),
-    chatbotIds.length
-      ? db.query.chatbotAssignments.findMany({
-          where: and(
-            inArray(chatbotAssignments.chatbotId, chatbotIds),
-            inArray(chatbotAssignments.studentId, studentIds),
-          ),
-        })
-      : Promise.resolve([]),
-    interactiveIds.length
-      ? db.query.interactiveProgress.findMany({
-          where: and(
-            inArray(interactiveProgress.interactiveId, interactiveIds),
-            inArray(interactiveProgress.studentId, studentIds),
-          ),
-        })
-      : Promise.resolve([]),
-  ]);
+  const [lp, ca, ip] = (await withSectionTenant(opts.sectionId, null, (tx) =>
+    Promise.all([
+      lessonIds.length
+        ? tx.query.lessonProgress.findMany({
+            where: and(
+              inArray(lessonProgress.lessonId, lessonIds),
+              inArray(lessonProgress.studentId, studentIds),
+            ),
+          })
+        : Promise.resolve([]),
+      chatbotIds.length
+        ? tx.query.chatbotAssignments.findMany({
+            where: and(
+              inArray(chatbotAssignments.chatbotId, chatbotIds),
+              inArray(chatbotAssignments.studentId, studentIds),
+            ),
+          })
+        : Promise.resolve([]),
+      interactiveIds.length
+        ? tx.query.interactiveProgress.findMany({
+            where: and(
+              inArray(interactiveProgress.interactiveId, interactiveIds),
+              inArray(interactiveProgress.studentId, studentIds),
+            ),
+          })
+        : Promise.resolve([]),
+    ]),
+  )) ?? [[], [], []];
 
   for (const col of columns) {
     for (const sid of studentIds) {
