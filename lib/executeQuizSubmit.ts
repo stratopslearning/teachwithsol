@@ -14,7 +14,7 @@ import { parseJsonb, rowsFromExecute } from '@/lib/db/rows';
 import { maybeEncryptAttemptAnswers } from '@/lib/crypto/fieldEncryption';
 import { getLatestQuizVersionId } from '@/lib/quiz/versions';
 import { assertOfferingWritable } from '@/lib/offerings/lifecycle';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { scoreOutcome } from '@/lib/quiz/score';
 
 export { MaxAttemptsExceededError } from '@/lib/quiz/accessPolicy';
 
@@ -152,9 +152,11 @@ export async function executeQuizSubmit(
       courseId: section?.courseId ?? null,
     });
 
-  const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-  const passingScore = quiz.passingScore ?? DEFAULT_PASSING_SCORE;
-  const passed = maxScore > 0 ? percentage >= passingScore : false;
+  const { percentage, passed } = scoreOutcome({
+    totalScore,
+    maxScore,
+    passingScore: quiz.passingScore,
+  });
   const attemptGradingStatus: 'complete' | 'partial' =
     pendingQuestionIds.length > 0 ? 'partial' : 'complete';
   const currentAttemptNumber = attemptCount + 1;

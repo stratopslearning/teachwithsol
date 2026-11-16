@@ -17,7 +17,7 @@ import {
 } from '@/lib/grading';
 import { getOrDeriveRubric } from '@/lib/gradingRubric';
 import { isGradedStatus, type StoredFeedback } from '@/lib/gradingTypes';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { scoreOutcome } from '@/lib/quiz/score';
 
 /**
  * Legacy fallback feedback message left over from the old grader. Kept for
@@ -288,9 +288,11 @@ export async function regradeAttempt(
     });
   }
 
-  const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-  const passingScore = quiz.passingScore ?? DEFAULT_PASSING_SCORE;
-  const passed = maxScore > 0 ? percentage >= passingScore : false;
+  const { percentage, passed } = scoreOutcome({
+    totalScore,
+    maxScore,
+    passingScore: quiz.passingScore,
+  });
   const gradingStatus: 'complete' | 'partial' | 'failed' =
     pendingQuestionCount === 0
       ? 'complete'

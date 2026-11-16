@@ -65,8 +65,9 @@ const quizWindowRefine = {
   path: ['endDate'],
 };
 
-// Form validation schemas
-const quizBasicSchema = z.object({
+// Form validation: the settings step validates `quizBasicFields`, the final
+// submit validates the same fields plus questions.
+const quizBasicFields = z.object({
   title: z.string().min(1, 'Quiz title is required').max(100, 'Title must be less than 100 characters'),
   description: z.string().optional(),
   maxAttempts: z.number().min(1, 'Max attempts must be at least 1').max(10, 'Max attempts cannot exceed 10'),
@@ -78,7 +79,11 @@ const quizBasicSchema = z.object({
     .max(100, 'Passing score cannot exceed 100'),
   ...quizDateWindow,
   hideFeedbackAfterDue: z.boolean(),
-}).refine((data) => data.endDate > data.startDate, quizWindowRefine);
+});
+const quizBasicSchema = quizBasicFields.refine(
+  (data) => data.endDate > data.startDate,
+  quizWindowRefine,
+);
 
 const questionSchema = z.object({
   question: z.string().min(1, 'Question text is required'),
@@ -88,20 +93,11 @@ const questionSchema = z.object({
   correctAnswer: z.string().optional(),
 });
 
-const quizSchema = z.object({
-  title: z.string().min(1, 'Quiz title is required').max(100, 'Title must be less than 100 characters'),
-  description: z.string().optional(),
-  maxAttempts: z.number().min(1, 'Max attempts must be at least 1').max(10, 'Max attempts cannot exceed 10'),
-  timeLimit: z.number().min(1, 'Time limit must be at least 1 minute').max(180, 'Time limit cannot exceed 3 hours'),
-  passingScore: z
-    .number()
-    .int('Passing score must be a whole number')
-    .min(0, 'Passing score must be 0 or higher')
-    .max(100, 'Passing score cannot exceed 100'),
-  ...quizDateWindow,
-  hideFeedbackAfterDue: z.boolean(),
-  questions: z.array(questionSchema).min(1, 'At least one question is required'),
-}).refine((data) => data.endDate > data.startDate, quizWindowRefine);
+const quizSchema = quizBasicFields
+  .extend({
+    questions: z.array(questionSchema).min(1, 'At least one question is required'),
+  })
+  .refine((data) => data.endDate > data.startDate, quizWindowRefine);
 
 type QuizFormData = z.infer<typeof quizSchema>;
 

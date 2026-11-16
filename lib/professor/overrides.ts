@@ -19,7 +19,7 @@ import {
   resolveAttemptAnswer,
   resolveAttemptFeedback,
 } from '@/lib/quizAttemptAnswers';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { scoreOutcome } from '@/lib/quiz/score';
 
 export type GradeOverrideInput = {
   attemptId: string;
@@ -221,10 +221,11 @@ export async function computeEffectiveAttemptScore(
     totalScore = clampScore(wholeAttempt.numericScore, maxScore);
   }
 
-  const percentage =
-    maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-  const passingScore = attempt.quiz?.passingScore ?? DEFAULT_PASSING_SCORE;
-  const passed = maxScore > 0 ? percentage >= passingScore : false;
+  const { percentage, passed } = scoreOutcome({
+    totalScore,
+    maxScore,
+    passingScore: attempt.quiz?.passingScore,
+  });
 
   return {
     totalScore,
