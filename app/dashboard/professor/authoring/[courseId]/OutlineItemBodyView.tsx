@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocalDate } from "@/components/timezone/useLocalDate";
+
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -127,6 +129,7 @@ export function OutlineItemBodyView({
   editable?: boolean;
   onQuestionPointsChange?: (index: number, points: number) => void;
 }) {
+  const localDate = useLocalDate();
   if (type === "LESSON") {
     const chapter = body.chapter;
     if (chapter?.kind === "interactive_chapter") {
@@ -234,10 +237,10 @@ export function OutlineItemBodyView({
           <p className="text-[11px] text-muted-foreground">
             {[
               body.startDate
-                ? `Opens ${new Date(body.startDate).toLocaleDateString()}`
+                ? `Opens ${localDate.date(body.startDate)}`
                 : null,
               body.endDate
-                ? `Due ${new Date(body.endDate).toLocaleDateString()}`
+                ? `Due ${localDate.date(body.endDate)}`
                 : null,
               body.timeLimit != null ? `${body.timeLimit} min` : null,
               body.maxAttempts != null

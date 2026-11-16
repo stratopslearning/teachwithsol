@@ -23,18 +23,9 @@ import {
 } from '@/lib/professor/graderSections';
 import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
 import { appRedirect } from '@/lib/serverRedirect';
+import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 
 export const dynamic = 'force-dynamic';
-
-function formatTimestamp(value: Date | null): string {
-  if (!value) return '-';
-  return new Date(value).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
 
 export default async function TaGradingDeskPage() {
   const user = await requireTeachingAccess();
@@ -94,7 +85,9 @@ export default async function TaGradingDeskPage() {
                   </TableCell>
                   <TableCell>{item.quiz.title}</TableCell>
                   <TableCell>{item.section.name}</TableCell>
-                  <TableCell>{formatTimestamp(item.submittedAt)}</TableCell>
+                  <TableCell>
+                    <LocalDateTime value={item.submittedAt} />
+                  </TableCell>
                   <TableCell>
                     <Badge variant="warning">{item.needsAttentionCount}</Badge>
                   </TableCell>

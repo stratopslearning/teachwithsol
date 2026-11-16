@@ -42,6 +42,7 @@ import {
   attemptNeedsBackgroundRetry,
   scheduleAttemptRetry,
 } from "@/lib/backgroundRetry";
+import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 
 export default async function AttemptDetailPage({
   params,
@@ -263,9 +264,7 @@ export default async function AttemptDetailPage({
           <div>
             <dt className="eyebrow text-ink-faint">Submitted</dt>
             <dd className="mt-2 text-ink tnum">
-              {attempt.submittedAt
-                ? new Date(attempt.submittedAt).toLocaleString()
-                : "-"}
+              <LocalDateTime value={attempt.submittedAt} />
             </dd>
           </div>
           <div className="col-span-2 lg:col-span-4">

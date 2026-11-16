@@ -66,6 +66,7 @@ import {
   type KnowledgeIndexStatus,
 } from "@/lib/knowledge/displayStatus";
 import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
 
 function isZipFile(file: File) {
   const mime = (file.type || "").toLowerCase();
@@ -107,13 +108,6 @@ function statusClass(
     default:
       return "border-border bg-muted text-muted-foreground";
   }
-}
-
-function formatBytes(n: number | null) {
-  if (n == null || n <= 0) return null;
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 /** Zip imports use "folder / file" titles — split for grouped display. */

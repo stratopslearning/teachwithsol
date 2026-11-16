@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocalDate } from "@/components/timezone/useLocalDate";
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Clock } from "@/components/icons";
@@ -51,16 +53,11 @@ function progressTone(item: ActivityListItem): "default" | "success" | "secondar
   }
 }
 
-function formatDue(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function scheduleMeta(item: ActivityListItem, now = new Date()) {
+function scheduleMeta(
+  item: ActivityListItem,
+  formatDue: (iso: string) => string,
+  now = new Date(),
+) {
   const start = item.startDate ? new Date(item.startDate) : null;
   const end = item.endDate ? new Date(item.endDate) : null;
 
@@ -100,6 +97,7 @@ export function AssignmentsTableClient({
   items: ActivityListItem[];
   role: "professor" | "student" | "admin";
 }) {
+  const localDate = useLocalDate();
   const [filter, setFilter] = useState<ActivityType | "ALL">("ALL");
   const filtered = useMemo(
     () =>
@@ -131,7 +129,7 @@ export function AssignmentsTableClient({
       ) : (
         <ul className="divide-y divide-rule rounded-xl border border-rule bg-surface">
           {filtered.map((item) => {
-            const schedule = scheduleMeta(item);
+            const schedule = scheduleMeta(item, localDate.shortDateTime);
             const attempts =
               item.type === "QUIZ" && item.attemptCount != null
                 ? item.maxAttempts != null && item.maxAttempts > 0

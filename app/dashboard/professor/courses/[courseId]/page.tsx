@@ -35,20 +35,9 @@ import { assertCanManageCourse, listCourseMaterials } from '@/lib/knowledge';
 import { loadCourseNav } from '@/lib/lms/loadCourseNav';
 import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
 import { assertWorkspaceAllowsTeaching } from '@/lib/workspace';
+import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 
 export const dynamic = 'force-dynamic';
-
-function formatWhen(d: Date | string | null | undefined) {
-  if (!d) return '';
-  const date = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
 
 export default async function ProfessorCourseHubPage({
   params,
@@ -312,9 +301,12 @@ export default async function ProfessorCourseHubPage({
                         {attempt.section.name
                           ? ` · ${attempt.section.name}`
                           : ''}
-                        {attempt.submittedAt
-                          ? ` · ${formatWhen(attempt.submittedAt)}`
-                          : ''}
+                        {attempt.submittedAt ? (
+                          <>
+                            {' · '}
+                            <LocalDateTime value={attempt.submittedAt} />
+                          </>
+                        ) : null}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">

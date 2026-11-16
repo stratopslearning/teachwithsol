@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocalDate } from "@/components/timezone/useLocalDate";
+
 import { apiFetch } from "@/lib/api/client";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -75,13 +77,12 @@ function TypeIcon({ type }: { type: ActivityType }) {
   return <Icon className="h-4 w-4" aria-hidden />;
 }
 
-function formatWindow(start: string | null, end: string | null) {
+function formatWindow(
+  start: string | null,
+  end: string | null,
+  fmt: (iso: string) => string,
+) {
   if (!start && !end) return null;
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
   if (start && end) return `${fmt(start)} – ${fmt(end)}`;
   if (start) return `From ${fmt(start)}`;
   return `Until ${fmt(end!)}`;
@@ -115,6 +116,7 @@ export function CourseAssignmentsClient({
   createInteractiveHref?: string;
   authoringHref: string;
 }) {
+  const localDate = useLocalDate();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [filter, setFilter] = useState<"ALL" | ActivityType>("ALL");
@@ -392,7 +394,7 @@ export function CourseAssignmentsClient({
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card/30">
           {visible.map((item) => {
-            const windowLabel = formatWindow(item.startDate, item.endDate);
+            const windowLabel = formatWindow(item.startDate, item.endDate, localDate.shortDate);
             const secondary = secondaryHref(item);
             const busy = pending || togglingId === item.id;
 

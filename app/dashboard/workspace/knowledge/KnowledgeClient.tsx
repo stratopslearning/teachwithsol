@@ -52,6 +52,8 @@ import type {
   KnowledgeProvider,
 } from "@/lib/knowledge";
 import { cn } from "@/lib/utils";
+import { LocalDateTime } from "@/components/timezone/LocalDateTime";
+import { formatBytes } from "@/lib/format";
 
 const UNFILED = "Unfiled";
 
@@ -117,12 +119,6 @@ function isZipFile(file: File) {
     mime === "application/zip" ||
     mime === "application/x-zip-compressed"
   );
-}
-
-function formatBytes(n: number) {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export type ConnectorProviderStatus = {
@@ -909,7 +905,7 @@ export default function KnowledgeClient({
                 {d.visibility === "personal" ? "Private" : "Shared"}
               </span>
               {d.byteSize != null ? (
-                <span>{formatBytes(d.byteSize)}</span>
+                <span>{formatBytes(d.byteSize) ?? '0 B'}</span>
               ) : null}
             </div>
             {d.errorMessage ? (
@@ -1082,7 +1078,7 @@ export default function KnowledgeClient({
                           {file.name}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {formatBytes(file.size)}
+                          {formatBytes(file.size) ?? '0 B'}
                           {isZipFile(file)
                             ? " · folders become prefixes"
                             : ""}
@@ -1311,7 +1307,7 @@ export default function KnowledgeClient({
                                   {bookFile.name}
                                 </p>
                                 <p className="text-[11px] text-muted-foreground">
-                                  {formatBytes(bookFile.size)}
+                                  {formatBytes(bookFile.size) ?? '0 B'}
                                 </p>
                               </div>
                               <button
@@ -1825,7 +1821,7 @@ export default function KnowledgeClient({
                       {ready && c?.lastSyncAt ? (
                         <p className="mt-2 text-xs text-muted-foreground">
                           Last sync{" "}
-                          {new Date(c.lastSyncAt).toLocaleString()}
+                          <LocalDateTime value={c.lastSyncAt} />
                         </p>
                       ) : null}
                     </div>
