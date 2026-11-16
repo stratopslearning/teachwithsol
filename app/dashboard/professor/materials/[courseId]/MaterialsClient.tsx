@@ -16,6 +16,13 @@ import {
   Upload,
   X,
 } from "@/components/icons";
+import {
+  MAX_UPLOAD_BYTES as MAX_BYTES,
+  MAX_ZIP_UPLOAD_BYTES as MAX_ZIP_BYTES,
+  MATERIAL_UPLOAD_ACCEPT as ACCEPTED,
+  BOOK_UPLOAD_ACCEPT as BOOK_ACCEPTED,
+  MAX_BOOK_UPLOAD_BYTES as MAX_BOOK_BYTES,
+} from "@/lib/uploadLimits";
 import { toast } from "sonner";
 
 import {
@@ -59,11 +66,6 @@ import {
 } from "@/lib/knowledge/displayStatus";
 import { cn } from "@/lib/utils";
 
-const ACCEPTED = ".pdf,.docx,.txt,.md,.zip";
-const BOOK_ACCEPTED = ".epub,.xml,.pdf";
-const MAX_BYTES = 50 * 1024 * 1024;
-const MAX_ZIP_BYTES = 50 * 1024 * 1024;
-
 function isZipFile(file: File) {
   const mime = (file.type || "").toLowerCase();
   return (
@@ -72,7 +74,6 @@ function isZipFile(file: File) {
     mime === "application/x-zip-compressed"
   );
 }
-const MAX_BOOK_BYTES = 50 * 1024 * 1024;
 
 function statusLabel(
   status: MaterialSummary["status"] | BookWithChapters["status"],
@@ -1646,7 +1647,6 @@ export default function MaterialsClient({
           </div>
         </section>
       ) : null}
-
 
       <section className="rounded-xl border border-border bg-card/40 p-3 sm:p-4">
         {(() => {

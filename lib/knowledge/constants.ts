@@ -11,10 +11,10 @@ export const CHUNK_TARGET_CHARS = 2_000;
 export const CHUNK_OVERLAP_CHARS = 200;
 
 /** Max upload size for a single file (50 MB; matches zip/book caps). */
-export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+export { MAX_UPLOAD_BYTES } from '@/lib/uploadLimits';
 
 /** Max size for a Knowledge zip pack (50 MB). */
-export const MAX_ZIP_UPLOAD_BYTES = 50 * 1024 * 1024;
+export { MAX_ZIP_UPLOAD_BYTES } from '@/lib/uploadLimits';
 
 /** Cap extracted Knowledge docs per zip. */
 export const MAX_ZIP_KNOWLEDGE_FILES = 40;

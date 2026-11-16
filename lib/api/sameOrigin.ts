@@ -11,7 +11,11 @@
  * not browsers on our origin.
  */
 
-import { MAX_BOOK_UPLOAD_BYTES } from '@/lib/books/constants';
+import {
+  MAX_BOOK_UPLOAD_BYTES,
+  MAX_ZIP_UPLOAD_BYTES,
+  MULTIPART_HEADROOM_BYTES,
+} from '@/lib/uploadLimits';
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -23,7 +27,8 @@ export const MIDDLEWARE_MAX_BODY_BYTES = 1_048_576; // 1 MB
  * H5P). Sized for zip packs (`MAX_ZIP_UPLOAD_BYTES` = 50 MB) plus ~1 MB of
  * multipart framing so a max-size zip is not rejected at the edge.
  */
-export const MIDDLEWARE_UPLOAD_MAX_BODY_BYTES = 51 * 1024 * 1024; // 51 MB
+export const MIDDLEWARE_UPLOAD_MAX_BODY_BYTES =
+  MAX_ZIP_UPLOAD_BYTES + MULTIPART_HEADROOM_BYTES; // 51 MB
 
 /**
  * Hosted-book EPUB/XML uploads (Pressbooks exports are often large): the
@@ -31,7 +36,7 @@ export const MIDDLEWARE_UPLOAD_MAX_BODY_BYTES = 51 * 1024 * 1024; // 51 MB
  * rejected at the edge (same headroom as the materials budget above).
  */
 export const MIDDLEWARE_BOOK_UPLOAD_MAX_BODY_BYTES =
-  MAX_BOOK_UPLOAD_BYTES + 1024 * 1024; // 51 MB
+  MAX_BOOK_UPLOAD_BYTES + MULTIPART_HEADROOM_BYTES; // 51 MB
 
 /** Paths that may receive multipart file uploads up to the materials budget. */
 export function isLargeUploadApiPath(appPath: string): boolean {

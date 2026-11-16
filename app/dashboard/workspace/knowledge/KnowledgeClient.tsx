@@ -10,6 +10,13 @@ import {
   useTransition,
 } from "react";
 import {
+  MAX_UPLOAD_BYTES as MAX_BYTES,
+  MAX_ZIP_UPLOAD_BYTES as MAX_ZIP_BYTES,
+  MATERIAL_UPLOAD_ACCEPT as ACCEPTED,
+  BOOK_UPLOAD_ACCEPT as BOOK_ACCEPTED,
+  MAX_BOOK_UPLOAD_BYTES as MAX_BOOK_BYTES,
+} from "@/lib/uploadLimits";
+import {
   BookOpen,
   ChevronRight,
   FileText,
@@ -45,11 +52,6 @@ import type {
 } from "@/lib/knowledge";
 import { cn } from "@/lib/utils";
 
-const ACCEPTED = ".pdf,.docx,.txt,.md,.zip";
-const BOOK_ACCEPTED = ".epub,.xml,.pdf";
-const MAX_BYTES = 50 * 1024 * 1024;
-const MAX_ZIP_BYTES = 50 * 1024 * 1024;
-const MAX_BOOK_BYTES = 50 * 1024 * 1024;
 const UNFILED = "Unfiled";
 
 /** Zip imports encode folders as `Week 1 / syllabus` in the title. */

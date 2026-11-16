@@ -225,3 +225,15 @@ describe('middleware upload body limits', () => {
     ).toBe(true);
   });
 });
+
+describe('upload limits stay derived from one source', () => {
+  it('middleware caps are the file caps plus multipart headroom', async () => {
+    const limits = await import('@/lib/uploadLimits');
+    expect(MIDDLEWARE_UPLOAD_MAX_BODY_BYTES).toBe(
+      limits.MAX_ZIP_UPLOAD_BYTES + limits.MULTIPART_HEADROOM_BYTES,
+    );
+    expect(MIDDLEWARE_BOOK_UPLOAD_MAX_BODY_BYTES).toBe(
+      limits.MAX_BOOK_UPLOAD_BYTES + limits.MULTIPART_HEADROOM_BYTES,
+    );
+  });
+});
