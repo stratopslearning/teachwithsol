@@ -24,7 +24,10 @@ export async function loadQuizQuestions(
   tenantId: string,
 ): Promise<GradingQuestion[]> {
   return withTenant(tenantId, null, (tx) =>
-    tx.query.questions.findMany({ where: eq(questions.quizId, quizId) }),
+    tx.query.questions.findMany({
+      where: eq(questions.quizId, quizId),
+      orderBy: (q, { asc }) => asc(q.order),
+    }),
   );
 }
 
@@ -44,6 +47,21 @@ export async function loadActiveQuiz(
 export async function loadAttemptForGrading(attemptId: string): Promise<AttemptRow | null> {
   const bundle = await fetchAttemptWithQuizAssignmentDefiner(attemptId);
   return bundle?.attempt ?? null;
+}
+
+/**
+ * A student's own attempt with its quiz, for the results / review pages.
+ * The lookup bypasses RLS, so ownership is checked here: returns null unless
+ * the attempt belongs to `studentId`.
+ */
+export async function loadOwnAttempt(
+  attemptId: string,
+  studentId: string,
+): Promise<{ attempt: AttemptRow; quiz: GradingQuiz } | null> {
+  const bundle = await fetchAttemptWithQuizAssignmentDefiner(attemptId);
+  if (!bundle?.attempt || !bundle.quiz) return null;
+  if (bundle.attempt.studentId !== studentId) return null;
+  return { attempt: bundle.attempt, quiz: bundle.quiz };
 }
 
 /**

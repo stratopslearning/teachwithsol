@@ -1,7 +1,3 @@
-import { eq } from "drizzle-orm";
-
-import { db } from "@/app/db";
-import { attempts, questions } from "@/app/db/schema";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -17,6 +13,7 @@ import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { listGradeOverrideHistoryForAttempt } from "@/lib/professor/overrides";
 import { quizGradesAreReleased } from "@/lib/professor/gradesReleased";
 import { getOpenRegradeRequestForAttempt } from "@/lib/regradeRequests";
+import { loadOwnAttempt, loadQuizQuestions } from "@/lib/quiz/gradingData";
 
 interface ResultsPageProps {
   params: Promise<{ quizId: string }>;
@@ -37,16 +34,13 @@ export default async function ResultsPage({
     appRedirect("/dashboard/student");
   }
 
-  const attempt = await db.query.attempts.findFirst({
-    where: eq(attempts.id, attemptId),
-    with: { quiz: true },
-  });
-
-  if (!attempt || attempt.studentId !== user.id) {
+  // FORCE RLS: a plain db read returns no attempt (students were bounced to
+  // the dashboard). Load via the definer; ownership is checked there.
+  const own = await loadOwnAttempt(attemptId, user.id);
+  if (!own) {
     appRedirect("/dashboard/student");
   }
-
-  const quiz = attempt.quiz;
+  const { attempt, quiz } = own;
   if (
     attempt.tenantId &&
     (attempt.gradingStatus !== "complete" ||
@@ -67,11 +61,8 @@ export default async function ResultsPage({
     : null;
 
   const quizQuestions =
-    overrideHistory.length > 0
-      ? await db.query.questions.findMany({
-          where: eq(questions.quizId, p.quizId),
-          columns: { id: true, order: true },
-        })
+    overrideHistory.length > 0 && attempt.tenantId
+      ? await loadQuizQuestions(attempt.quizId, attempt.tenantId)
       : [];
   const questionOrder = new Map(
     quizQuestions.map((q) => [q.id, q.order] as const),

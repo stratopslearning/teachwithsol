@@ -1,7 +1,3 @@
-import { eq } from "drizzle-orm";
-
-import { db } from "@/app/db";
-import { attempts, questions } from "@/app/db/schema";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { GPTFeedbackDisplay } from "@/components/quiz/GPTFeedbackDisplay";
@@ -29,6 +25,7 @@ import {
   quizGradesAreReleased,
 } from "@/lib/professor/overrides";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
+import { loadOwnAttempt, loadQuizQuestions } from "@/lib/quiz/gradingData";
 
 interface ReviewPageProps {
   params: Promise<{ quizId: string }>;
@@ -48,20 +45,14 @@ export default async function ReviewPage({
 
   if (!attemptId) appRedirect("/dashboard/student");
 
-  const attempt = await db.query.attempts.findFirst({
-    where: eq(attempts.id, attemptId),
-    with: { quiz: true },
-  });
-
-  if (!attempt || attempt.studentId !== user.id) {
+  // FORCE RLS: plain db reads return no attempt / questions. Load via the
+  // definer (ownership checked) and read questions under the attempt's tenant.
+  const own = await loadOwnAttempt(attemptId, user.id);
+  if (!own || own.attempt.quizId !== quizId || !own.attempt.tenantId) {
     appRedirect("/dashboard/student");
   }
-
-  const quiz = attempt.quiz;
-  const quizQuestions = await db.query.questions.findMany({
-    where: eq(questions.quizId, quizId),
-    orderBy: (questions, { asc }) => asc(questions.order),
-  });
+  const { attempt, quiz } = own;
+  const quizQuestions = await loadQuizQuestions(quizId, attempt.tenantId!);
   const answers: Record<string, any> = (attempt.answers as any) || {};
   const gptFeedback: Record<string, any> = attempt.gptFeedback || {};
   const questionKeyMap = buildLegacyQuestionKeyMap(
