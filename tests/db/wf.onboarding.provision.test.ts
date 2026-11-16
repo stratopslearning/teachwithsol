@@ -4,8 +4,9 @@ import { closeTestDb, getTestDb, type TestDb } from '../helpers/db';
 import { makeUser } from '../helpers/factories';
 import { workspaces, workspaceLicenses, roleBindings } from '@/app/db/schema';
 import { eq } from 'drizzle-orm';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('wf.onboarding.provision', () => {
   let db: TestDb;

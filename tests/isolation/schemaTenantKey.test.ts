@@ -2,8 +2,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { closeTestDb, getTestDb, type TestDb } from '../helpers/db';
 import { TEACHING_TENANT_TABLES } from '../helpers/teachingTenantTables';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('schema tenant_id on teaching tables', () => {
   let db: TestDb;

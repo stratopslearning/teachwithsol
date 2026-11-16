@@ -3,8 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { retrieveCourseChunks } from '@/lib/knowledge/retrieve';
 
 import { closeTestDb, getTestDb, type TestDb } from '../helpers/db';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('vector retrieval cross-tenant', () => {
   let db: TestDb;

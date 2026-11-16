@@ -1,9 +1,11 @@
 /**
- * Fail fast in CI when DB project runs without TEST_DATABASE_URL
+ * Fail fast in CI when the db project runs without a real TEST_DATABASE_URL
  * (no silent skip-and-green).
  */
-if (process.env.CI === 'true' && !process.env.TEST_DATABASE_URL) {
+import { hasTestDb } from './helpers/testDb';
+
+if (process.env.CI === 'true' && !hasTestDb()) {
   throw new Error(
-    'CI=true but TEST_DATABASE_URL is unset — db project cannot skip in CI',
+    'CI=true but TEST_DATABASE_URL is unset; the db project cannot skip in CI',
   );
 }

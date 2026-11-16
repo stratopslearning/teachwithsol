@@ -16,23 +16,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - run: npm run typecheck
 
   test:
     name: Test
     runs-on: ubuntu-latest
-    # Only run when the test secrets are configured. The condition prevents the
-    # job from failing on forks that don't have access to repository secrets.
-    if: ${{ vars.RUN_TESTS == 'true' || github.event_name == 'pull_request' }}
     env:
       NODE_ENV: test
-      DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
       CLERK_SECRET_KEY: test_clerk_secret
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: test_clerk_pub
       STRIPE_SECRET_KEY: sk_test_dummy
@@ -42,19 +33,11 @@ jobs:
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - name: Unit tests (no DB)
         run: npm test
-      - name: Apply migrations (Neon optional)
-        if: ${{ env.DATABASE_URL != '' }}
-        run: npm run migrate
-      - name: DB tests against Neon (optional branch fidelity)
-        if: ${{ env.DATABASE_URL != '' }}
-        run: npm run test:db
+      # Migrations, DB tests and the tenant-schema check run once, in the
+      # isolation job below, against a throwaway Postgres.
       # Golden LLM grading scores: .github/workflows/evals.yml (Braintrust).
       # Shape guard: tests/unit/goldenGradingShape.test.ts in unit project.
 
@@ -63,34 +46,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       # Errors fail the build. Warnings (unused vars etc.) are a tracked backlog.
       - run: npm run lint
-
-  tenant-schema:
-    name: Tenant schema check
-    runs-on: ubuntu-latest
-    if: ${{ vars.RUN_TESTS == 'true' || github.event_name == 'pull_request' }}
-    env:
-      NODE_ENV: test
-      DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-      DEV_DB_HOSTS: ${{ secrets.DEV_DB_HOSTS }}
-      I_CONFIRM_DEV_DB: '1'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - name: Check tenant_id + FORCE RLS
-        if: ${{ env.TEST_DATABASE_URL != '' }}
-        run: npm run check:tenant-schema
 
   # Wave 4 (26): isolation suite against an EPHEMERAL Postgres + pgvector
   # service container — never the shared Neon dev database.
@@ -129,11 +87,7 @@ jobs:
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - name: Apply migrations (as owner)
         env:
           DATABASE_URL: postgresql://postgres:ci_owner_pw@localhost:5432/neondb

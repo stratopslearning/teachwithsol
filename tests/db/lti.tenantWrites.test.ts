@@ -10,8 +10,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ltiDeployments, ltiPlatforms } from '@/app/db/schema';
 import { closeTestDb, getTestDb, type TestDb } from '../helpers/db';
 import { makeWorkspace } from '../helpers/factories';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('lti tenant-stamped writes', () => {
   let db: TestDb;

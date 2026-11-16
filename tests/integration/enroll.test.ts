@@ -27,8 +27,9 @@ import {
   makeSection,
   makeUser,
 } from '../helpers/factories';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('student_sections unique constraint', () => {
   let db: TestDb;

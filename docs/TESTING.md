@@ -44,13 +44,12 @@ It does **not** prove UI clicks, live Canvas LTI, or deterministic LLM scores (B
 | Job | Role |
 | --- | --- |
 | `typecheck` | `tsc` |
-| `test` | Always `npm test` (unit); optional Neon `test:db` if secret set |
-| `isolation-pgvector` | **Required** ephemeral Postgres: migrate → `sol_app` → `npm run test:db` → tenant-schema |
-| `tenant-schema` | `check:tenant-schema` when Neon URL present |
+| `test` | `npm test` (unit only) |
+| `isolation-pgvector` | The one DB job: ephemeral Postgres, migrate → `sol_app` → `npm run test:db` → `check:tenant-schema`. The db project fails (never skips) in CI |
 | `lint` | `next lint` (errors fail the build; warnings are backlog) + legacy-authz ratchet |
 
 ## Adding tests
 
 - Pure logic → `tests/unit/`.
-- Needs Postgres / RLS / authorize against real bindings → `tests/db/` with `describe.skipIf(!process.env.TEST_DATABASE_URL)`.
+- Needs Postgres / RLS / authorize against real bindings → `tests/db/` with `describe.skipIf(!hasTestDb())` (`tests/helpers/testDb.ts`).
 - Prefer `seedTenantGraph` over hand-rolled inserts.

@@ -13,8 +13,9 @@ import { activeOnly } from '@/lib/db/filters';
 
 import { closeTestDb, getTestDb, type TestDb } from '../helpers/db';
 import { makeQuiz, makeUser } from '../helpers/factories';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 describe.skipIf(skip)('quiz visibility (publish / hide)', () => {
   let db: TestDb;

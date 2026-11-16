@@ -17,8 +17,9 @@ import {
   seedTenantGraph,
   type TenantGraph,
 } from '../helpers/seedTenantFixture';
+import { hasTestDb } from '@/tests/helpers/testDb';
 
-const skip = !process.env.TEST_DATABASE_URL;
+const skip = !hasTestDb();
 
 const SAMPLE_DENY: Partial<Record<BindingRole, Permission>> = {
   faculty: 'grade.write',
