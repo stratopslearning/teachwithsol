@@ -29,6 +29,7 @@ import {
   MAX_USER_MESSAGE_CHARS,
   TUTOR_PROMPT_VERSION,
 } from '@/lib/chatbot/constants';
+import { tutorAiCapBlock } from '@/lib/chatbot/aiCap';
 import { streamChatbotReply, scrubAssistantReply } from '@/lib/chatbot/respond';
 import { resolveModel } from '@/lib/ai/modelRouter';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
@@ -174,30 +175,9 @@ export async function POST(
     // Fast-path when retrieval is empty: fixed reply (still allow streaming path for policy).
     const forceNotInMaterials = !hadRetrievalHits && !lessonsContext.trim();
 
-    let tutorWorkspaceId: string | null = null;
     const sessionSection = await fetchSectionById(session.sectionId);
-    try {
-      if (sessionSection?.courseId) {
-        const { getCourseWorkspaceId, checkAiBandAvailable } = await import(
-          '@/lib/workspace'
-        );
-        tutorWorkspaceId = await getCourseWorkspaceId(sessionSection.courseId);
-        const cap = await checkAiBandAvailable(tutorWorkspaceId);
-        if (!cap.ok) {
-          return NextResponse.json(
-            {
-              error: cap.reason,
-              code: 'ai_band_exceeded',
-              used: cap.used,
-              cap: cap.cap,
-            },
-            { status: 429 },
-          );
-        }
-      }
-    } catch (err) {
-      console.warn('[chatbot/message] AI cap check failed', err);
-    }
+    const capBlock = await tutorAiCapBlock(sessionSection?.courseId);
+    if (capBlock) return capBlock;
 
     let tutorPolicyRules = tutorPolicySystemRules(
       resolveTutorAiPolicy({ chatbotPolicy: bot.aiPolicy }),
