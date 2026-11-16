@@ -11,7 +11,12 @@ import { getElapsedMinutes, isTimeLimitExceeded } from '@/lib/quizTimeLimit';
 import { isSectionConcluded, SECTION_CONCLUDED_MESSAGE } from '@/lib/sectionAvailability';
 import { normalizeDatabaseDate } from '@/lib/utils';
 
-export type QuizAction = 'start' | 'submit';
+/**
+ * - `view`: open the quiz page. A passed due date doesn't block a student
+ *   with an attempt in progress (start then auto-submits their saved answers).
+ * - `start`, `submit`: the API actions.
+ */
+export type QuizAction = 'view' | 'start' | 'submit';
 
 export type QuizAccessReason =
   | 'archived'
@@ -143,7 +148,9 @@ export function evaluateQuizAccess(
         : availability.reason === 'quizEnded'
           ? 'ended'
           : 'dueDatePassed';
-    return deny(reason, action);
+    const viewInProgress =
+      action === 'view' && reason === 'dueDatePassed' && inProgressAttempt != null;
+    if (!viewInProgress) return deny(reason, action);
   }
 
   if (action === 'submit' && quiz.timeLimit) {
