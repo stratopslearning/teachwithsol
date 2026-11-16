@@ -59,9 +59,11 @@ export async function processMaterial(materialId: string): Promise<void> {
       return;
     }
 
-    await deleteCourseMaterialChunksDefiner(materialId);
-
+    // Embed before touching the existing chunks: if the embedding call fails,
+    // the material keeps its current search content.
     const embeddings = await embedTexts(chunks.map((c) => c.content));
+
+    await deleteCourseMaterialChunksDefiner(materialId);
 
     await insertCourseMaterialChunksDefiner({
       materialId,
