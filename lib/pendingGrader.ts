@@ -13,16 +13,14 @@
  * `manual_review` so the worker stops retrying and the professor sees a
  * flag in the attention queue.
  */
-import { and, eq } from 'drizzle-orm';
-
-import { db } from '@/app/db';
+import type { attempts } from '@/app/db/schema';
+import { fetchSectionById } from '@/lib/db/entityScopedReads';
 import {
-  attempts,
-  questions as questionsTable,
-  quizzes as quizzesTable,
-  sections,
-} from '@/app/db/schema';
-import { activeOnly } from '@/lib/db/filters';
+  loadActiveQuiz,
+  loadAttemptForGrading,
+  loadQuizQuestions,
+  saveAttemptGrading,
+} from '@/lib/quiz/gradingData';
 import {
   gradeMultipleQuestions,
   outcomeToFeedback,
@@ -50,27 +48,21 @@ export type GradePendingResult = {
 export async function gradePendingForAttempt(
   attempt: AttemptRow,
 ): Promise<GradePendingResult> {
-  const quiz = await db.query.quizzes.findFirst({
-    where: and(
-      eq(quizzesTable.id, attempt.quizId),
-      activeOnly(quizzesTable.deletedAt),
-    ),
-  });
+  const tenantId = attempt.tenantId;
+  if (!tenantId) {
+    throw new Error(`Attempt ${attempt.id} has no tenant`);
+  }
+  const quiz = await loadActiveQuiz(attempt.quizId, tenantId);
   if (!quiz) {
     return { attemptId: attempt.id, regraded: 0, stillPending: 0, promoted: 0 };
   }
 
-  const quizQuestions = await db.query.questions.findMany({
-    where: eq(questionsTable.quizId, attempt.quizId),
-  });
+  const quizQuestions = await loadQuizQuestions(attempt.quizId, tenantId);
 
   let courseId: string | undefined;
   let workspaceId: string | null = null;
   if (attempt.sectionId) {
-    const section = await db.query.sections.findFirst({
-      where: eq(sections.id, attempt.sectionId),
-      columns: { courseId: true, workspaceId: true },
-    });
+    const section = await fetchSectionById(attempt.sectionId);
     courseId = section?.courseId;
     workspaceId = section?.workspaceId ?? null;
   }
@@ -280,17 +272,14 @@ export async function gradePendingForAttempt(
         ? 'failed'
         : 'partial';
 
-  await db
-    .update(attempts)
-    .set({
-      score: totalScore,
-      maxScore,
-      percentage,
-      passed,
-      gptFeedback: nextFeedback,
-      gradingStatus,
-    })
-    .where(eq(attempts.id, attempt.id));
+  await saveAttemptGrading(tenantId, attempt.id, {
+    score: totalScore,
+    maxScore,
+    percentage,
+    passed,
+    gptFeedback: nextFeedback,
+    gradingStatus,
+  });
 
   if (gradingStatus === 'complete') {
     const { enqueueQuizPassback } = await import('@/lib/lti/passback');
@@ -302,10 +291,7 @@ export async function gradePendingForAttempt(
   if (regraded > 0 && attempt.sectionId) {
     void (async () => {
       try {
-        const section = await db.query.sections.findFirst({
-          where: eq(sections.id, attempt.sectionId!),
-          columns: { courseId: true },
-        });
+        const section = await fetchSectionById(attempt.sectionId!);
         if (!section) return;
         const { getCourseWorkspaceId, recordAiUsage } = await import(
           '@/lib/workspace'
@@ -325,9 +311,7 @@ export async function gradePendingForAttempt(
 export async function gradePendingForAttemptId(
   attemptId: string,
 ): Promise<GradePendingResult> {
-  const attempt = await db.query.attempts.findFirst({
-    where: eq(attempts.id, attemptId),
-  });
+  const attempt = await loadAttemptForGrading(attemptId);
   if (!attempt) {
     return { attemptId, regraded: 0, stillPending: 0, promoted: 0 };
   }

@@ -71,6 +71,11 @@ vi.mock('@/lib/gradingRubric', async (importOriginal) => {
   return { ...actual, getOrDeriveRubric: mocks.getOrDeriveRubric };
 });
 
+// Questions are read under the attempt's tenant (FORCE RLS), not via db.query.
+vi.mock('@/lib/quiz/gradingData', () => ({
+  loadQuizQuestions: (...args: unknown[]) => mocks.questionsFindMany(...args),
+}));
+
 vi.mock('@/app/db', () => ({
   db: {
     query: {

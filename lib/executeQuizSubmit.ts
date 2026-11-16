@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-import { questions, sections } from '@/app/db/schema';
+import { sections } from '@/app/db/schema';
 import { authorize } from '@/lib/authz';
 import { scheduleAttemptRetry } from '@/lib/backgroundRetry';
 import { loadExamContext, missingExamResource } from '@/lib/examContext';
@@ -9,6 +9,7 @@ import { mergeAttemptAnswers } from '@/lib/shouldForceAutoSubmit';
 import { resolveAttemptSectionId } from '@/lib/resolveAttemptSection';
 import { assertQuizAccess, MaxAttemptsExceededError } from '@/lib/quiz/accessPolicy';
 import { scoreSubmittedQuestions } from '@/lib/scoreSubmittedQuestions';
+import { loadQuizQuestions } from '@/lib/quiz/gradingData';
 import { parseJsonb, rowsFromExecute } from '@/lib/db/rows';
 import { maybeEncryptAttemptAnswers } from '@/lib/crypto/fieldEncryption';
 import { getLatestQuizVersionId } from '@/lib/quiz/versions';
@@ -140,9 +141,11 @@ export async function executeQuizSubmit(
   const savedAnswers = inProgressAttempt?.answers ?? {};
   const answers = mergeAttemptAnswers(savedAnswers, incomingAnswers);
 
-  const quizQuestions = await db.query.questions.findMany({
-    where: eq(questions.quizId, quizId),
-  });
+  // Under FORCE RLS a plain db read returns no questions (scored 0/0).
+  const quizQuestions = await loadQuizQuestions(quizId, tenantId);
+  if (quizQuestions.length === 0) {
+    console.warn('[executeQuizSubmit] quiz has no questions', { quizId, tenantId });
+  }
 
   const { totalScore, maxScore, gptFeedback, pendingQuestionIds } =
     await scoreSubmittedQuestions(quizQuestions, answers, {
