@@ -1,54 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingApi } from '@/lib/api/sessionAuth';
+import { route } from '@/lib/api/route';
 import {
   createCourseAnnouncementDefiner,
   listCourseAnnouncementsDefiner,
 } from '@/lib/db/lmsDefiners';
-import { assertCanManageCourse } from '@/lib/knowledge';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  _req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    return NextResponse.json({
-      announcements: await listCourseAnnouncementsDefiner(courseId),
-    });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+type P = { courseId: string };
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    const body = (await readJsonBody(req)) as {
-      title?: string;
-      bodyMarkdown?: string;
-      publish?: boolean;
-    };
+export const GET = route<P>({ auth: 'manageCourse' }, async ({ params }) =>
+  NextResponse.json({
+    announcements: await listCourseAnnouncementsDefiner(params.courseId),
+  }),
+);
+
+const createBody = z.object({
+  title: z.string().optional(),
+  bodyMarkdown: z.string().optional(),
+  publish: z.boolean().optional(),
+});
+
+export const POST = route<P, typeof createBody>(
+  { auth: 'manageCourse', body: createBody },
+  async ({ params, user, body }) => {
     const announcement = await createCourseAnnouncementDefiner({
-      courseId,
+      courseId: params.courseId,
       authorUserId: user.id,
       title: body.title,
       bodyMarkdown: body.bodyMarkdown,
       publish: body.publish ?? true,
     });
     return NextResponse.json({ announcement });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

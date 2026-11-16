@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingApi } from '@/lib/api/sessionAuth';
-import { assertCanManageCourse } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 import {
   deleteModule,
   setModulePublished,
@@ -12,63 +10,44 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string; moduleId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId, moduleId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    const body = (await readJsonBody(req)) as {
-      title?: string;
-      position?: number;
-      published?: boolean;
-      unlockAt?: string | null;
-      prerequisiteModuleIds?: string[];
-    };
-    if (typeof body.published === 'boolean') {
-      const { published, title, position, unlockAt, prerequisiteModuleIds } =
-        body;
-      if (
-        title !== undefined ||
-        position !== undefined ||
-        unlockAt !== undefined ||
-        prerequisiteModuleIds !== undefined
-      ) {
-        await updateModule(courseId, moduleId, {
-          title,
-          position,
-          unlockAt,
-          prerequisiteModuleIds,
-        });
-      }
-      const result = await setModulePublished(
-        user,
-        courseId,
-        moduleId,
-        published,
-      );
-      return NextResponse.json(result);
-    }
-    const mod = await updateModule(courseId, moduleId, body);
-    return NextResponse.json({ module: mod });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+type P = { courseId: string; moduleId: string };
 
-export async function DELETE(
-  _req: NextRequest,
-  ctx: { params: Promise<{ courseId: string; moduleId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId, moduleId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    const id = await deleteModule(courseId, moduleId);
-    return NextResponse.json({ id });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+const patchBody = z.object({
+  title: z.string().optional(),
+  position: z.number().optional(),
+  published: z.boolean().optional(),
+  unlockAt: z.string().nullable().optional(),
+  prerequisiteModuleIds: z.array(z.string()).optional(),
+});
+
+export const PATCH = route<P, typeof patchBody>(
+  { auth: 'manageCourse', body: patchBody },
+  async ({ params, user, body }) => {
+    const { courseId, moduleId } = params;
+    if (typeof body.published !== 'boolean') {
+      const mod = await updateModule(courseId, moduleId, body);
+      return NextResponse.json({ module: mod });
+    }
+    const { published, title, position, unlockAt, prerequisiteModuleIds } = body;
+    if (
+      title !== undefined ||
+      position !== undefined ||
+      unlockAt !== undefined ||
+      prerequisiteModuleIds !== undefined
+    ) {
+      await updateModule(courseId, moduleId, {
+        title,
+        position,
+        unlockAt,
+        prerequisiteModuleIds,
+      });
+    }
+    return NextResponse.json(
+      await setModulePublished(user, courseId, moduleId, published),
+    );
+  },
+);
+
+export const DELETE = route<P>({ auth: 'manageCourse' }, async ({ params }) =>
+  NextResponse.json({ id: await deleteModule(params.courseId, params.moduleId) }),
+);

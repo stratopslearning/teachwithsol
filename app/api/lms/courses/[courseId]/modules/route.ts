@@ -1,50 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingApi } from '@/lib/api/sessionAuth';
-import { assertCanManageCourse } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 import { listTeachableSectionIdsForCourse } from '@/lib/authoring/access';
 import { createModule, listModulesWithItems } from '@/lib/lms/modules';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  _req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    const modules = await listModulesWithItems(courseId);
-    return NextResponse.json({ modules });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+type P = { courseId: string };
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    const body = (await readJsonBody(req)) as {
-      title?: string;
-      published?: boolean;
-    };
-    const sectionIds = await listTeachableSectionIdsForCourse(user, courseId);
+export const GET = route<P>({ auth: 'manageCourse' }, async ({ params }) =>
+  NextResponse.json({ modules: await listModulesWithItems(params.courseId) }),
+);
+
+const createBody = z.object({
+  title: z.string().optional(),
+  published: z.boolean().optional(),
+});
+
+export const POST = route<P, typeof createBody>(
+  { auth: 'manageCourse', body: createBody },
+  async ({ params, user, body }) => {
+    const sectionIds = await listTeachableSectionIdsForCourse(user, params.courseId);
     const mod = await createModule({
-      courseId,
+      courseId: params.courseId,
       title: body.title?.trim() || 'New module',
       published: Boolean(body.published),
       sectionIds,
     });
     return NextResponse.json({ module: mod });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

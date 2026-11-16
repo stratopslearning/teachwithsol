@@ -26,7 +26,7 @@ const { updateSettings, markComplete } = vi.hoisted(() => ({
 vi.mock('@/lib/db/lmsDefiners', () => ({
   updateCourseLmsSettingsDefiner: updateSettings,
 }));
-vi.mock('@/lib/knowledge', () => ({ assertCanManageCourse: async () => {} }));
+vi.mock('@/lib/knowledge/access', () => ({ assertCanManageCourse: async () => {} }));
 vi.mock('@/lib/lms/modules', () => ({ markModuleItemComplete: markComplete }));
 
 import { PATCH as patchSettings } from '@/app/api/lms/courses/[courseId]/settings/route';

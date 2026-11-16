@@ -1,52 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingApi } from '@/lib/api/sessionAuth';
-import { assertCanManageCourse } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
+import { completionRequirementSchema } from '@/lib/lms/schemas';
 import { deleteModuleItem, updateModuleItem } from '@/lib/lms/modules';
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(
-  req: NextRequest,
-  ctx: {
-    params: Promise<{ courseId: string; moduleId: string; itemId: string }>;
-  },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId, moduleId, itemId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    const body = (await readJsonBody(req)) as {
-      title?: string;
-      position?: number;
-      published?: boolean;
-      completionRequirement?: {
-        type: 'view' | 'submit' | 'score_at_least';
-        minPercent?: number;
-      } | null;
-    };
-    const item = await updateModuleItem(moduleId, itemId, body);
-    return NextResponse.json({ item });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+type P = { courseId: string; moduleId: string; itemId: string };
 
-export async function DELETE(
-  _req: NextRequest,
-  ctx: {
-    params: Promise<{ courseId: string; moduleId: string; itemId: string }>;
-  },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { courseId, moduleId, itemId } = await ctx.params;
-    await assertCanManageCourse(user, courseId);
-    const id = await deleteModuleItem(moduleId, itemId);
-    return NextResponse.json({ id });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+const patchBody = z.object({
+  title: z.string().optional(),
+  position: z.number().optional(),
+  published: z.boolean().optional(),
+  completionRequirement: completionRequirementSchema.nullable().optional(),
+});
+
+export const PATCH = route<P, typeof patchBody>(
+  { auth: 'manageCourse', body: patchBody },
+  async ({ params, body }) =>
+    NextResponse.json({
+      item: await updateModuleItem(params.moduleId, params.itemId, body),
+    }),
+);
+
+export const DELETE = route<P>({ auth: 'manageCourse' }, async ({ params }) =>
+  NextResponse.json({ id: await deleteModuleItem(params.moduleId, params.itemId) }),
+);
