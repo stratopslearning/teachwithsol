@@ -1,12 +1,12 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { apiUrl } from '@/lib/basePath';
 
 type LinkState = {
   enabled: boolean;
@@ -30,8 +30,7 @@ export function CanvasLinkPanel({ sectionId }: { sectionId: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(
-          apiUrl(`/api/professor/section/${sectionId}/canvas`),
+        const res = await apiFetch(`/api/professor/section/${sectionId}/canvas`,
         );
         if (!res.ok) return;
         const data = (await res.json()) as LinkState;
@@ -55,8 +54,7 @@ export function CanvasLinkPanel({ sectionId }: { sectionId: string }) {
   const save = () => {
     startTransition(async () => {
       try {
-        const res = await fetch(
-          apiUrl(`/api/professor/section/${sectionId}/canvas`),
+        const res = await apiFetch(`/api/professor/section/${sectionId}/canvas`,
           {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -92,8 +90,7 @@ export function CanvasLinkPanel({ sectionId }: { sectionId: string }) {
 
   const unlink = () => {
     startTransition(async () => {
-      const res = await fetch(
-        apiUrl(`/api/professor/section/${sectionId}/canvas`),
+      const res = await apiFetch(`/api/professor/section/${sectionId}/canvas`,
         { method: 'DELETE' },
       );
       if (!res.ok) {
@@ -109,8 +106,7 @@ export function CanvasLinkPanel({ sectionId }: { sectionId: string }) {
 
   const syncRoster = () => {
     startTransition(async () => {
-      const res = await fetch(
-        apiUrl(`/api/professor/section/${sectionId}/canvas`),
+      const res = await apiFetch(`/api/professor/section/${sectionId}/canvas`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -18,7 +19,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { ActivityType } from "@/lib/assignments";
-import { apiUrl } from "@/lib/basePath";
 import { cn } from "@/lib/utils";
 
 export type AssignableActivityOption = {
@@ -112,7 +112,7 @@ export function AssignActivityToSectionDialog({
     try {
       const results = await Promise.all(
         selected.map(async (item) => {
-          const res = await fetch(apiUrl("/api/professor/activity/sections"), {
+          const res = await apiFetch("/api/professor/activity/sections", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Loader2, Plus, Trash2 } from '@/components/icons';
@@ -8,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { apiUrl } from '@/lib/basePath';
 import type { InteractiveChapterBody } from '@/lib/lms/interactiveChapter';
 
 function newId() {
@@ -86,7 +86,7 @@ export function LessonEditClient({
         payload = { ...payload, markdown, chapter: null };
       }
 
-      const res = await fetch(apiUrl(`/api/professor/lesson/${lesson.id}`), {
+      const res = await apiFetch(`/api/professor/lesson/${lesson.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

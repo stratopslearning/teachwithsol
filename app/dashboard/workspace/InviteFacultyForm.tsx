@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 import { Check, Copy } from '@/components/icons';
 
@@ -13,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { apiUrl } from '@/lib/basePath';
 
 export function InviteFacultyForm({ workspaceId }: { workspaceId: string }) {
   const [email, setEmail] = useState('');
@@ -34,7 +34,7 @@ export function InviteFacultyForm({ workspaceId }: { workspaceId: string }) {
     setEmailSkipped(false);
     setCopied(false);
     try {
-      const res = await fetch(apiUrl(`/api/workspaces/${workspaceId}/invites`), {
+      const res = await apiFetch(`/api/workspaces/${workspaceId}/invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), role }),

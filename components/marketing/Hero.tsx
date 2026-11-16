@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
@@ -8,7 +9,7 @@ import { useGSAP } from "@gsap/react";
 import { SplitText } from "gsap/SplitText";
 
 import { Button } from "@/components/ui/button";
-import { apiUrl, withBasePath } from "@/lib/basePath";
+import { withBasePath } from "@/lib/basePath";
 import { CAL_BOOKING_URL } from "@/lib/calBooking";
 import type { DashboardAreas } from "@/lib/authz/gates";
 import {
@@ -32,7 +33,7 @@ export function Hero() {
 
   useEffect(() => {
     if (!isSignedIn) return;
-    fetch(apiUrl("/api/user"))
+    apiFetch("/api/user")
       .then((res) => res.json())
       .then((data) => setDbUser(data.user))
       .catch((err) => console.error("Error fetching user:", err));

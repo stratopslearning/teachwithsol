@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -14,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { apiUrl, appPath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 import { FOUNDERS_EMAIL } from '@/lib/legal';
 
 type Path = 'teach' | 'student' | 'department';
@@ -46,7 +47,7 @@ export function OnboardingClient({
     setBusy(target);
     setError(null);
     try {
-      const res = await fetch(apiUrl('/api/onboarding/workspace'), {
+      const res = await apiFetch('/api/onboarding/workspace', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,7 +75,7 @@ export function OnboardingClient({
     setEnrollBusy(true);
     setEnrollError(null);
     try {
-      const res = await fetch(apiUrl('/api/student/enroll'), {
+      const res = await apiFetch('/api/student/enroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enrollmentCode: studentCode.trim() }),

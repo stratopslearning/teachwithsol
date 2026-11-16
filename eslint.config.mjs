@@ -65,18 +65,23 @@ export default [
       "react-hooks/exhaustive-deps": "warn",
       "sol/no-legacy-authz": "error",
       // A bare '/api/...' path skips NEXT_PUBLIC_BASE_PATH and 404s on the
-      // /learning deploy. Wrap it: fetch(apiUrl('/api/...')).
+      // /learning deploy. Call app APIs with apiFetch('/api/...').
       "no-restricted-syntax": [
         "error",
         {
           selector:
             "CallExpression[callee.name='fetch'] > Literal.arguments:first-child[value=/^\\/api\\//]",
-          message: "Wrap API paths with apiUrl() from '@/lib/basePath'.",
+          message: "Call app APIs with apiFetch() from '@/lib/api/client'.",
         },
         {
           selector:
             "CallExpression[callee.name='fetch'] > TemplateLiteral.arguments:first-child[quasis.0.value.raw=/^\\/api\\//]",
-          message: "Wrap API paths with apiUrl() from '@/lib/basePath'.",
+          message: "Call app APIs with apiFetch() from '@/lib/api/client'.",
+        },
+        {
+          selector:
+            "CallExpression[callee.name='fetch'] > CallExpression.arguments:first-child[callee.name='apiUrl']",
+          message: "Use apiFetch(path) from '@/lib/api/client' instead of fetch(apiUrl(path)).",
         },
         // Next adds basePath to redirect() and next/link itself, so these
         // produce /learning/learning/... on the /learning deploy.

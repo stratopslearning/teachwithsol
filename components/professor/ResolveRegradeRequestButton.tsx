@@ -1,11 +1,11 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 import { Check } from '@/components/icons';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 export function ResolveRegradeRequestButton({
   requestId,
@@ -25,8 +25,7 @@ export function ResolveRegradeRequestButton({
 
     setIsLoading(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/regrade-requests/${requestId}/resolve`),
+      const res = await apiFetch(`/api/professor/regrade-requests/${requestId}/resolve`,
         { method: 'POST' },
       );
       const data = await res.json().catch(() => null);

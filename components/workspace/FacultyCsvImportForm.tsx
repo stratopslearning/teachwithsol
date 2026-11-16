@@ -1,10 +1,10 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { apiUrl } from '@/lib/basePath';
 import {
   downloadCsvTemplate,
   EMAIL_LIST_CSV_TEMPLATE,
@@ -23,7 +23,7 @@ export function FacultyCsvImportForm({ workspaceId }: { workspaceId: string }) {
     setSummary(null);
     try {
       const csv = await file.text();
-      const res = await fetch(apiUrl('/api/workspace/faculty-import'), {
+      const res = await apiFetch('/api/workspace/faculty-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workspaceId, csv }),

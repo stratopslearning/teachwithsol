@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,7 +15,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ActivityType } from "@/lib/assignments";
-import { apiUrl } from "@/lib/basePath";
 
 export type SectionOption = { id: string; title: string };
 
@@ -49,7 +49,7 @@ export function AssignSectionsDialog({
   async function save() {
     setSaving(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/activity/sections"), {
+      const res = await apiFetch("/api/professor/activity/sections", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import * as React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ import { useRef, useEffect, useCallback } from "react";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 import { getRemainingSeconds } from "@/lib/quizTimeLimit";
 import { shouldHideFeedbackForStudent, cleanQuizDescription } from "@/lib/utils";
-import { apiUrl, appPath, withBasePath } from "@/lib/basePath";
+import { appPath, withBasePath } from "@/lib/basePath";
 import {
   startApiErrorToBlockCode,
   type QuizBlockCode,
@@ -100,7 +101,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
     if (quizStarted || starting) return;
     setStarting(true);
     try {
-      const res = await fetch(apiUrl(`/api/quiz/${quiz.id}/start`), {
+      const res = await apiFetch(`/api/quiz/${quiz.id}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assignmentId }),
@@ -200,7 +201,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
 
     setSaveStatus("saving");
     try {
-      const res = await fetch(apiUrl(`/api/quiz/${quiz.id}/progress`), {
+      const res = await apiFetch(`/api/quiz/${quiz.id}/progress`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assignmentId, answers: payload }),
@@ -240,7 +241,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
       if (submittingRef.current || !startedAt) return;
       submittingRef.current = true;
       try {
-        await fetch(apiUrl(`/api/quiz/${quiz.id}/submit`), {
+        await apiFetch(`/api/quiz/${quiz.id}/submit`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -260,7 +261,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
       if (!quizStarted || submittingRef.current) return;
       const payload = answersRef.current;
       if (Object.keys(payload).length === 0) return;
-      fetch(apiUrl(`/api/quiz/${quiz.id}/progress`), {
+      apiFetch(`/api/quiz/${quiz.id}/progress`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assignmentId, answers: payload }),
@@ -361,7 +362,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
     setSubmitting(true);
     const payload = options.answersOverride ?? answersRef.current;
     try {
-      const res = await fetch(apiUrl(`/api/quiz/${quiz.id}/submit`), {
+      const res = await apiFetch(`/api/quiz/${quiz.id}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,10 +1,10 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { apiUrl } from "@/lib/basePath";
 
 export default function UnassignDiscussionButton({
   chatbotId,
@@ -20,10 +20,8 @@ export default function UnassignDiscussionButton({
     if (!confirm("Unassign this discussion from the section?")) return;
     setLoading(true);
     try {
-      const res = await fetch(
-        apiUrl(
+      const res = await apiFetch(
           `/api/professor/section/${sectionId}/chatbot/${chatbotId}/unassign`,
-        ),
         { method: "POST" },
       );
       if (res.ok) {

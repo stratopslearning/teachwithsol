@@ -1,12 +1,12 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiUrl } from "@/lib/basePath";
 
 export default function ProfessorEnrollForm({
   onEnrolled,
@@ -24,7 +24,7 @@ export default function ProfessorEnrollForm({
     setSuccess(null);
     setError(null);
     try {
-      const res = await fetch(apiUrl("/api/professor/enroll"), {
+      const res = await apiFetch("/api/professor/enroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enrollmentCode: code.trim() }),

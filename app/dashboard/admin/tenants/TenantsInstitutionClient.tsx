@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -12,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { apiUrl } from '@/lib/basePath';
 
 export type TenantTreeNode = {
   id: string;
@@ -101,8 +101,7 @@ export function TenantsInstitutionClient({ workspaces }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(
-        apiUrl(`/api/admin/workspaces/${childId}/link-parent`),
+      const res = await apiFetch(`/api/admin/workspaces/${childId}/link-parent`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

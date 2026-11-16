@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -42,7 +43,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 
-import { apiUrl, appPath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 import type { BookWithChapters } from "@/lib/books";
 import { uploadCourseBookFile } from "@/lib/books/clientUpload";
 import type {
@@ -258,10 +259,8 @@ export default function KnowledgeClient({
       return;
     }
     try {
-      const res = await fetch(
-        apiUrl(
+      const res = await apiFetch(
           `/api/professor/books?courseId=${encodeURIComponent(activeCourseId)}`,
-        ),
       );
       const data = await res.json().catch(() => ({}));
       if (res.ok && Array.isArray(data.books)) {
@@ -329,10 +328,8 @@ export default function KnowledgeClient({
   async function onShare(documentId: string) {
     setBusyId(documentId);
     try {
-      const res = await fetch(
-        apiUrl(
+      const res = await apiFetch(
           `/api/professor/knowledge/documents/${documentId}?action=share`,
-        ),
         { method: "POST" },
       );
       const data = await res.json().catch(() => ({}));
@@ -367,7 +364,7 @@ export default function KnowledgeClient({
     if (!zip && fileTitle.trim()) fd.set("title", fileTitle.trim());
     setUploading(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/knowledge/documents"), {
+      const res = await apiFetch("/api/professor/knowledge/documents", {
         method: "POST",
         body: fd,
         credentials: "same-origin",
@@ -414,7 +411,7 @@ export default function KnowledgeClient({
     e.preventDefault();
     setAddingLink(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/knowledge/documents"), {
+      const res = await apiFetch("/api/professor/knowledge/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -451,7 +448,7 @@ export default function KnowledgeClient({
     }
     setImportingBook(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/books"), {
+      const res = await apiFetch("/api/professor/books", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -540,8 +537,7 @@ export default function KnowledgeClient({
     if (!confirm("Remove this document from the workspace library?")) return;
     setBusyId(id);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/knowledge/documents/${id}`),
+      const res = await apiFetch(`/api/professor/knowledge/documents/${id}`,
         { method: "DELETE" },
       );
       if (!res.ok) {
@@ -583,8 +579,7 @@ export default function KnowledgeClient({
     setRenaming(true);
     setBusyId(d.id);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/knowledge/documents/${d.id}`),
+      const res = await apiFetch(`/api/professor/knowledge/documents/${d.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -640,7 +635,7 @@ export default function KnowledgeClient({
     setEditingFolder(null);
     setRenaming(true);
     try {
-      const res = await fetch(apiUrl("/api/professor/knowledge/documents"), {
+      const res = await apiFetch("/api/professor/knowledge/documents", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -692,8 +687,7 @@ export default function KnowledgeClient({
   async function onReprocess(id: string) {
     setBusyId(id);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/knowledge/documents/${id}?action=reprocess`),
+      const res = await apiFetch(`/api/professor/knowledge/documents/${id}?action=reprocess`,
         { method: "POST" },
       );
       if (!res.ok) {
@@ -710,7 +704,7 @@ export default function KnowledgeClient({
 
   async function openVersions(id: string) {
     setVersionsDocId(id);
-    const res = await fetch(apiUrl(`/api/professor/knowledge/documents/${id}`));
+    const res = await apiFetch(`/api/professor/knowledge/documents/${id}`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       toast.error(data.error || "Could not load versions");
@@ -722,8 +716,7 @@ export default function KnowledgeClient({
   async function onRestore(documentId: string, versionId: string) {
     setBusyId(documentId);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/knowledge/documents/${documentId}/restore`),
+      const res = await apiFetch(`/api/professor/knowledge/documents/${documentId}/restore`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -744,7 +737,7 @@ export default function KnowledgeClient({
   }
 
   async function ensureConnector(provider: KnowledgeProvider) {
-    const res = await fetch(apiUrl("/api/professor/knowledge/connectors"), {
+    const res = await apiFetch("/api/professor/knowledge/connectors", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workspaceId, provider }),
@@ -772,10 +765,8 @@ export default function KnowledgeClient({
     const existing = connectors.find((c) => c.provider === provider);
     const connector = existing ?? (await ensureConnector(provider));
     if (!connector) return;
-    const res = await fetch(
-      apiUrl(
+    const res = await apiFetch(
         `/api/professor/knowledge/connectors/${connector.id}/authorize`,
-      ),
     );
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.url) {
@@ -791,8 +782,7 @@ export default function KnowledgeClient({
   async function onSync(id: string) {
     setBusyId(id);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/knowledge/connectors/${id}?action=sync`),
+      const res = await apiFetch(`/api/professor/knowledge/connectors/${id}?action=sync`,
         { method: "POST" },
       );
       const data = await res.json().catch(() => ({}));
@@ -811,8 +801,7 @@ export default function KnowledgeClient({
     if (!confirm("Disconnect this source?")) return;
     setBusyId(id);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/knowledge/connectors/${id}`),
+      const res = await apiFetch(`/api/professor/knowledge/connectors/${id}`,
         { method: "DELETE" },
       );
       if (!res.ok) {

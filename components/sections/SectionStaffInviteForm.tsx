@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 import { Check, Copy } from '@/components/icons';
 
@@ -13,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { apiUrl } from '@/lib/basePath';
 
 type StaffInviteRole = 'co_instructor' | 'ta' | 'grader';
 
@@ -41,8 +41,7 @@ export function SectionStaffInviteForm({ sectionId }: { sectionId: string }) {
     setCopied(false);
     const invitedEmail = email.trim();
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/section/${sectionId}/staff`),
+      const res = await apiFetch(`/api/professor/section/${sectionId}/staff`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,7 @@
 "use client";
 
-import { apiUrl, withBasePath } from '@/lib/basePath';
+import { apiFetch } from "@/lib/api/client";
+import { withBasePath } from '@/lib/basePath';
 import {
   downloadCsvTemplate,
   QUIZ_QUESTIONS_CSV_TEMPLATE,
@@ -307,7 +308,7 @@ export function QuizCreationForm({
     setIsSubmitting(true);
     try {
       const questionsWithOrder = data.questions.map((q, idx) => ({ ...q, order: idx }));
-      const response = await fetch(apiUrl(apiEndpoint || '/api/professor/quiz/create'), {
+      const response = await apiFetch(apiEndpoint || '/api/professor/quiz/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Mail, RotateCcw } from '@/components/icons';
@@ -14,7 +15,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 export function ResendOwnerInviteButton({
   workspaceId,
@@ -41,8 +41,7 @@ export function ResendOwnerInviteButton({
     setError(null);
     setClaimUrl(null);
     try {
-      const res = await fetch(
-        apiUrl(`/api/admin/workspaces/${workspaceId}/owner-invite`),
+      const res = await apiFetch(`/api/admin/workspaces/${workspaceId}/owner-invite`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

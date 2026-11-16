@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Gift, Hourglass, XCircle } from '@/components/icons';
@@ -15,7 +16,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 export function GrantCompAccessButton({
   workspaceId,
@@ -49,7 +49,7 @@ export function GrantCompAccessButton({
             ? { action: 'grant_comp_access' as const, indefinite: true }
             : { action: 'grant_comp_access' as const, days: 30 };
 
-      const res = await fetch(apiUrl(`/api/admin/workspaces/${workspaceId}`), {
+      const res = await apiFetch(`/api/admin/workspaces/${workspaceId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -7,7 +8,6 @@ import { toast } from 'sonner';
 import { FlashcardsDeck } from '@/components/learning/FlashcardsDeck';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 type Flashcard = {
   id: string;
@@ -37,8 +37,7 @@ export default function LessonReaderClient({
 
   async function setStatus(status: 'STARTED' | 'COMPLETED') {
     try {
-      const res = await fetch(
-        apiUrl(`/api/student/lessons/${lesson.id}/progress`),
+      const res = await apiFetch(`/api/student/lessons/${lesson.id}/progress`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

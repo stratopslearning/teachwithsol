@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useEffect, useState } from "react";
 import {
   motion,
@@ -16,7 +17,6 @@ import { ThemedUserButton } from "@/components/auth/ThemedUserButton";
 import { SolMark } from "@/components/brand/SolMark";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { apiUrl } from "@/lib/basePath";
 import { CAL_BOOKING_URL } from "@/lib/calBooking";
 import type { DashboardAreas } from "@/lib/authz/gates";
 import {
@@ -86,7 +86,7 @@ export function Navbar({ variant = "landing" }: NavbarProps) {
 
   useEffect(() => {
     if (isSignedIn) {
-      fetch(apiUrl("/api/user"))
+      apiFetch("/api/user")
         .then((res) => res.json())
         .then((data) => setDbUser(data.user))
         .catch((err) => console.error("Error fetching user:", err));

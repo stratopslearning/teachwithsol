@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -9,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
-import { apiUrl } from "@/lib/basePath";
 import { isSectionConcluded } from "@/lib/sectionAvailability";
 
 function extractLocalDateAndTime(
@@ -71,7 +71,7 @@ export function SectionEndsAtEditor({
       }
 
       if (mode === "professor") {
-        const res = await fetch(apiUrl(`/api/professor/section/${sectionId}`), {
+        const res = await apiFetch(`/api/professor/section/${sectionId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ endsAt: nextEndsAt }),
@@ -86,7 +86,7 @@ export function SectionEndsAtEditor({
           return;
         }
       } else {
-        const res = await fetch(apiUrl(`/api/admin/section/${sectionId}`), {
+        const res = await apiFetch(`/api/admin/section/${sectionId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

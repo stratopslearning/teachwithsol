@@ -1,10 +1,10 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { Download } from '@/components/icons';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 export function WorkspaceExportButton({ workspaceId }: { workspaceId: string }) {
   const [busy, setBusy] = useState(false);
@@ -12,8 +12,7 @@ export function WorkspaceExportButton({ workspaceId }: { workspaceId: string }) 
   async function onExport() {
     setBusy(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/workspace/export?workspaceId=${encodeURIComponent(workspaceId)}`),
+      const res = await apiFetch(`/api/workspace/export?workspaceId=${encodeURIComponent(workspaceId)}`,
       );
       if (!res.ok) return;
       const blob = await res.blob();

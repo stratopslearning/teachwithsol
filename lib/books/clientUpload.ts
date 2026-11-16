@@ -2,7 +2,7 @@
  * Browser helper: upload a book file, using S3 presigned PUT when the file
  * would exceed Vercel's ~4.5 MB request body limit.
  */
-import { apiUrl } from '@/lib/basePath';
+import { apiFetch } from '@/lib/api/client';
 import { BOOK_DIRECT_UPLOAD_THRESHOLD_BYTES } from '@/lib/books/constants';
 import type { BookSummary } from '@/lib/books/types';
 
@@ -55,7 +55,7 @@ export async function uploadCourseBookFile(opts: {
   const useDirect = file.size >= BOOK_DIRECT_UPLOAD_THRESHOLD_BYTES;
 
   if (useDirect) {
-    const beginRes = await fetch(apiUrl('/api/professor/books/direct-upload'), {
+    const beginRes = await apiFetch('/api/professor/books/direct-upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
@@ -86,8 +86,7 @@ export async function uploadCourseBookFile(opts: {
       return { ok: false, status: 502, error: put.error };
     }
 
-    const completeRes = await fetch(
-      apiUrl('/api/professor/books/direct-upload'),
+    const completeRes = await apiFetch('/api/professor/books/direct-upload',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -115,7 +114,7 @@ export async function uploadCourseBookFile(opts: {
   fd.set('file', file);
   if (title?.trim()) fd.set('title', title.trim());
 
-  const res = await fetch(apiUrl('/api/professor/books'), {
+  const res = await apiFetch('/api/professor/books', {
     method: 'POST',
     body: fd,
     credentials: 'same-origin',

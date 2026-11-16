@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { ChevronDown } from "@/components/icons";
 import { toast } from "sonner";
@@ -13,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { apiUrl } from "@/lib/basePath";
 
 export function UserActions({
   user,
@@ -37,7 +37,7 @@ export function UserActions({
     if (!confirm(`${label} platform staff for ${user.email ?? user.id}?`)) return;
     setLoading(true);
     try {
-      const res = await fetch(apiUrl(`/api/admin/user/${user.id}`), {
+      const res = await apiFetch(`/api/admin/user/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ platformStaff: next }),
@@ -74,10 +74,8 @@ export function UserActions({
     setLoading(true);
     try {
       const runDelete = (allowMissingClerk: boolean) =>
-        fetch(
-          apiUrl(
+        apiFetch(
             `/api/admin/user/${user.id}${allowMissingClerk ? "?allowMissingClerk=1" : ""}`,
-          ),
           { method: "DELETE" },
         );
 

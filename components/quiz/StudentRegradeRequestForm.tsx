@@ -1,12 +1,12 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { apiUrl } from '@/lib/basePath';
 
 type StudentRegradeRequestFormProps = {
   attemptId: string;
@@ -46,7 +46,7 @@ export function StudentRegradeRequestForm({
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(apiUrl('/api/student/regrade-requests'), {
+      const res = await apiFetch('/api/student/regrade-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ attemptId, note: trimmed }),

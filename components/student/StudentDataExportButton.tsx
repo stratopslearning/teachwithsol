@@ -1,11 +1,11 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { Download } from "@/components/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { apiUrl } from "@/lib/basePath";
 
 export function StudentDataExportButton() {
   const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ export function StudentDataExportButton() {
   async function onExport() {
     setLoading(true);
     try {
-      const res = await fetch(apiUrl("/api/student/export"), {
+      const res = await apiFetch("/api/student/export", {
         credentials: "same-origin",
       });
       if (!res.ok) {

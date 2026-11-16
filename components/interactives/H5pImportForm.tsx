@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
@@ -8,7 +9,7 @@ import { FileArchive, Loader2, Package, Upload, X } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiUrl, appPath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 import { cn } from "@/lib/utils";
 
 type SectionOpt = { id: string; title: string; courseId: string };
@@ -70,7 +71,7 @@ export function H5pImportForm({ sections }: { sections: SectionOpt[] }) {
       form.set("courseId", courseId);
       form.set("title", title.trim() || file.name.replace(/\.h5p$/i, ""));
       form.set("sectionIds", sectionId);
-      const res = await fetch(apiUrl("/api/professor/interactive/import"), {
+      const res = await apiFetch("/api/professor/interactive/import", {
         method: "POST",
         body: form,
       });

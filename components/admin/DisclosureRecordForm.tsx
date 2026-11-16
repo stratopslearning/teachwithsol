@@ -1,12 +1,12 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { apiUrl } from '@/lib/basePath';
 
 export function DisclosureRecordForm() {
   const [subjectUserId, setSubjectUserId] = useState('');
@@ -22,7 +22,7 @@ export function DisclosureRecordForm() {
     setStatus('saving');
     setError(null);
     try {
-      const res = await fetch(apiUrl('/api/admin/disclosure'), {
+      const res = await apiFetch('/api/admin/disclosure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

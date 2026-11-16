@@ -1,12 +1,12 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { apiUrl } from '@/lib/basePath';
 
 export type OwnershipCandidate = { userId: string; label: string };
 
@@ -39,7 +39,7 @@ export function TransferOwnershipForm({
     }
     setBusy(true);
     try {
-      const res = await fetch(apiUrl('/api/workspace/transfer-ownership'), {
+      const res = await apiFetch('/api/workspace/transfer-ownership', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workspaceId, toUserId }),

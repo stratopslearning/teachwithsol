@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { apiUrl, appPath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 
 export function CreateSectionForm({
   courseId,
@@ -33,7 +34,7 @@ export function CreateSectionForm({
     setError(null);
     const toastId = toast.loading(`Creating “${trimmed}”…`);
     try {
-      const res = await fetch(apiUrl('/api/professor/section'), {
+      const res = await apiFetch('/api/professor/section', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,12 +1,12 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 
 import { Check, Copy } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { apiUrl } from '@/lib/basePath';
 import {
   downloadCsvTemplate,
   EMAIL_LIST_CSV_TEMPLATE,
@@ -81,8 +81,7 @@ export function InviteLearnersPanel({ sectionId }: { sectionId: string }) {
     setSummary(null);
     setClaimRows([]);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/section/${sectionId}/student-invites`),
+      const res = await apiFetch(`/api/professor/section/${sectionId}/student-invites`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -113,8 +112,7 @@ export function InviteLearnersPanel({ sectionId }: { sectionId: string }) {
     setClaimRows([]);
     try {
       const csv = await file.text();
-      const res = await fetch(
-        apiUrl(`/api/professor/section/${sectionId}/roster-import`),
+      const res = await apiFetch(`/api/professor/section/${sectionId}/roster-import`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

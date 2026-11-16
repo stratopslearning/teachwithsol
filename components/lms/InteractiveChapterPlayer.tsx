@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -7,7 +8,6 @@ import remarkGfm from 'remark-gfm';
 
 import { Check, ChevronDown, ChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 import {
   CHAPTER_QUESTIONS_PER_ATTEMPT,
   pickCheckQuestions,
@@ -169,8 +169,7 @@ export function InteractiveChapterPlayer({
 
     setError(null);
     try {
-      const res = await fetch(
-        apiUrl(`/api/student/lessons/${lessonId}/chapter-check`),
+      const res = await apiFetch(`/api/student/lessons/${lessonId}/chapter-check`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

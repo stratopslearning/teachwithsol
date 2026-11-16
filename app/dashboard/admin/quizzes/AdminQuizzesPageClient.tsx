@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { MoreHorizontal, Plus } from "@/components/icons";
@@ -43,7 +44,7 @@ import {
   LocalDateTime,
   TIMESTAMP_CELL_CLASS,
 } from "@/components/timezone/LocalDateTime";
-import { apiUrl, withBasePath } from "@/lib/basePath";
+import { withBasePath } from "@/lib/basePath";
 import { cleanQuizDescription } from "@/lib/utils";
 
 const ROWS_PER_PAGE = 15;
@@ -139,7 +140,7 @@ export default function AdminQuizzesPageClient({
       try {
         const data = await Promise.all(
           allQuizzes.map(async (quiz) => {
-            const res = await fetch(apiUrl(`/api/quiz/${quiz.id}/questions`));
+            const res = await apiFetch(`/api/quiz/${quiz.id}/questions`);
             if (res.ok) {
               const json = await res.json();
               return { ...quiz, questions: json.questions || [] };
@@ -163,7 +164,7 @@ export default function AdminQuizzesPageClient({
   async function handleDeleteQuiz(quizId: string) {
     if (!confirm("Are you sure you want to delete this quiz?")) return;
     try {
-      const res = await fetch(apiUrl(`/api/admin/quiz/${quizId}`), {
+      const res = await apiFetch(`/api/admin/quiz/${quizId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -184,8 +185,7 @@ export default function AdminQuizzesPageClient({
     )
       return;
     try {
-      const res = await fetch(
-        apiUrl(`/api/admin/quiz/${quizId}/section/${sectionId}`),
+      const res = await apiFetch(`/api/admin/quiz/${quizId}/section/${sectionId}`,
         { method: "DELETE" },
       );
       if (res.ok) {

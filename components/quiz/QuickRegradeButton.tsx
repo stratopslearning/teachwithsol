@@ -1,12 +1,12 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 import { RefreshCw } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 type QuickRegradeButtonProps = {
   attemptId: string;
@@ -33,8 +33,7 @@ export function QuickRegradeButton({
   async function handleRegrade() {
     setIsLoading(true);
     try {
-      const response = await fetch(
-        apiUrl(`/api/professor/attempt/${attemptId}/regrade`),
+      const response = await apiFetch(`/api/professor/attempt/${attemptId}/regrade`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

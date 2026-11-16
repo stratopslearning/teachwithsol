@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { Download } from "@/components/icons";
 import { useState } from "react";
 
@@ -14,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiUrl } from "@/lib/basePath";
 
 export default function ExportResultsSection({
   quizzes,
@@ -34,8 +34,7 @@ export default function ExportResultsSection({
     if (quizId && quizId !== "all") params.append("quizId", quizId);
     if (dateFrom) params.append("dateFrom", dateFrom);
     if (dateTo) params.append("dateTo", dateTo);
-    const res = await fetch(
-      apiUrl(`/api/professor/quiz/export?${params.toString()}`),
+    const res = await apiFetch(`/api/professor/quiz/export?${params.toString()}`,
     );
     if (res.ok) {
       const blob = await res.blob();

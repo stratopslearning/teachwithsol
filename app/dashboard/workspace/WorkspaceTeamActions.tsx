@@ -1,11 +1,11 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 export function RemoveMemberButton({
   workspaceId,
@@ -23,8 +23,7 @@ export function RemoveMemberButton({
     if (!confirm(`Remove ${label} from this workspace?`)) return;
     setBusy(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/workspaces/${workspaceId}/members/${membershipId}`),
+      const res = await apiFetch(`/api/workspaces/${workspaceId}/members/${membershipId}`,
         { method: 'DELETE' },
       );
       const data = await res.json().catch(() => ({}));
@@ -70,8 +69,7 @@ export function RevokeInviteButton({
     if (!confirm(`Revoke invite for ${email}?`)) return;
     setBusy(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/workspaces/${workspaceId}/invites/${inviteId}`),
+      const res = await apiFetch(`/api/workspaces/${workspaceId}/invites/${inviteId}`,
         { method: 'DELETE' },
       );
       const data = await res.json().catch(() => ({}));

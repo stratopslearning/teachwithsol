@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useMemo, useState } from "react";
 import { Loader2 } from "@/components/icons";
 import { toast } from "sonner";
@@ -22,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiUrl } from "@/lib/basePath";
 import type { RolloverFinding } from "@/lib/authoring/rolloverChecks";
 import type { OfferingCopySource } from "@/lib/authoring/copySources";
 
@@ -50,8 +50,7 @@ export function CopyFromOfferingDialog({
     setLoadingChecks(true);
     setFindings([]);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/authoring/courses/${courseId}/checks`),
+      const res = await apiFetch(`/api/professor/authoring/courses/${courseId}/checks`,
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -73,8 +72,7 @@ export function CopyFromOfferingDialog({
     }
     setCopying(true);
     try {
-      const res = await fetch(
-        apiUrl(`/api/professor/offering/${targetOfferingId}/copy-from`),
+      const res = await apiFetch(`/api/professor/offering/${targetOfferingId}/copy-from`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { SectionMultiSelect } from "@/components/ui/SectionMultiSelect";
 import { TutorPolicySelect } from "@/components/professor/TutorPolicySelect";
-import { apiUrl, appPath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 import {
   DEFAULT_TUTOR_AI_POLICY,
   type TutorAiPolicyMode,
@@ -95,12 +96,10 @@ export function ChatbotCreationForm({
             : { mode: aiPolicyMode },
       };
 
-      const res = await fetch(
-        apiUrl(
+      const res = await apiFetch(
           isEdit
             ? `/api/professor/chatbot/${initial!.id}/update`
             : "/api/professor/chatbot/create",
-        ),
         {
           method: isEdit ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },

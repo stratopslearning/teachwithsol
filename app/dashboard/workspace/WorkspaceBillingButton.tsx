@@ -1,9 +1,9 @@
 'use client';
 
+import { apiFetch } from '@/lib/api/client';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { apiUrl } from '@/lib/basePath';
 
 export function WorkspaceBillingButton({ workspaceId }: { workspaceId: string }) {
   const [busy, setBusy] = useState(false);
@@ -13,7 +13,7 @@ export function WorkspaceBillingButton({ workspaceId }: { workspaceId: string })
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl('/api/stripe/workspace-checkout'), {
+      const res = await apiFetch('/api/stripe/workspace-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workspaceId }),
