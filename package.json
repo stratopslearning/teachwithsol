@@ -14,6 +14,8 @@
     "check:legacy-authz": "tsx scripts/count-legacy-authz.ts --check",
     "count:legacy-authz": "tsx scripts/count-legacy-authz.ts --verbose",
     "check:tenant-schema": "tsx scripts/check-tenant-schema.ts",
+    "db:functions:sync": "tsx scripts/db-functions/sync.ts",
+    "db:functions:migrate": "tsx scripts/db-functions/migrate.ts",
     "migrate": "tsx scripts/guarded-drizzle-migrate.ts",
     "migrate:generate": "drizzle-kit generate",
     "db:preflight": "tsx scripts/preflight.ts",
