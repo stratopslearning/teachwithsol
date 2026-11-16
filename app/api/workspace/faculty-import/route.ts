@@ -9,7 +9,7 @@ import { readJsonBody } from '@/lib/api/readJsonBody';
 import { parseEmailListFromCsv } from '@/lib/csv/parseEmailList';
 import { sendWorkspaceInviteMail } from '@/lib/email';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
-import { getRequiredBaseUrl } from '@/lib/stripe';
+import { appBaseUrl } from '@/lib/siteUrl';
 import {
   createWorkspaceInvite,
   getActiveWorkspaceId,
@@ -68,12 +68,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No valid emails in CSV' }, { status: 400 });
   }
 
-  let baseUrl: string | undefined;
-  try {
-    baseUrl = getRequiredBaseUrl();
-  } catch {
-    baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-  }
+  const baseUrl = appBaseUrl();
 
   const workspace = await db.query.workspaces.findFirst({
     where: eq(workspaces.id, workspaceId),

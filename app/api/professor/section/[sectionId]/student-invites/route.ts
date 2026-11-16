@@ -11,7 +11,7 @@ import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { parseEmailListFromCsv } from '@/lib/csv/parseEmailList';
 import { fetchCourseById, fetchSectionById } from '@/lib/db/entityScopedReads';
 import { sendStudentInviteMail } from '@/lib/email';
-import { getRequiredBaseUrl } from '@/lib/stripe';
+import { appBaseUrl } from '@/lib/siteUrl';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,12 +82,7 @@ export async function POST(
       );
     }
 
-    let baseUrl: string | undefined;
-    try {
-      baseUrl = getRequiredBaseUrl();
-    } catch {
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-    }
+    const baseUrl = appBaseUrl();
 
     const results: Array<{
       email: string;

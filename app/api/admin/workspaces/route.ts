@@ -12,7 +12,7 @@ import {
   getTier,
   tiersForSku,
 } from '@/lib/workspace/pricing';
-import { getRequiredBaseUrl } from '@/lib/stripe';
+import { appBaseUrl } from '@/lib/siteUrl';
 import { LICENSE_PLANS, licensePlanForWorkspaceType, WORKSPACE_TYPES } from '@/app/db/enums';
 
 export const dynamic = 'force-dynamic';
@@ -120,12 +120,7 @@ export async function POST(req: NextRequest) {
       actorClerkId: user.clerkId,
     });
 
-    let baseUrl: string | undefined;
-    try {
-      baseUrl = getRequiredBaseUrl();
-    } catch {
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-    }
+    const baseUrl = appBaseUrl();
 
     const ownerEmail = data.ownerEmail.trim().toLowerCase();
     const invite = await createWorkspaceOwnerInvite({

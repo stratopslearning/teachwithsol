@@ -7,7 +7,7 @@ import { db } from '@/app/db';
 import { users } from '@/app/db/schema';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { logAudit } from '@/lib/audit';
-import { getRequiredBaseUrl } from '@/lib/stripe';
+import { appBaseUrl } from '@/lib/siteUrl';
 import { createWorkspaceOwnerInvite } from '@/lib/workspace/invites';
 
 export const dynamic = 'force-dynamic';
@@ -96,12 +96,7 @@ export async function POST(
       );
     }
 
-    let baseUrl: string | undefined;
-    try {
-      baseUrl = getRequiredBaseUrl();
-    } catch {
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '');
-    }
+    const baseUrl = appBaseUrl();
 
     const invite = await createWorkspaceOwnerInvite({
       workspaceId,
