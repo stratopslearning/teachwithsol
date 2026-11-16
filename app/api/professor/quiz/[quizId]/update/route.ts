@@ -6,32 +6,11 @@ import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { updateQuiz } from '@/lib/professor/mutations';
 import { readJsonBody } from '@/lib/api/readJsonBody';
-import {
-  DEFAULT_PASSING_SCORE,
-  isoDateTimeRequired,
-  quizQuestionInputSchema,
-  quizWindowSuperRefine,
-} from '@/lib/quizSchemas';
+import { quizUpdateSchema } from '@/lib/quizSchemas';
 
 export const dynamic = 'force-dynamic';
 
-const updateQuizSchema = z
-  .object({
-    title: z.string().min(1).max(200),
-    description: z.string().max(8_000).optional(),
-    sectionIds: z
-      .array(z.string().min(1))
-      .min(1, 'Select at least one section')
-      .max(50),
-    maxAttempts: z.number().min(1).max(10).default(1),
-    timeLimit: z.number().min(1).max(24 * 60).optional(),
-    startDate: isoDateTimeRequired,
-    endDate: isoDateTimeRequired,
-    isActive: z.boolean().default(true),
-    passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
-    questions: z.array(quizQuestionInputSchema).max(200),
-  })
-  .superRefine(quizWindowSuperRefine);
+const updateQuizSchema = quizUpdateSchema;
 
 export async function PUT(
   req: NextRequest,
