@@ -1,6 +1,4 @@
-import { redirect } from 'next/navigation';
-
-import { withBasePath } from '@/lib/basePath';
+import { appRedirect } from "@/lib/serverRedirect";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,5 +9,5 @@ export default async function Page({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  redirect(withBasePath(`/dashboard/professor/courses/${courseId}/sections`));
+  appRedirect(`/dashboard/professor/courses/${courseId}/sections`);
 }

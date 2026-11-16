@@ -18,7 +18,7 @@ import {
 import { db } from '@/app/db';
 import { quizzes } from '@/app/db/schema';
 import { activeOnly } from '@/lib/db/filters';
-import { withBasePath } from '@/lib/basePath';
+import { appPath, withBasePath } from '@/lib/basePath';
 import { userCanWriteQuiz } from '@/lib/quizAccess';
 import { getCalibrationStubForQuiz } from '@/lib/quiz/calibrationStub';
 import { appRedirect } from '@/lib/serverRedirect';
@@ -60,7 +60,7 @@ export default async function QuizCalibrationPage({
         description="Grade a small sample and compare auto-scores with instructor overrides. Full calibration workflows will expand here."
         actions={
           <Button asChild variant="outline" size="sm">
-            <Link href={withBasePath(`/dashboard/professor/quiz/${quizId}/edit`)}>
+            <Link href={appPath(`/dashboard/professor/quiz/${quizId}/edit`)}>
               Back to quiz
             </Link>
           </Button>

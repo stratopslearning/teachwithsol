@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BlogShell } from "@/components/blog/BlogShell";
-import { withBasePath } from "@/lib/basePath";
+import { appPath, withBasePath } from "@/lib/basePath";
 import {
   getAllBlogPosts,
   kindLabel,
@@ -34,7 +34,7 @@ function PostCard({ post }: { post: BlogMeta }) {
   return (
     <li>
       <Link
-        href={withBasePath(`/blog/${post.slug}`)}
+        href={appPath(`/blog/${post.slug}`)}
         className="group block border-b border-rule/60 py-6 transition-colors hover:border-ink/30"
       >
         <div className="flex flex-wrap items-center gap-2 text-sm text-ink-faint">
@@ -86,7 +86,7 @@ export default function BlogIndexPage() {
             </a>
             {" · "}
             <Link
-              href={withBasePath("/docs")}
+              href={appPath("/docs")}
               className="underline decoration-rule underline-offset-2 hover:text-ink"
             >
               Docs

@@ -8,7 +8,7 @@ import {
 } from '@/components/books/BookContentsNav';
 import { BookResumeButton } from '@/components/books/BookResumeButton';
 import { StudentBookReaderShell } from '@/components/books/StudentBookReaderShell';
-import { withBasePath } from '@/lib/basePath';
+import { appPath, withBasePath } from '@/lib/basePath';
 import {
   isMetaTocChapter,
   isTeachableTopLevelChapter,
@@ -101,7 +101,7 @@ export function StudentBookToc({
           />
           {next ? (
             <Link
-              href={withBasePath(
+              href={appPath(
                 bookHref(book.id, {
                   sectionId: section?.id,
                   chapterId: next.id,

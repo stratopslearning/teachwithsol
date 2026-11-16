@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { withBasePath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 
 interface Enrollment {
   id: string;
@@ -56,7 +56,7 @@ export function EnrollmentList({ enrollments }: EnrollmentListProps) {
         >
           <div className="min-w-0 flex-1">
             <Link
-              href={withBasePath(
+              href={appPath(
                 `/dashboard/student/sections/${enrollment.section.id}`,
               )}
               className="block min-w-0"
@@ -73,7 +73,7 @@ export function EnrollmentList({ enrollments }: EnrollmentListProps) {
             <Badge variant="success">Enrolled</Badge>
             <Button asChild size="sm">
               <Link
-                href={withBasePath(
+                href={appPath(
                   `/dashboard/student/sections/${enrollment.section.id}`,
                 )}
               >

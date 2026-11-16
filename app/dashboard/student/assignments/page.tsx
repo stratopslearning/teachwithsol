@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { listStudentActivities } from "@/lib/assignments";
 import { requireStudent } from "@/lib/auth";
-import { withBasePath } from "@/lib/basePath";
+import { appPath, withBasePath } from "@/lib/basePath";
 import { listStudentBooks } from "@/lib/books";
 import { fetchUserEnrollmentsDetail } from "@/lib/db/facultyStudentReads";
 import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
@@ -49,7 +49,7 @@ export default async function StudentAssignmentsPage() {
             <h2 className="text-sm font-medium text-foreground">Books</h2>
             {books.some((b) => b.sectionIds[0]) ? (
               <Link
-                href={withBasePath(
+                href={appPath(
                   books.length === 1 && books[0]!.sectionIds[0]
                     ? `/dashboard/student/sections/${books[0]!.sectionIds[0]}/books`
                     : `/dashboard/student/sections/${books[0]!.sectionIds[0]}`,

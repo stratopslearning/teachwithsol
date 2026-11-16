@@ -6,7 +6,7 @@ import { BlogShell } from "@/components/blog/BlogShell";
 import { CopyPageButton } from "@/components/docs/CopyPageButton";
 import { DocsMarkdown } from "@/components/docs/DocsMarkdown";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { withBasePath } from "@/lib/basePath";
+import { appPath, withBasePath } from "@/lib/basePath";
 import {
   buildBlogMarkdown,
   getBlogBySlug,
@@ -106,7 +106,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3 text-sm text-ink-faint">
               <Link
-                href={withBasePath("/blog")}
+                href={appPath("/blog")}
                 className="transition-colors hover:text-ink"
               >
                 Blog

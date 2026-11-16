@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Minus, Plus } from '@/components/icons';
 
-import { withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 import {
   chapterDisplayIndexMap,
   isTeachableTopLevelChapter,
@@ -133,7 +133,7 @@ export function BookContentsNav({
             return (
               <li key={ch.id}>
                 <Link
-                  href={withBasePath(
+                  href={appPath(
                     bookHref(bookId, {
                       sectionId,
                       chapterId: ch.id,
@@ -165,7 +165,7 @@ export function BookContentsNav({
   return (
     <nav className={cn('min-h-0', className)} aria-label="Book contents">
       <Link
-        href={withBasePath(bookHref(bookId, { sectionId, audience }))}
+        href={appPath(bookHref(bookId, { sectionId, audience }))}
         onClick={onNavigate}
         className="mb-3 block px-1 text-sm font-medium text-ink underline-offset-2 hover:underline"
       >
@@ -187,7 +187,7 @@ export function BookContentsNav({
             <li key={node.id}>
               <div className="flex items-stretch gap-1">
                 <Link
-                  href={withBasePath(
+                  href={appPath(
                     bookHref(bookId, {
                       sectionId,
                       chapterId: node.id,
@@ -233,7 +233,7 @@ export function BookContentsNav({
                         )}
                       >
                         <Link
-                          href={withBasePath(
+                          href={appPath(
                             bookHref(bookId, {
                               sectionId,
                               chapterId: child.id,

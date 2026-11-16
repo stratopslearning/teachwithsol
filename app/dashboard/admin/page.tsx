@@ -14,7 +14,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/patterns/StatCard';
 import { Button } from '@/components/ui/button';
 import { fetchAdminOverviewStats } from '@/lib/admin/platformReads';
-import { withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 import { requireAdmin } from '@/lib/auth';
 
 export default async function AdminDashboardPage() {
@@ -117,21 +117,21 @@ export default async function AdminDashboardPage() {
       <AdminSection eyebrow="Quick actions" title="What needs doing">
         <div className="flex flex-wrap gap-3">
           <Button asChild>
-            <Link href={withBasePath('/dashboard/admin/workspaces')}>
+            <Link href={appPath('/dashboard/admin/workspaces')}>
               Provision workspace
             </Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={withBasePath('/dashboard/admin/users')}>People</Link>
+            <Link href={appPath('/dashboard/admin/users')}>People</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={withBasePath('/dashboard/admin/lti')}>
+            <Link href={appPath('/dashboard/admin/lti')}>
               <Link2 className="mr-1.5 h-3.5 w-3.5" />
               Canvas LTI
             </Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={withBasePath('/dashboard/admin/audit')}>
+            <Link href={appPath('/dashboard/admin/audit')}>
               <ScrollText className="mr-1.5 h-3.5 w-3.5" />
               Audit log
             </Link>

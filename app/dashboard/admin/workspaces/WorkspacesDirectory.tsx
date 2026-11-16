@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
-import { withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 
 export type WorkspaceDirectoryRow = {
   id: string;
@@ -195,7 +195,7 @@ export function WorkspacesDirectory({ rows }: { rows: WorkspaceDirectoryRow[] })
                     <div className="inline-flex items-center justify-end gap-0.5">
                       <Button asChild variant="ghost" size="sm" className="h-8 px-2">
                         <Link
-                          href={withBasePath(
+                          href={appPath(
                             `/dashboard/admin/courses?workspaceId=${encodeURIComponent(w.id)}`,
                           )}
                           title="Open catalog"

@@ -3,7 +3,7 @@ import { ArrowRight, BookOpen, Layers } from '@/components/icons';
 
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { Button } from '@/components/ui/button';
-import { appPath, withBasePath } from '@/lib/basePath';
+import { appPath } from '@/lib/basePath';
 import { fillCourseHrefTemplate } from '@/lib/professor/courseHref';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +33,7 @@ export function CoursePickerLanding({
         description={`Create a course first, then open ${toolLabel}.`}
         actions={
           <Button asChild>
-            <Link href={withBasePath(emptyHref)}>Go to Courses</Link>
+            <Link href={appPath(emptyHref)}>Go to Courses</Link>
           </Button>
         }
       />

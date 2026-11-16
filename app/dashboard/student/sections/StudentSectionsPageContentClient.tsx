@@ -7,7 +7,7 @@ import { Layers } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { withBasePath } from "@/lib/basePath";
+import { appPath } from "@/lib/basePath";
 import {
   Pagination,
   PaginationContent,
@@ -152,7 +152,7 @@ export default function StudentSectionsPageContentClient({
                 <TableRow key={section.id}>
                   <TableCell className="font-medium">
                     <Link
-                      href={withBasePath(
+                      href={appPath(
                         `/dashboard/student/sections/${section.id}`,
                       )}
                       className="text-ink underline-offset-2 hover:underline"
@@ -170,7 +170,7 @@ export default function StudentSectionsPageContentClient({
                     <div className="inline-flex items-center justify-end gap-1.5">
                       <Button asChild size="sm">
                         <Link
-                          href={withBasePath(
+                          href={appPath(
                             `/dashboard/student/sections/${section.id}`,
                           )}
                         >
