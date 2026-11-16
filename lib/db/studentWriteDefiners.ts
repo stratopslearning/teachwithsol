@@ -384,6 +384,18 @@ export type StudentGradebookAttempt = {
   sectionEndsAt: Date | null;
 };
 
+/** Every tenant a student has enrollments, attempts or chatbot sessions in. */
+export async function fetchStudentTenantIdsDefiner(
+  studentId: string,
+): Promise<string[]> {
+  const result = await db.execute(sql`
+    SELECT sol_student_tenant_ids(${studentId}::uuid) AS ids
+  `);
+  const ids = rowsFromExecute<{ ids: unknown }>(result)[0]?.ids;
+  if (!Array.isArray(ids)) return [];
+  return ids.map((id) => String(id));
+}
+
 export async function fetchStudentGradebookAttemptsDefiner(
   studentId: string,
 ): Promise<StudentGradebookAttempt[]> {
