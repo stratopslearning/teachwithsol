@@ -1,6 +1,5 @@
 /**
  * Teaching / student tables that must carry tenant_id after Phase 2 expand.
- * Kept in sync with scripts/validate-tenant-backfill.ts.
  */
 export const TEACHING_TENANT_TABLES = [
   'courses',

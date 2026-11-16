@@ -913,31 +913,3 @@ async function runWithTimeout<T>(
     if (timer) clearTimeout(timer);
   }
 }
-
-export function calculateQuizStatistics(
-  gradingResults: Array<{ score: number; confidence?: number }>,
-) {
-  const totalScore = gradingResults.reduce(
-    (sum, result) => sum + (result.score ?? 0),
-    0,
-  );
-  const totalConfidence = gradingResults.reduce(
-    (sum, result) => sum + (result.confidence ?? 80),
-    0,
-  );
-  const averageConfidence = gradingResults.length
-    ? totalConfidence / gradingResults.length
-    : 0;
-
-  return {
-    totalScore,
-    questionCount: gradingResults.length,
-    averageConfidence: Math.round(averageConfidence),
-    gradingQuality:
-      averageConfidence > 80
-        ? 'High'
-        : averageConfidence > 60
-          ? 'Medium'
-          : 'Low',
-  };
-}

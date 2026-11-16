@@ -3494,32 +3494,6 @@ export const peerDiscussions = pgTable(
   }),
 );
 
-export const peerDiscussionPosts = pgTable(
-  'peer_discussion_posts',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    discussionId: uuid('discussion_id')
-      .references(() => peerDiscussions.id, { onDelete: 'cascade' })
-      .notNull(),
-    tenantId: uuid('tenant_id')
-      .references(() => workspaces.id, { onDelete: 'restrict' })
-      .notNull(),
-    authorUserId: uuid('author_user_id')
-      .references(() => users.id, { onDelete: 'cascade' })
-      .notNull(),
-    parentPostId: uuid('parent_post_id'),
-    bodyMarkdown: text('body_markdown').notNull(),
-    deletedAt: ts('deleted_at'),
-    createdAt: ts('created_at').defaultNow().notNull(),
-    updatedAt: ts('updated_at').defaultNow().notNull(),
-  },
-  (t) => ({
-    discussionIdx: index('peer_discussion_posts_discussion_idx').on(
-      t.discussionId,
-    ),
-  }),
-);
-
 export const assignmentGroups = pgTable(
   'assignment_groups',
   {
@@ -3591,31 +3565,6 @@ export const learningOutcomes = pgTable(
   },
   (t) => ({
     courseIdx: index('learning_outcomes_course_idx').on(t.courseId),
-  }),
-);
-
-export const outcomeLinks = pgTable(
-  'outcome_links',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    outcomeId: uuid('outcome_id')
-      .references(() => learningOutcomes.id, { onDelete: 'cascade' })
-      .notNull(),
-    tenantId: uuid('tenant_id')
-      .references(() => workspaces.id, { onDelete: 'restrict' })
-      .notNull(),
-    questionId: uuid('question_id').references(() => questions.id, {
-      onDelete: 'cascade',
-    }),
-    quizId: uuid('quiz_id').references(() => quizzes.id, {
-      onDelete: 'cascade',
-    }),
-    conceptTag: text('concept_tag'),
-    rubricCriterionId: text('rubric_criterion_id'),
-    createdAt: ts('created_at').defaultNow().notNull(),
-  },
-  (t) => ({
-    outcomeIdx: index('outcome_links_outcome_idx').on(t.outcomeId),
   }),
 );
 

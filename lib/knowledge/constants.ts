@@ -30,10 +30,4 @@ export const ALLOWED_UPLOAD_MIME = new Set([
   'text/x-markdown',
 ]);
 
-export const ALLOWED_ZIP_MIME = new Set([
-  'application/zip',
-  'application/x-zip-compressed',
-  'application/octet-stream',
-]);
-
 export const EMBEDDING_MODEL = defaultEmbedModel();
