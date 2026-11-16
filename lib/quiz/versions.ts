@@ -1,6 +1,6 @@
 import { desc, eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withQuizTenant } from '@/lib/db/sectionTenants';
 import { quizVersions, quizzes, questions } from '@/app/db/schema';
 
 export type QuizVersionSnapshot = {
@@ -27,10 +27,14 @@ export async function createQuizVersionSnapshot(opts: {
 export async function getLatestQuizVersionId(
   quizId: string,
 ): Promise<string | null> {
-  const row = await db.query.quizVersions.findFirst({
-    where: eq(quizVersions.quizId, quizId),
-    orderBy: [desc(quizVersions.version)],
-    columns: { id: true },
-  });
+  // FORCE RLS: a plain db read returned nothing, so attempts never recorded
+  // their quiz version. Read under the quiz's tenant.
+  const row = await withQuizTenant(quizId, null, (tx) =>
+    tx.query.quizVersions.findFirst({
+      where: eq(quizVersions.quizId, quizId),
+      orderBy: [desc(quizVersions.version)],
+      columns: { id: true },
+    }),
+  );
   return row?.id ?? null;
 }

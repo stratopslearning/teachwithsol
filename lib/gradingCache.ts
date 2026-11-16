@@ -16,7 +16,7 @@
 import { createHash } from 'crypto';
 import { and, eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import { gradingCache } from '@/app/db/schema';
 import { hashCacheKey } from '@/lib/crypto/cacheKeyHmac';
 import type {
@@ -91,14 +91,20 @@ export async function lookupCachedGrading(args: {
 }): Promise<CachedGradingPayload | null> {
   if (!args.studentAnswer || !args.studentAnswer.trim()) return null;
   const key = computeCacheKey(args);
+  // FORCE RLS: cache rows are tenant-scoped; without a tenant a read sees
+  // nothing, so treat it as a miss.
+  if (!args.tenantId) return null;
+  const tenantId = args.tenantId;
   try {
-    const row = await db.query.gradingCache.findFirst({
-      where: and(
-        eq(gradingCache.key, key),
-        eq(gradingCache.rubricVersion, args.rubricVersion),
-        eq(gradingCache.modelVersion, args.modelVersion),
-      ),
-    });
+    const row = await withTenant(tenantId, null, (tx) =>
+      tx.query.gradingCache.findFirst({
+        where: and(
+          eq(gradingCache.key, key),
+          eq(gradingCache.rubricVersion, args.rubricVersion),
+          eq(gradingCache.modelVersion, args.modelVersion),
+        ),
+      }),
+    );
     if (!row) return null;
     return row.payload as CachedGradingPayload;
   } catch (error) {
@@ -120,17 +126,24 @@ export async function writeCachedGrading(args: {
 }): Promise<void> {
   if (!args.studentAnswer || !args.studentAnswer.trim()) return;
   const key = computeCacheKey(args);
+  // FORCE RLS: write under the tenant and stamp tenant_id (a plain insert
+  // was rejected, so the cache never filled).
+  if (!args.tenantId) return;
+  const tenantId = args.tenantId;
   try {
-    await db
-      .insert(gradingCache)
-      .values({
-        key,
-        questionId: args.questionId,
-        rubricVersion: args.rubricVersion,
-        modelVersion: args.modelVersion,
-        payload: args.payload,
-      })
-      .onConflictDoNothing({ target: gradingCache.key });
+    await withTenant(tenantId, null, (tx) =>
+      tx
+        .insert(gradingCache)
+        .values({
+          key,
+          tenantId,
+          questionId: args.questionId,
+          rubricVersion: args.rubricVersion,
+          modelVersion: args.modelVersion,
+          payload: args.payload,
+        })
+        .onConflictDoNothing({ target: gradingCache.key }),
+    );
   } catch (error) {
     console.warn('gradingCache.write failed:', error);
   }

@@ -4,7 +4,8 @@
  */
 import { eq } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
+import { findInUserTenants } from '@/lib/db/userTenants';
 import { questions } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
 import { gradeShortAnswer } from '@/lib/grading';
@@ -59,6 +60,22 @@ export function gateRubricForGrading(question: {
   return { ok: false, reason: 'missing', status };
 }
 
+/**
+ * A question by id, found in one of the actor's workspaces, with its tenant.
+ * FORCE RLS: a plain db read finds nothing (every rubric action was "Question
+ * not found"), and an unscoped lookup would reach other workspaces' questions.
+ */
+export async function loadQuestionForActor(questionId: string, actorUserId: string) {
+  const found = await findInUserTenants(actorUserId, async (tx, tenantId) => {
+    const question = await tx.query.questions.findFirst({
+      where: eq(questions.id, questionId),
+    });
+    return question ? { question, tenantId } : undefined;
+  });
+  if (!found) throw ApiError.notFound('Question not found');
+  return found;
+}
+
 /** Propose a rubric for a question without auto-approving. */
 export async function proposeQuestionRubric(opts: {
   questionId: string;
@@ -69,10 +86,10 @@ export async function proposeQuestionRubric(opts: {
   sampleAnswers?: { strong: string; partial: string; weak: string };
   needsInstructorInput?: boolean;
 }> {
-  const question = await db.query.questions.findFirst({
-    where: eq(questions.id, opts.questionId),
-  });
-  if (!question) throw ApiError.notFound('Question not found');
+  const { question, tenantId } = await loadQuestionForActor(
+    opts.questionId,
+    opts.actorUserId,
+  );
   if (question.type !== 'SHORT_ANSWER') {
     throw ApiError.badRequest('Rubrics apply to short-answer questions only');
   }
@@ -84,15 +101,17 @@ export async function proposeQuestionRubric(opts: {
   const full = await callRubricModelFull(question.question, correct, {
     totalPoints: question.points,
   });
-  await db
-    .update(questions)
-    .set({
-      rubric: full.criteria,
-      rubricStatus: 'proposed',
-      rubricApprovedAt: null,
-      rubricApprovedBy: null,
-    })
-    .where(eq(questions.id, opts.questionId));
+  await withTenant(tenantId, opts.actorUserId, (tx) =>
+    tx
+      .update(questions)
+      .set({
+        rubric: full.criteria,
+        rubricStatus: 'proposed',
+        rubricApprovedAt: null,
+        rubricApprovedBy: null,
+      })
+      .where(eq(questions.id, opts.questionId)),
+  );
 
   return {
     rubric: full.criteria,
@@ -107,13 +126,11 @@ export async function proposeQuestionRubric(opts: {
  */
 export async function testRubricSampleSeparation(opts: {
   questionId: string;
+  actorUserId: string;
   samples: { band: SampleAnswerBand; answer: string }[];
   maxPoints?: number;
 }): Promise<{ ok: boolean; results: RubricSampleResult[]; message?: string }> {
-  const question = await db.query.questions.findFirst({
-    where: eq(questions.id, opts.questionId),
-  });
-  if (!question) throw ApiError.notFound('Question not found');
+  const { question } = await loadQuestionForActor(opts.questionId, opts.actorUserId);
   const rubric = readRubricFromColumn(question.rubric);
   if (!rubric) {
     return { ok: false, results: [], message: 'No rubric proposed yet' };
@@ -183,16 +200,17 @@ export async function approveQuestionRubric(opts: {
   actorUserId: string;
   samples?: { band: SampleAnswerBand; answer: string }[];
 }): Promise<{ rubric: RubricCriterion[] }> {
-  const question = await db.query.questions.findFirst({
-    where: eq(questions.id, opts.questionId),
-  });
-  if (!question) throw ApiError.notFound('Question not found');
+  const { question, tenantId } = await loadQuestionForActor(
+    opts.questionId,
+    opts.actorUserId,
+  );
   const rubric = readRubricFromColumn(question.rubric);
   if (!rubric) throw ApiError.badRequest('Propose a rubric before approving');
 
   if (opts.samples && opts.samples.length >= 3) {
     const test = await testRubricSampleSeparation({
       questionId: opts.questionId,
+      actorUserId: opts.actorUserId,
       samples: opts.samples,
     });
     if (!test.ok) {
@@ -200,14 +218,16 @@ export async function approveQuestionRubric(opts: {
     }
   }
 
-  await db
-    .update(questions)
-    .set({
-      rubricStatus: 'approved',
-      rubricApprovedAt: new Date(),
-      rubricApprovedBy: opts.actorUserId,
-    })
-    .where(eq(questions.id, opts.questionId));
+  await withTenant(tenantId, opts.actorUserId, (tx) =>
+    tx
+      .update(questions)
+      .set({
+        rubricStatus: 'approved',
+        rubricApprovedAt: new Date(),
+        rubricApprovedBy: opts.actorUserId,
+      })
+      .where(eq(questions.id, opts.questionId)),
+  );
 
   return { rubric };
 }

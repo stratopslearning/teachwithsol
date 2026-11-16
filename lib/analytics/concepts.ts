@@ -1,7 +1,9 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, inArray } from 'drizzle-orm';
 
-import { db } from '@/app/db';
-import { questions, quizSections, quizzes } from '@/app/db/schema';
+import { quizSections, quizzes } from '@/app/db/schema';
+import { readBySectionTenants } from '@/lib/db/sectionTenants';
+import { withTenant } from '@/lib/db/tenantContext';
+import { loadQuizQuestions } from '@/lib/quiz/gradingData';
 import { resolveAnalyticsSectionIds } from '@/lib/analytics/access';
 import {
   aggregateConceptMastery,
@@ -34,10 +36,17 @@ export async function getConceptMastery(
     };
   }
 
-  const links = await db.query.quizSections.findMany({
-    where: inArray(quizSections.sectionId, sectionIds),
-    columns: { quizId: true },
-  });
+  // FORCE RLS: plain db reads return nothing (concept mastery was always
+  // empty). Read each tenant's share of the sections under that tenant.
+  const links = await readBySectionTenants(sectionIds, user.id, async (tx, ids, tenantId) =>
+    (
+      await tx.query.quizSections.findMany({
+        where: inArray(quizSections.sectionId, ids),
+        columns: { quizId: true },
+      })
+    ).map((l) => ({ ...l, tenantId })),
+  );
+  const tenantOfQuiz = new Map(links.map((l) => [l.quizId, l.tenantId]));
   const quizIds = [...new Set(links.map((l) => l.quizId))];
   if (quizIds.length === 0) {
     return {
@@ -46,10 +55,23 @@ export async function getConceptMastery(
     };
   }
 
-  const quizRows = await db.query.quizzes.findMany({
-    where: and(inArray(quizzes.id, quizIds), activeOnly(quizzes.deletedAt)),
-    columns: { id: true },
-  });
+  const quizIdsByTenant = new Map<string, string[]>();
+  for (const id of quizIds) {
+    const t = tenantOfQuiz.get(id)!;
+    quizIdsByTenant.set(t, [...(quizIdsByTenant.get(t) ?? []), id]);
+  }
+  const quizRows = (
+    await Promise.all(
+      [...quizIdsByTenant].map(([tenantId, ids]) =>
+        withTenant(tenantId, user.id, (tx) =>
+          tx.query.quizzes.findMany({
+            where: and(inArray(quizzes.id, ids), activeOnly(quizzes.deletedAt)),
+            columns: { id: true },
+          }),
+        ),
+      ),
+    )
+  ).flat();
   const activeQuizIds = quizRows.map((q) => q.id);
   if (activeQuizIds.length === 0) {
     return {
@@ -61,10 +83,7 @@ export async function getConceptMastery(
   const allStats: ReturnType<typeof computeQuestionStatsForAttempts> = [];
 
   for (const quizId of activeQuizIds) {
-    const quizQuestions = await db.query.questions.findMany({
-      where: eq(questions.quizId, quizId),
-      orderBy: (q, { asc }) => [asc(q.order)],
-    });
+    const quizQuestions = await loadQuizQuestions(quizId, tenantOfQuiz.get(quizId)!);
 
     const forStats: QuizQuestionForStats[] = quizQuestions.map((q) => ({
       id: q.id,

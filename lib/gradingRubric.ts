@@ -12,7 +12,7 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import { questions } from '@/app/db/schema';
 import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
 import {
@@ -372,6 +372,8 @@ type QuestionRow = {
   correctAnswer: string | null;
   rubric: unknown;
   rubricVersion: number;
+  /** Needed to persist a derived rubric under FORCE RLS. */
+  tenantId?: string | null;
 };
 
 /**
@@ -420,10 +422,14 @@ export async function getOrDeriveRubric(
       { isFailure: false },
     );
     try {
-      await db
-        .update(questions)
-        .set({ rubric })
-        .where(eq(questions.id, question.id));
+      // FORCE RLS: a plain update matched no rows, so derived rubrics were
+      // never saved and were re-derived (an AI call) on every grade.
+      if (question.tenantId) {
+        const tenantId = question.tenantId;
+        await withTenant(tenantId, null, (tx) =>
+          tx.update(questions).set({ rubric }).where(eq(questions.id, question.id)),
+        );
+      }
     } catch (writeErr) {
       console.warn('rubric persist failed (continuing without cache):', writeErr);
     }

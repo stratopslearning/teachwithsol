@@ -1,7 +1,6 @@
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-import { sections } from '@/app/db/schema';
 import { authorize } from '@/lib/authz';
 import { scheduleAttemptRetry } from '@/lib/backgroundRetry';
 import { loadExamContext, missingExamResource } from '@/lib/examContext';
@@ -76,13 +75,8 @@ export async function executeQuizSubmit(
 
   const { fetchSectionById } = await import('@/lib/db/entityScopedReads');
   const section = await fetchSectionById(sectionId);
-  if (!section) {
-    // Fallback bare read only when DEFINER misses (should not happen).
-    const bare = await db.query.sections.findFirst({
-      where: eq(sections.id, sectionId),
-    });
-    if (!bare) throw new Error('Section not found');
-  }
+  // (A plain db fallback read can't see the row under FORCE RLS either.)
+  if (!section) throw new Error('Section not found');
   const sectionRow = section ?? {
     endsAt: null,
     offeringId: null as string | null,

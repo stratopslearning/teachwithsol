@@ -4,7 +4,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
+import { withTenant } from '@/lib/db/tenantContext';
 import {
   attempts,
   chatbotSessions,
@@ -199,10 +199,14 @@ export async function analyzeUnitInsights(opts: {
 
   let quizFilter = opts.quizIds ?? [];
   if (quizFilter.length === 0) {
-    const activityQuizzes = await db
-      .select({ quizId: courseActivities.quizId })
-      .from(courseActivities)
-      .where(eq(courseActivities.courseId, opts.courseId));
+    // FORCE RLS: run reads under the tenant (plain db reads returned nothing,
+    // so insights were generated from no data).
+    const activityQuizzes = await withTenant(opts.tenantId, null, (tx) =>
+      tx
+        .select({ quizId: courseActivities.quizId })
+        .from(courseActivities)
+        .where(eq(courseActivities.courseId, opts.courseId)),
+    );
     quizFilter = activityQuizzes
       .map((r) => r.quizId)
       .filter((id): id is string => Boolean(id));
@@ -221,20 +225,22 @@ export async function analyzeUnitInsights(opts: {
   const answersMerged: Record<string, unknown> = {};
 
   if (quizFilter.length > 0) {
-    const recentAttempts = await db.query.attempts.findMany({
-      where: and(
-        eq(attempts.tenantId, opts.tenantId),
-        sql`${attempts.submittedAt} is not null`,
-      ),
-      orderBy: [desc(attempts.submittedAt)],
-      limit: 120,
-      columns: {
-        id: true,
-        quizId: true,
-        answers: true,
-        gptFeedback: true,
-      },
-    });
+    const recentAttempts = await withTenant(opts.tenantId, null, (tx) =>
+      tx.query.attempts.findMany({
+        where: and(
+          eq(attempts.tenantId, opts.tenantId),
+          sql`${attempts.submittedAt} is not null`,
+        ),
+        orderBy: [desc(attempts.submittedAt)],
+        limit: 120,
+        columns: {
+          id: true,
+          quizId: true,
+          answers: true,
+          gptFeedback: true,
+        },
+      }),
+    );
 
     for (const att of recentAttempts) {
       if (!quizFilter.includes(att.quizId)) continue;
@@ -266,12 +272,14 @@ export async function analyzeUnitInsights(opts: {
     }
   }
 
-  const sessions = await db.query.chatbotSessions.findMany({
-    where: eq(chatbotSessions.tenantId, opts.tenantId),
-    orderBy: [desc(chatbotSessions.startedAt)],
-    limit: 80,
-    columns: { struggleTopics: true },
-  });
+  const sessions = await withTenant(opts.tenantId, null, (tx) =>
+    tx.query.chatbotSessions.findMany({
+      where: eq(chatbotSessions.tenantId, opts.tenantId),
+      orderBy: [desc(chatbotSessions.startedAt)],
+      limit: 80,
+      columns: { struggleTopics: true },
+    }),
+  );
   const struggleTopics = sessions.flatMap((s) =>
     Array.isArray(s.struggleTopics) ? (s.struggleTopics as string[]) : [],
   );
@@ -333,19 +341,21 @@ export async function analyzeUnitInsights(opts: {
     );
   }
 
-  const [row] = await db
-    .insert(unitInsights)
-    .values({
-      tenantId: opts.tenantId,
-      courseId: opts.courseId,
-      outlineId: opts.outlineId ?? null,
-      moduleId: opts.moduleId ?? null,
-      misconceptions: result.value.misconceptions,
-      suggestions: result.value.suggestions,
-      modelVersion: resolved.model,
-      promptVersion: INSIGHTS_PROMPT_VERSION,
-    })
-    .returning();
+  const [row] = await withTenant(opts.tenantId, null, (tx) =>
+    tx
+      .insert(unitInsights)
+      .values({
+        tenantId: opts.tenantId,
+        courseId: opts.courseId,
+        outlineId: opts.outlineId ?? null,
+        moduleId: opts.moduleId ?? null,
+        misconceptions: result.value.misconceptions,
+        suggestions: result.value.suggestions,
+        modelVersion: resolved.model,
+        promptVersion: INSIGHTS_PROMPT_VERSION,
+      })
+      .returning(),
+  );
 
   void logAiSpan('insights.analyze', 'insights', {
     courseId: hashId(opts.courseId),
@@ -362,12 +372,14 @@ export async function listUnitInsights(opts: {
   courseId: string;
   limit?: number;
 }) {
-  return db.query.unitInsights.findMany({
-    where: and(
-      eq(unitInsights.tenantId, opts.tenantId),
-      eq(unitInsights.courseId, opts.courseId),
-    ),
-    orderBy: [desc(unitInsights.createdAt)],
-    limit: opts.limit ?? 10,
-  });
+  return withTenant(opts.tenantId, null, (tx) =>
+    tx.query.unitInsights.findMany({
+      where: and(
+        eq(unitInsights.tenantId, opts.tenantId),
+        eq(unitInsights.courseId, opts.courseId),
+      ),
+      orderBy: [desc(unitInsights.createdAt)],
+      limit: opts.limit ?? 10,
+    }),
+  );
 }

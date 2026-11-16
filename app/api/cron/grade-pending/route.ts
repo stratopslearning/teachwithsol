@@ -17,7 +17,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { inArray } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { listAllTenantIds } from '@/lib/db/allTenants';
+import { withTenant } from '@/lib/db/tenantContext';
 import { attempts } from '@/app/db/schema';
 import { isCronAuthorized } from '@/lib/api/cronAuth';
 import { sweepStaleInProgressAttempts } from '@/lib/autoSubmitInProgressAttempt';
@@ -39,11 +40,24 @@ export async function GET(req: NextRequest) {
   try {
     const autoSubmitSweep = await sweepStaleInProgressAttempts();
 
-    const pendingAttempts = await db.query.attempts.findMany({
-      where: inArray(attempts.gradingStatus, ['partial', 'failed']),
-      limit: BATCH_LIMIT,
-      orderBy: (cols, { asc }) => [asc(cols.submittedAt)],
-    });
+    // FORCE RLS: a plain db read returns no attempts, so this cron never
+    // graded anything. Sweep each tenant under withTenant, oldest first.
+    const perTenant = await Promise.all(
+      (await listAllTenantIds()).map((tenantId) =>
+        withTenant(tenantId, null, (tx) =>
+          tx.query.attempts.findMany({
+            where: inArray(attempts.gradingStatus, ['partial', 'failed']),
+            limit: BATCH_LIMIT,
+            orderBy: (cols, { asc }) => [asc(cols.submittedAt)],
+          }),
+        ),
+      ),
+    );
+    const submitted = (d: Date | null) => (d ? new Date(d).getTime() : Infinity);
+    const pendingAttempts = perTenant
+      .flat()
+      .sort((a, b) => submitted(a.submittedAt) - submitted(b.submittedAt))
+      .slice(0, BATCH_LIMIT);
 
     if (pendingAttempts.length === 0) {
       return NextResponse.json({
