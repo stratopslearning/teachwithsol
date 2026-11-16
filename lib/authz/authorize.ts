@@ -20,7 +20,7 @@ import {
   fetchUserRoleBindings,
   userEnrolledInSection,
 } from '@/lib/authz/userScopedReads';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 
 export type AuthzScopeType =
   | 'organization'
@@ -42,10 +42,6 @@ export type AuthzResource = {
   offeringId?: string | null;
   organizationId?: string | null;
 };
-
-type AuthUser = Pick<UserData, 'id'> & {
-  platformStaff?: boolean | null;
-}
 
 type ScopeRef = { scopeType: AuthzScopeType; scopeId: string };
 

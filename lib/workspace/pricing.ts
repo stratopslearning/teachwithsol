@@ -1,3 +1,5 @@
+import type { WorkspaceType } from '@/app/db/enums';
+
 /**
  * Draft commercial catalog for workspace SKUs.
  *
@@ -9,7 +11,7 @@
  * AI band: included tutor turns + SA grades + embed batches (summed units).
  */
 
-export type WorkspaceSku = 'creator' | 'business' | 'department' | 'institution';
+export type WorkspaceSku = WorkspaceType;
 
 export type PricingTierId = string;
 

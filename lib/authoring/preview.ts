@@ -5,9 +5,7 @@ import { ApiError } from '@/lib/api/errors';
 import { assertCanManageItem } from '@/lib/authoring/access';
 import type { OutlineItemSummary } from '@/lib/authoring/outlines';
 import { withItemTenant } from '@/lib/authoring/tenant';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export type ItemPreview = {
   item: OutlineItemSummary;

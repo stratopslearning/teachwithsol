@@ -15,12 +15,13 @@ import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { fetchCourseById, fetchSectionById } from '@/lib/db/entityScopedReads';
 import { sendStaffInviteMail } from '@/lib/email';
 import { getRequiredBaseUrl } from '@/lib/stripe';
+import { SECTION_STAFF_INVITE_ROLES } from '@/app/db/enums';
 
 export const dynamic = 'force-dynamic';
 
 const bodySchema = z.object({
   email: z.string().email().max(320),
-  role: z.enum(['co_instructor', 'ta', 'grader']),
+  role: z.enum(SECTION_STAFF_INVITE_ROLES),
 });
 
 export async function POST(

@@ -1,8 +1,6 @@
-export type KnowledgeIndexStatus =
-  | 'PENDING'
-  | 'PROCESSING'
-  | 'READY'
-  | 'FAILED';
+import type { ProcessingStatus } from '@/app/db/enums';
+
+export type KnowledgeIndexStatus = ProcessingStatus;
 
 export type MaterialDisplayStatus = 'Processing' | 'Ready' | 'Needs attention';
 

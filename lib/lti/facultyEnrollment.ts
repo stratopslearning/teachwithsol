@@ -11,13 +11,8 @@ import { upsertRoleBinding } from '@/lib/authz/bindings';
 import type { BindingRole } from '@/lib/authz/permissions';
 import { hasTeachingAssistantRole } from '@/lib/lti/roles';
 import { ensureWorkspaceMembership } from '@/lib/workspace/access';
+import { SECTION_TEACHING_ROLES } from '@/app/db/enums';
 
-const SECTION_TEACHING_ROLES: BindingRole[] = [
-  'lead_instructor',
-  'co_instructor',
-  'ta',
-  'grader',
-];
 
 /** Map Canvas/IMS roles → section-scoped binding. Default co_instructor. */
 export function mapLtiRolesToBindingRole(

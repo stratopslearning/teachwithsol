@@ -14,15 +14,11 @@ import {
   upsertActivityForInteractive,
 } from '@/lib/assignments/sync';
 import { userCanAccessTeachingArea } from '@/lib/authz/gates';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import {
   assertCanManageInteractive,
   listTeachableSectionsForCourse,
 } from '@/lib/interactives/access';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & {
-  platformStaff?: boolean | null;
-};
 
 export async function createInteractive(
   user: AuthUser,

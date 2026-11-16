@@ -2,7 +2,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 import { outlineModules } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 import { authorizeOnSection } from '@/lib/authz/courseAccess';
 import {
   fetchOutlineById,
@@ -14,10 +14,6 @@ import {
   withOutlineTenant,
 } from '@/lib/authoring/tenant';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-
-type AuthUser = Pick<UserData, 'id'> & {
-  platformStaff?: boolean | null;
-}
 
 export async function assertCanManageOutline(
   user: AuthUser,

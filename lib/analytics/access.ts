@@ -1,9 +1,7 @@
 import { listTeachableSectionIdsForCourse } from '@/lib/authoring/access';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import { ApiError } from '@/lib/api/errors';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export async function resolveAnalyticsSectionIds(
   user: AuthUser,

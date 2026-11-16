@@ -5,9 +5,7 @@ import {
   fetchBookChapterForReaderDefiner,
   fetchBookChaptersTocForBookDefiner,
 } from '@/lib/db/bookWriteDefiners';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id'> & { platformStaff?: boolean | null };
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 
 /** Faculty preview: same TOC shape as student, gated by course manage access. */
 export async function getFacultyBookToc(user: AuthUser, bookId: string) {

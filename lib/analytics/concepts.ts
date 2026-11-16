@@ -10,14 +10,12 @@ import {
 } from '@/lib/analytics/aggregateConcepts';
 import { suppressConceptRows } from '@/lib/analytics/kAnonymity';
 import { activeOnly } from '@/lib/db/filters';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { fetchSubmittedAttemptsForProfessorSections } from '@/lib/professorVisibleAttempts';
 import {
   computeQuestionStatsForAttempts,
   type QuizQuestionForStats,
 } from '@/lib/quizQuestionStats';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export async function getConceptMastery(
   user: AuthUser,

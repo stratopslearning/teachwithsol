@@ -13,6 +13,7 @@ import {
   isoDateTimeRequired,
   quizWindowSuperRefine,
 } from '@/lib/quizSchemas';
+import { QUESTION_TYPES } from '@/app/db/enums';
 import {
   buildQuizDescriptionWithMetadata,
   extractQuizMetadata,
@@ -35,7 +36,7 @@ const adminQuizUpdateSchema = z
     .array(
       z.object({
         id: z.string().optional(),
-        type: z.enum(['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER']),
+        type: z.enum(QUESTION_TYPES),
         question: z.string().min(1).max(4_000),
         options: z.array(z.string().max(2_000)).optional().nullable(),
         correctAnswer: z.string().max(2_000).optional().nullable(),

@@ -27,12 +27,9 @@ import {
   getTier,
   type WorkspaceSku,
 } from '@/lib/workspace/pricing';
+import { licensePlanForWorkspaceType, type LicensePlan } from '@/app/db/enums';
 
-export type WorkspacePlan =
-  | 'creator'
-  | 'business_team'
-  | 'department'
-  | 'institution';
+export type WorkspacePlan = LicensePlan;
 
 export type ProvisionWorkspaceInput = {
   slug: string;
@@ -100,12 +97,7 @@ export async function provisionWorkspace(
   }
 
   const plan: WorkspacePlan =
-    input.plan ??
-    (input.type === 'business'
-      ? 'business_team'
-      : input.type === 'creator'
-        ? 'creator'
-        : input.type);
+    input.plan ?? licensePlanForWorkspaceType(input.type);
 
   const stripeBilled = input.type === 'creator' || input.type === 'business';
   const actorId = input.ownerUserId ?? input.actorUserId ?? null;

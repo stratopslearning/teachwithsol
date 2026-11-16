@@ -18,11 +18,9 @@ import {
   fetchSectionById,
   fetchSectionRowsForCourse,
 } from '@/lib/db/entityScopedReads';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUserRef } from '@/lib/getOrCreateUser';
 
-export type AuthzUser = Pick<UserData, 'id'> & {
-  platformStaff?: boolean | null;
-}
+export type AuthzUser = AuthUserRef;
 
 export type CourseRef = {
   id: string;

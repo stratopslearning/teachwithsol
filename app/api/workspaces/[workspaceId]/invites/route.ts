@@ -13,13 +13,14 @@ import {
   createWorkspaceInvite,
   userCanInviteWorkspaceFaculty,
 } from '@/lib/workspace';
+import { WORKSPACE_GRANTABLE_ROLES } from '@/app/db/enums';
 
 export const dynamic = 'force-dynamic';
 
 const bodySchema = z.object({
   email: z.string().email().max(320),
   /** Owner/admin may invite instructors or co-admins (never owner). */
-  role: z.enum(['instructor', 'admin']).optional(),
+  role: z.enum(WORKSPACE_GRANTABLE_ROLES).optional(),
 });
 
 /**

@@ -5,10 +5,8 @@ import {
   type AuthzRole,
 } from '@/lib/authz/permissions';
 import { fetchUserRoleBindings } from '@/lib/authz/userScopedReads';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 import { requireWorkspaceTeaching } from '@/lib/workspace/entitlement';
-
-type AuthUser = Pick<UserData, 'id'> & { platformStaff?: boolean | null };
 
 /** Roles that may use workspace Knowledge / authoring library reads. */
 export function roleGrantsWorkspaceFacultyAccess(role: AuthzRole): boolean {

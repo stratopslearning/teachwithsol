@@ -6,9 +6,7 @@ import {
   fetchActiveSectionIdsForStudentDefiner,
 } from '@/lib/db/bookWriteDefiners';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
-import type { UserData } from '@/lib/getOrCreateUser';
-
-type AuthUser = Pick<UserData, 'id'> & { platformStaff?: boolean | null };
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 
 export async function assertCanManageBook(user: AuthUser, bookId: string) {
   const book = await fetchHostedBookByIdDefiner(bookId);

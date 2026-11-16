@@ -10,6 +10,18 @@ import {
   uuid,
   vector,
 } from 'drizzle-orm/pg-core';
+
+import {
+  BINDING_ROLES,
+  BINDING_SCOPE_TYPES,
+  LICENSE_PLANS,
+  OUTLINE_ITEM_TYPES,
+  PROCESSING_STATUSES,
+  QUESTION_TYPES,
+  SECTION_STAFF_INVITE_ROLES,
+  WORKSPACE_GRANTABLE_ROLES,
+  WORKSPACE_TYPES,
+} from './enums';
 import { relations, sql } from 'drizzle-orm';
 
 // All timestamps are timestamptz so the database always stores/returns UTC.
@@ -57,7 +69,7 @@ export const workspaces = pgTable(
     slug: text('slug').notNull(),
     name: text('name').notNull(),
     type: text('type', {
-      enum: ['creator', 'business', 'department', 'institution'],
+      enum: WORKSPACE_TYPES,
     })
       .default('department')
       .notNull(),
@@ -128,7 +140,7 @@ export const workspaceLicenses = pgTable(
       .references(() => workspaces.id, { onDelete: 'cascade' })
       .notNull(),
     plan: text('plan', {
-      enum: ['creator', 'business_team', 'department', 'institution'],
+      enum: LICENSE_PLANS,
     })
       .default('department')
       .notNull(),
@@ -228,19 +240,11 @@ export const roleBindings = pgTable(
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
     scopeType: text('scope_type', {
-      enum: ['organization', 'department', 'offering', 'section'],
+      enum: BINDING_SCOPE_TYPES,
     }).notNull(),
     scopeId: uuid('scope_id').notNull(),
     role: text('role', {
-      enum: [
-        'owner',
-        'admin',
-        'faculty',
-        'lead_instructor',
-        'co_instructor',
-        'ta',
-        'grader',
-      ],
+      enum: BINDING_ROLES,
     }).notNull(),
     grantedBy: uuid('granted_by').references(() => users.id, {
       onDelete: 'set null',
@@ -429,7 +433,7 @@ export const sectionStaffInvites = pgTable(
       .notNull(),
     email: text('email').notNull(),
     role: text('role', {
-      enum: ['co_instructor', 'ta', 'grader'],
+      enum: SECTION_STAFF_INVITE_ROLES,
     }).notNull(),
     tokenHash: text('token_hash').notNull(),
     grantedBy: uuid('granted_by').references(() => users.id, {
@@ -518,7 +522,7 @@ export const workspaceAccessRequests = pgTable(
     email: text('email').notNull(),
     name: text('name'),
     claimedRole: text('claimed_role', {
-      enum: ['instructor', 'admin'],
+      enum: WORKSPACE_GRANTABLE_ROLES,
     })
       .default('instructor')
       .notNull(),
@@ -752,7 +756,7 @@ export const questions = pgTable(
     offeringId: uuid('offering_id').references(() => courseOfferings.id, {
       onDelete: 'set null',
     }),
-    type: text('type', { enum: ['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER'] }).notNull(),
+    type: text('type', { enum: QUESTION_TYPES }).notNull(),
     question: text('question').notNull(),
     options: jsonb('options'), // For MCQ: ["option1", "option2", ...]
     correctAnswer: text('correct_answer'), // For MCQ/TF: "option1" or "true"
@@ -1328,7 +1332,7 @@ export const courseMaterials = pgTable(
     /** Original URL for URL sources. */
     externalUrl: text('external_url'),
     status: text('status', {
-      enum: ['PENDING', 'PROCESSING', 'READY', 'FAILED'],
+      enum: PROCESSING_STATUSES,
     })
       .default('PENDING')
       .notNull(),
@@ -1460,7 +1464,7 @@ export const knowledgeDocuments = pgTable(
     externalId: text('external_id'),
     externalPath: text('external_path'),
     status: text('status', {
-      enum: ['PENDING', 'PROCESSING', 'READY', 'FAILED'],
+      enum: PROCESSING_STATUSES,
     })
       .default('PENDING')
       .notNull(),
@@ -1672,7 +1676,7 @@ export const hostedBooks = pgTable(
     sourceUrl: text('source_url'),
     s3Key: text('s3_key'),
     status: text('status', {
-      enum: ['PENDING', 'PROCESSING', 'READY', 'FAILED'],
+      enum: PROCESSING_STATUSES,
     })
       .default('PENDING')
       .notNull(),
@@ -2071,7 +2075,7 @@ export const courseActivities = pgTable(
       .references(() => users.id, { onDelete: 'restrict' })
       .notNull(),
     type: text('type', {
-      enum: ['QUIZ', 'LESSON', 'DISCUSSION', 'INTERACTIVE'],
+      enum: OUTLINE_ITEM_TYPES,
     }).notNull(),
     title: text('title').notNull(),
     description: text('description'),
@@ -2276,7 +2280,7 @@ export const outlineItems = pgTable(
       onDelete: 'restrict',
     }),
     type: text('type', {
-      enum: ['LESSON', 'QUIZ', 'DISCUSSION', 'INTERACTIVE'],
+      enum: OUTLINE_ITEM_TYPES,
     }).notNull(),
     title: text('title').notNull(),
     status: text('status', {

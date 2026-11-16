@@ -1,5 +1,5 @@
 import { ApiError } from '@/lib/api/errors';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { getConnectorAdapter } from '@/lib/knowledge/connectors/index';
 import type { KnowledgeProvider } from '@/lib/knowledge/connectors/types';
 import { enqueueConnectorSync } from '@/lib/jobs/enqueue';
@@ -12,8 +12,6 @@ import {
   assertWorkspaceFacultyRead,
   assertWorkspaceLibraryAdmin,
 } from '@/lib/knowledge/workspaceAccess';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export type ConnectorSummary = {
   id: string;

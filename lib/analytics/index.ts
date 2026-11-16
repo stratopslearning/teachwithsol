@@ -8,7 +8,7 @@ import {
   getLessonCompletion,
   type LessonCompletionRow,
 } from '@/lib/analytics/lessons';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 export type { ConceptMasteryRow, TagCoverage, LessonCompletionRow };
 export { aggregateConceptMastery } from '@/lib/analytics/aggregateConcepts';
@@ -20,8 +20,6 @@ export {
   computeRollupsForCourse,
   type WhatToChangeSuggestion,
 } from '@/lib/analytics/computeRollups';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export type CourseAnalytics = {
   courseId: string;

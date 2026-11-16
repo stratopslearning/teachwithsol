@@ -25,10 +25,8 @@ import {
   createInteractiveFromAuthoring,
   setInteractiveVisibility,
 } from '@/lib/interactives';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 function quizWindowIso() {
   const start = new Date();

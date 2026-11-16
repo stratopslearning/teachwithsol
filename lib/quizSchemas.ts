@@ -3,10 +3,11 @@
  * enforce the same field length caps.
  */
 import { z } from 'zod';
+import { QUESTION_TYPES } from '@/app/db/enums';
 
 export const quizQuestionInputSchema = z.object({
   id: z.string().optional(),
-  type: z.enum(['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER']),
+  type: z.enum(QUESTION_TYPES),
   question: z.string().min(1).max(4_000),
   // DB / edit forms often send null for TRUE_FALSE / SHORT_ANSWER.
   options: z

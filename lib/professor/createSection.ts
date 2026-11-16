@@ -3,7 +3,7 @@ import {
   createSectionDefiner,
   fetchCourseById,
 } from '@/lib/db/entityScopedReads';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 import { adminSupportForTenant } from '@/lib/professor/adminSupport';
 import { parseOptionalEndsAt } from '@/lib/sectionAvailability';
 import { generateEnrollmentCode } from '@/lib/utils';
@@ -11,10 +11,6 @@ import {
   assertWorkspaceAllowsCourseCreate,
   userCanCreateCoursesInWorkspace,
 } from '@/lib/workspace';
-
-type AuthUser = Pick<UserData, 'id'> & {
-  platformStaff?: boolean | null;
-}
 
 export type CreatedSection = {
   id: string;

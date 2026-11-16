@@ -18,7 +18,7 @@ import {
 } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
 import { logAudit } from '@/lib/audit';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 import {
   assertCanManageCourse,
   assertCanManageMaterial,
@@ -38,8 +38,6 @@ import {
 import { softDeleteMirroredKnowledgeDocs } from '@/lib/knowledge/mirror';
 import type { ZipImportSkip } from '@/lib/knowledge/zipImport';
 import { getCourseWorkspaceId } from '@/lib/workspace';
-
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 export type MaterialSummary = {
   id: string;

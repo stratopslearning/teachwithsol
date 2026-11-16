@@ -19,10 +19,9 @@ import {
 import { withTenant } from '@/lib/db/tenantContext';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import { fetchOfferingCourseId } from '@/lib/workspace/workspaceScopedReads';
-import type { UserData } from '@/lib/getOrCreateUser';
+import type { AuthUser } from '@/lib/getOrCreateUser';
 
 type OfferingRow = typeof courseOfferings.$inferSelect;
-type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
 async function loadOfferingForCopy(
   offeringId: string,

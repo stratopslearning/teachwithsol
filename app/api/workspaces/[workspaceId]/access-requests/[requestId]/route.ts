@@ -10,6 +10,7 @@ import { readJsonBody } from '@/lib/api/readJsonBody';
 import { sendWorkspaceInviteMail } from '@/lib/email';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { decideAccessRequest } from '@/lib/workspace/accessRequests';
+import { WORKSPACE_GRANTABLE_ROLES } from '@/app/db/enums';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ const bodySchema = z.object({
   decision: z.enum(['approved', 'rejected', 'blocked']),
   note: z.string().max(500).optional(),
   /** Approver-chosen role when approving. Defaults to instructor. */
-  role: z.enum(['instructor', 'admin']).optional(),
+  role: z.enum(WORKSPACE_GRANTABLE_ROLES).optional(),
 });
 
 export async function PATCH(

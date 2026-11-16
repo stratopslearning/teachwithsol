@@ -37,6 +37,16 @@ export interface UserData {
   updatedAt: Date;
 }
 
+/** The user fields authz checks need (id + Clerk id + staff flag). */
+export type AuthUser = Pick<UserData, 'id' | 'clerkId'> & {
+  platformStaff?: boolean | null;
+};
+
+/** Minimal authz caller: id + staff flag. */
+export type AuthUserRef = Pick<UserData, 'id'> & {
+  platformStaff?: boolean | null;
+};
+
 /** Public client payload: never includes stripeCustomerId / lastSyncedAt. */
 export type PublicUserDto = Pick<
   UserData,
