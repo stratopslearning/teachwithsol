@@ -18,6 +18,13 @@ export async function GET(req: NextRequest) {
 
   const processed = await processPendingMaterials(10);
   // Knowledge documents had no sweep of their own; stuck ones never retried.
-  const documents = await processPendingKnowledgeDocuments(10);
+  // Isolated so a failure here (e.g. migration 0114 not applied yet) never
+  // blocks material processing above.
+  let documents = 0;
+  try {
+    documents = await processPendingKnowledgeDocuments(10);
+  } catch (err) {
+    console.error('[cron/process-materials] knowledge document sweep failed', err);
+  }
   return NextResponse.json({ ok: true, processed, documents });
 }
