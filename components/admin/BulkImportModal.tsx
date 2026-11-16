@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, Users, CheckCircle, XCircle, AlertCircle, Download } from '@/components/icons';
 import Papa from 'papaparse';
 import { toast } from 'sonner';
+import { useRouter } from "next/navigation";
 
 interface UserImportData {
   email: string;
@@ -25,6 +26,7 @@ interface ImportResult {
 }
 
 export default function BulkImportModal() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [csvData, setCsvData] = useState<UserImportData[]>([]);
@@ -147,7 +149,7 @@ export default function BulkImportModal() {
         
         // Refresh the page to show new users
         setTimeout(() => {
-          window.location.reload();
+          router.refresh();
         }, 2000);
       } else {
         throw new Error(result.error || 'Import failed');

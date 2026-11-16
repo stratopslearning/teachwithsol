@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export default function ExportResultsSection({
   quizzes,
@@ -47,7 +48,7 @@ export default function ExportResultsSection({
       a.remove();
       window.URL.revokeObjectURL(url);
     } else {
-      alert("Failed to export results");
+      toast.error("Failed to export results");
     }
     setDownloading(false);
   };

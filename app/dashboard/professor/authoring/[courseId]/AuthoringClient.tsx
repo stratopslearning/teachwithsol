@@ -41,6 +41,7 @@ import {
   type RolloverCheck,
   type SwitchDiff,
 } from "./types";
+import { confirmAction } from "@/components/feedback/ConfirmDialog";
 
 export default function AuthoringClient({
   courseId,
@@ -368,7 +369,7 @@ export default function AuthoringClient({
     if (historyBusy) return;
     if (outline) {
       if (
-        !confirm(
+        !await confirmAction(
           "Start a new authoring chat? The current draft stays in history and you can reopen it anytime.",
         )
       ) {
@@ -591,7 +592,7 @@ export default function AuthoringClient({
     }
     if (opts?.confirmReplace && outline) {
       if (
-        !confirm(
+        !await confirmAction(
           "Regenerate a new outline from materials? This archives the current draft. Refine chat edits the current draft instead.",
         )
       ) {
@@ -786,7 +787,7 @@ export default function AuthoringClient({
 
   async function onRestoreRevision(revisionId: string) {
     if (!outline) return;
-    if (!confirm("Restore this revision? Current state is snapshotted first.")) {
+    if (!await confirmAction("Restore this revision? Current state is snapshotted first.")) {
       return;
     }
     setActing(true);
@@ -1362,7 +1363,7 @@ export default function AuthoringClient({
   async function onRelease() {
     if (!selectedItem) return;
     if (
-      !confirm(
+      !await confirmAction(
         "Release to students? They will see this assignment immediately.",
       )
     ) {

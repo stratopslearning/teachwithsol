@@ -3,13 +3,15 @@ import { apiFetch } from "@/lib/api/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from '@/components/ui/button';
+import { confirmAction } from "@/components/feedback/ConfirmDialog";
+import { toast } from "sonner";
 
 export default function LeaveSectionButton({ sectionId }: { sectionId: string }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLeave = async () => {
-    if (!confirm("Are you sure you want to leave this section?")) return;
+    if (!await confirmAction("Are you sure you want to leave this section?")) return;
     setLoading(true);
     try {
       const res = await apiFetch(`/api/professor/section/${sectionId}/leave`, {
@@ -18,10 +20,10 @@ export default function LeaveSectionButton({ sectionId }: { sectionId: string })
       if (res.ok) {
         router.push("/dashboard/professor/sections");
       } else {
-        alert("Failed to leave section");
+        toast.error("Failed to leave section");
       }
     } catch {
-      alert("Failed to leave section");
+      toast.error("Failed to leave section");
     } finally {
       setLoading(false);
     }

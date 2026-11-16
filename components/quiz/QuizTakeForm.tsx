@@ -285,6 +285,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
     // For in-app navigation (Next.js)
     const handleRouteChange = (_url: string) => {
       if (Object.keys(answers).length < questions.length) {
+        // eslint-disable-next-line no-restricted-syntax -- runs in a synchronous navigation guard
         if (!window.confirm("You haven’t answered all questions. Submit before leaving?")) {
           throw "Route change aborted by quiz lock";
         } else {

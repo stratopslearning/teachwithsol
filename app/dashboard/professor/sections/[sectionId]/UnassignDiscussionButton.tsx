@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { confirmAction } from "@/components/feedback/ConfirmDialog";
+import { toast } from "sonner";
 
 export default function UnassignDiscussionButton({
   chatbotId,
@@ -17,7 +19,7 @@ export default function UnassignDiscussionButton({
   const router = useRouter();
 
   const handleUnassign = async () => {
-    if (!confirm("Unassign this discussion from the section?")) return;
+    if (!await confirmAction("Unassign this discussion from the section?")) return;
     setLoading(true);
     try {
       const res = await apiFetch(
@@ -27,10 +29,10 @@ export default function UnassignDiscussionButton({
       if (res.ok) {
         router.refresh();
       } else {
-        alert("Failed to unassign discussion");
+        toast.error("Failed to unassign discussion");
       }
     } catch {
-      alert("Failed to unassign discussion");
+      toast.error("Failed to unassign discussion");
     } finally {
       setLoading(false);
     }

@@ -40,6 +40,7 @@ import {
   type PersonNameFields,
 } from '@/lib/personName';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
+import { confirmAction } from '@/components/feedback/ConfirmDialog';
 
 export type RosterEnrollmentRow = {
   id: string;
@@ -92,7 +93,7 @@ function DropStudentButton({
   const [busy, setBusy] = useState(false);
 
   async function onDrop() {
-    if (!confirm(`Remove ${name} from this section?`)) return;
+    if (!await confirmAction(`Remove ${name} from this section?`)) return;
     setBusy(true);
     try {
       const res = await apiFetch(

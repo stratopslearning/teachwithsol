@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { confirmAction } from '@/components/feedback/ConfirmDialog';
 
 export function RemoveMemberButton({
   workspaceId,
@@ -20,7 +21,7 @@ export function RemoveMemberButton({
   const [busy, setBusy] = useState(false);
 
   async function onRemove() {
-    if (!confirm(`Remove ${label} from this workspace?`)) return;
+    if (!await confirmAction(`Remove ${label} from this workspace?`)) return;
     setBusy(true);
     try {
       const res = await apiFetch(`/api/workspaces/${workspaceId}/members/${membershipId}`,
@@ -66,7 +67,7 @@ export function RevokeInviteButton({
   const [busy, setBusy] = useState(false);
 
   async function onRevoke() {
-    if (!confirm(`Revoke invite for ${email}?`)) return;
+    if (!await confirmAction(`Revoke invite for ${email}?`)) return;
     setBusy(true);
     try {
       const res = await apiFetch(`/api/workspaces/${workspaceId}/invites/${inviteId}`,

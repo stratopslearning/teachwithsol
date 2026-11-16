@@ -13,6 +13,7 @@ import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
+import { ConfirmDialogHost } from "@/components/feedback/ConfirmDialog";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { authLocalization } from "@/components/auth/auth-localization";
 import { TimeZoneProvider } from "@/components/timezone/TimeZoneProvider";
@@ -134,6 +135,7 @@ export default function RootLayout({
               </a>
               {children}
               <Toaster position="top-right" richColors closeButton />
+              <ConfirmDialogHost />
             </ThemeProvider>
           </TimeZoneProvider>
         </ClerkProvider>

@@ -67,6 +67,7 @@ import {
 } from "@/lib/knowledge/displayStatus";
 import { cn } from "@/lib/utils";
 import { formatBytes } from "@/lib/format";
+import { confirmAction } from "@/components/feedback/ConfirmDialog";
 
 function isZipFile(file: File) {
   const mime = (file.type || "").toLowerCase();
@@ -263,7 +264,7 @@ export default function MaterialsClient({
   }
 
   async function onUnlinkDocument(documentId: string) {
-    if (!confirm("Detach this document from the course? It stays in the workspace library.")) {
+    if (!await confirmAction("Detach this document from the course? It stays in the workspace library.")) {
       return;
     }
     try {
@@ -634,7 +635,7 @@ export default function MaterialsClient({
 
   async function onReprocessBook(bookId: string) {
     if (
-      !confirm(
+      !await confirmAction(
         "Reprocess this book to rebuild chapter HTML for the student reader? Students keep the book; chapters refresh when ready.",
       )
     ) {
@@ -658,7 +659,7 @@ export default function MaterialsClient({
 
   async function onReleaseBook(bookId: string) {
     if (
-      !confirm(
+      !await confirmAction(
         "Release this book to all your sections for this course? Students will see it in Assignments.",
       )
     ) {
@@ -685,7 +686,7 @@ export default function MaterialsClient({
   }
 
   async function onDelete(id: string) {
-    if (!confirm("Remove this material from the course library?")) return;
+    if (!await confirmAction("Remove this material from the course library?")) return;
     try {
       const res = await apiFetch(`/api/professor/materials/${id}`, {
         method: "DELETE",
@@ -708,7 +709,7 @@ export default function MaterialsClient({
     const ids = [...selectedMaterialIds];
     if (ids.length === 0) return;
     if (
-      !confirm(
+      !await confirmAction(
         `Remove ${ids.length} material${ids.length === 1 ? "" : "s"} from the library?`,
       )
     ) {
@@ -749,7 +750,7 @@ export default function MaterialsClient({
   async function onDeleteBook(book: BookWithChapters) {
     const n = countTopLevelChapters(book.chapters, book.title);
     if (
-      !confirm(
+      !await confirmAction(
         n > 0
           ? `Delete “${book.title}” and its ${n} chapter${n === 1 ? "" : "s"}? Students will lose access.`
           : `Delete “${book.title}”?`,
@@ -787,7 +788,7 @@ export default function MaterialsClient({
     const ids = [...selectedBookIds];
     if (ids.length === 0) return;
     if (
-      !confirm(
+      !await confirmAction(
         `Delete ${ids.length} book${ids.length === 1 ? "" : "s"} and all their chapters? Students will lose access.`,
       )
     ) {
@@ -839,7 +840,7 @@ export default function MaterialsClient({
     bookId: string,
     chapter: BookChapterTocItem,
   ) {
-    if (!confirm(`Remove chapter “${chapter.title}” from this book?`)) return;
+    if (!await confirmAction(`Remove chapter “${chapter.title}” from this book?`)) return;
     setDeletingChapterId(chapter.id);
     try {
       const res = await apiFetch(`/api/professor/books/${bookId}/chapters/${chapter.id}`,
@@ -877,7 +878,7 @@ export default function MaterialsClient({
       .filter((id) => selectedChapterIds.has(id));
     if (ids.length === 0) return;
     if (
-      !confirm(
+      !await confirmAction(
         `Remove ${ids.length} chapter${ids.length === 1 ? "" : "s"} from “${book.title}”?`,
       )
     ) {

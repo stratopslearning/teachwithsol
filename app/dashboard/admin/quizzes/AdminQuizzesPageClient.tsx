@@ -46,6 +46,8 @@ import {
 } from "@/components/timezone/LocalDateTime";
 import { withBasePath } from "@/lib/basePath";
 import { cleanQuizDescription } from "@/lib/utils";
+import { confirmAction } from "@/components/feedback/ConfirmDialog";
+import { useRouter } from "next/navigation";
 
 const ROWS_PER_PAGE = 15;
 type SortMode = "DEFAULT" | "DUE_ASC" | "DUE_DESC";
@@ -80,6 +82,7 @@ export default function AdminQuizzesPageClient({
   allQuizzes: any[];
   allQuizSections: any[];
 }) {
+  const router = useRouter();
   const [quizzesWithQuestions, setQuizzesWithQuestions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sectionFilter, setSectionFilter] = useState<string>("ALL");
@@ -162,14 +165,14 @@ export default function AdminQuizzesPageClient({
   }, [allQuizzes]);
 
   async function handleDeleteQuiz(quizId: string) {
-    if (!confirm("Are you sure you want to delete this quiz?")) return;
+    if (!await confirmAction("Are you sure you want to delete this quiz?")) return;
     try {
       const res = await apiFetch(`/api/admin/quiz/${quizId}`, {
         method: "DELETE",
       });
       if (res.ok) {
         toast.success("Quiz deleted successfully");
-        window.location.reload();
+        router.refresh();
       } else {
         toast.error("Failed to delete quiz");
       }
@@ -181,7 +184,7 @@ export default function AdminQuizzesPageClient({
 
   async function handleUnassignQuiz(quizId: string, sectionId: string) {
     if (
-      !confirm("Are you sure you want to unassign this quiz from this section?")
+      !await confirmAction("Are you sure you want to unassign this quiz from this section?")
     )
       return;
     try {
@@ -190,7 +193,7 @@ export default function AdminQuizzesPageClient({
       );
       if (res.ok) {
         toast.success("Quiz unassigned from section");
-        window.location.reload();
+        router.refresh();
       } else {
         toast.error("Failed to unassign quiz from section");
       }
@@ -203,7 +206,7 @@ export default function AdminQuizzesPageClient({
   function handleEditSuccess() {
     setEditingQuizId(null);
     toast.success("Quiz updated successfully");
-    window.location.reload();
+    router.refresh();
   }
 
   return (

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
 
 export default function StudentEnrollForm({
   onEnrolled,
@@ -17,6 +18,7 @@ export default function StudentEnrollForm({
     course: { title: string };
   }) => void;
 }) {
+  const router = useRouter();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export default function StudentEnrollForm({
             course: data.section.course,
           });
         }
-        setTimeout(() => window.location.reload(), 800);
+        router.refresh();
       } else {
         const errorMsg = data.error || "Failed to enroll";
         setError(errorMsg);

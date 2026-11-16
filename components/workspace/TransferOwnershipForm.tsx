@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { confirmAction } from '@/components/feedback/ConfirmDialog';
 
 export type OwnershipCandidate = { userId: string; label: string };
 
@@ -31,7 +32,7 @@ export function TransferOwnershipForm({
     const target = candidates.find((c) => c.userId === toUserId);
     if (!target) return;
     if (
-      !confirm(
+      !await confirmAction(
         `Transfer ownership to ${target.label}? You will become an admin.`,
       )
     ) {

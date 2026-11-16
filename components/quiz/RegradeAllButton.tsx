@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { confirmAction } from '@/components/feedback/ConfirmDialog';
 
 type RegradeAllButtonProps = {
   /** How many attempts are currently in the queue, for the confirm copy. */
@@ -27,7 +28,7 @@ export function RegradeAllButton({ count }: RegradeAllButtonProps) {
 
   async function handleClick() {
     if (count === 0) return;
-    const confirmed = window.confirm(
+    const confirmed = await confirmAction(
       `Re-grade all ${count} attempt${count === 1 ? '' : 's'} in your attention queue?\n\nThis runs in the background. You can keep using the app. Refresh the page in a minute to see progress.`,
     );
     if (!confirmed) return;
