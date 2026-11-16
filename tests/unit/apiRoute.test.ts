@@ -26,7 +26,7 @@ const json = (body: unknown) =>
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
-const ctx = (p: Record<string, string>) => ({ params: Promise.resolve(p) });
+const ctx = <P extends Record<string, string>>(p: P) => ({ params: Promise.resolve(p) });
 
 beforeEach(() => {
   m.teaching = true;
