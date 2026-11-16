@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { attempts } from '@/app/db/schema';
 import { ApiError, jsonError } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { authorizeOnSection } from '@/lib/authz/courseAccess';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { regradeAttempt } from '@/lib/regradeAttempt';
+import { loadAttemptForGrading } from '@/lib/quiz/gradingData';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -49,9 +47,8 @@ export async function POST(
       );
     }
 
-    const attempt = await db.query.attempts.findFirst({
-      where: eq(attempts.id, attemptId),
-    });
+    // FORCE RLS: a plain db read finds no attempt; look it up via the definer.
+    const attempt = await loadAttemptForGrading(attemptId);
 
     if (!attempt) {
       return NextResponse.json({ error: 'Attempt not found' }, { status: 404 });

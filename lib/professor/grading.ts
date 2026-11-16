@@ -27,6 +27,8 @@ import {
   professorCanAccessQuiz,
 } from '@/lib/quizAccess';
 import { assertTeachesSection } from '@/lib/professor/sections';
+import { loadAttemptForGrading } from '@/lib/quiz/gradingData';
+import { withTenant } from '@/lib/db/tenantContext';
 
 type ProfessorUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
@@ -204,17 +206,23 @@ export async function getAttemptDetail(
   user: ProfessorUser,
   attemptId: string,
 ): Promise<AttemptDetail> {
-  const attempt = await db.query.attempts.findFirst({
-    where: eq(attempts.id, attemptId),
-    with: {
-      student: true,
-      quiz: { columns: { id: true, title: true } },
-      section: { columns: { id: true, name: true } },
-    },
-  });
-  if (!attempt) throw ApiError.notFound('Attempt not found');
+  // FORCE RLS: a plain db read finds no attempt. Find its section and tenant
+  // via the definer, check access, then read the details under the tenant.
+  const found = await loadAttemptForGrading(attemptId);
+  if (!found?.tenantId) throw ApiError.notFound('Attempt not found');
+  await assertTeachesSection(user, found.sectionId);
 
-  await assertTeachesSection(user, attempt.sectionId);
+  const attempt = await withTenant(found.tenantId, user.id, (tx) =>
+    tx.query.attempts.findFirst({
+      where: eq(attempts.id, attemptId),
+      with: {
+        student: true,
+        quiz: { columns: { id: true, title: true } },
+        section: { columns: { id: true, name: true } },
+      },
+    }),
+  );
+  if (!attempt) throw ApiError.notFound('Attempt not found');
 
   await logAudit({
     actorUserId: user.id,

@@ -16,7 +16,8 @@
  */
 import { and, inArray, isNotNull, or, sql } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { groupSectionIdsByTenant } from '@/lib/db/sectionTenants';
+import { withTenant } from '@/lib/db/tenantContext';
 import { attempts } from '@/app/db/schema';
 import { listTeachingSectionIds } from '@/lib/professor/graderSections';
 import {
@@ -25,6 +26,8 @@ import {
 } from '@/lib/regradeAttempt';
 
 export type AttentionItem = {
+  /** Tenant that owns the attempt (bulk regrade queues jobs under it). */
+  tenantId: string;
   attemptId: string;
   student: {
     id: string;
@@ -135,23 +138,38 @@ export async function getAttentionItemsForProfessor(
   //   1. New pipeline: gradingStatus IN ('partial', 'failed')
   //   2. Legacy:       gpt_feedback contains the fallback message string
   const fallbackMatch = sql<boolean>`${attempts.gptFeedback}::text LIKE ${'%' + FALLBACK_SNIPPET + '%'}`;
-  const rows = await db.query.attempts.findMany({
-    where: and(
-      isNotNull(attempts.submittedAt),
-      inArray(attempts.sectionId, sectionIds),
-      or(
-        inArray(attempts.gradingStatus, ['partial', 'failed']),
-        fallbackMatch,
-      ),
-    ),
-    with: {
-      student: true,
-      quiz: { columns: { id: true, title: true } },
-      section: { with: { course: { columns: { title: true } } } },
-    },
-    orderBy: (cols, { desc }) => [desc(cols.submittedAt)],
-    limit,
-  });
+  // FORCE RLS: a plain db read returns no attempts, so the queue was always
+  // empty. Read each tenant's sections under that tenant, then merge.
+  const byTenant = await groupSectionIdsByTenant(sectionIds);
+  const perTenant = await Promise.all(
+    [...byTenant].map(async ([tenantId, ids]) => {
+      const tenantRows = await withTenant(tenantId, professorId, (tx) =>
+        tx.query.attempts.findMany({
+          where: and(
+            isNotNull(attempts.submittedAt),
+            inArray(attempts.sectionId, ids),
+            or(
+              inArray(attempts.gradingStatus, ['partial', 'failed']),
+              fallbackMatch,
+            ),
+          ),
+          with: {
+            student: true,
+            quiz: { columns: { id: true, title: true } },
+            section: { with: { course: { columns: { title: true } } } },
+          },
+          orderBy: (cols, { desc }) => [desc(cols.submittedAt)],
+          limit,
+        }),
+      );
+      return tenantRows.map((row) => ({ ...row, tenantId }));
+    }),
+  );
+  const submittedTime = (d: Date | null) => (d ? new Date(d).getTime() : 0);
+  const rows = perTenant
+    .flat()
+    .sort((a, b) => submittedTime(b.submittedAt) - submittedTime(a.submittedAt))
+    .slice(0, limit);
 
   return rows.map<AttentionItem>((row) => {
     const counts = summariseFeedback(row.gptFeedback);
@@ -165,6 +183,7 @@ export async function getAttentionItemsForProfessor(
           : null;
 
     return {
+      tenantId: row.tenantId,
       attemptId: row.id,
       student: {
         id: row.student.id,

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { db } from '@/app/db';
-import { attempts } from '@/app/db/schema';
-import { eq } from 'drizzle-orm';
 
 import { apiErrorResponse, ApiError } from '@/lib/api/errors';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
@@ -12,6 +9,7 @@ import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { getAttemptDetail } from '@/lib/professor/grading';
 import { insertGradeOverride } from '@/lib/professor/overrides';
 import { assertTeachesSection } from '@/lib/professor/sections';
+import { loadAttemptForGrading } from '@/lib/quiz/gradingData';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,10 +61,8 @@ export async function PATCH(
     if (limited) return limited;
 
     const { attemptId } = await context.params;
-    const attemptRow = await db.query.attempts.findFirst({
-      where: eq(attempts.id, attemptId),
-      columns: { id: true, sectionId: true },
-    });
+    // FORCE RLS: a plain db read finds no attempt; look it up via the definer.
+    const attemptRow = await loadAttemptForGrading(attemptId);
     if (!attemptRow) throw ApiError.notFound('Attempt not found');
     await assertTeachesSection(auth.user, attemptRow.sectionId);
 
