@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 
-import { db } from '@/app/db';
+import { withQuizTenant } from '@/lib/db/sectionTenants';
 import { attempts, quizVersions, quizzes } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
 import type { QuizQuestionInput } from '@/lib/professor/mutations';
@@ -58,20 +58,24 @@ export async function quizQuestionEditsAreImmutable(quizId: string): Promise<{
   locked: boolean;
   reasons: string[];
 }> {
-  const [quiz, versionRow, attemptRow] = await Promise.all([
-    db.query.quizzes.findFirst({
-      where: eq(quizzes.id, quizId),
-      columns: { gradesReleasedAt: true },
-    }),
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(quizVersions)
-      .where(eq(quizVersions.quizId, quizId)),
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(attempts)
-      .where(eq(attempts.quizId, quizId)),
-  ]);
+  // FORCE RLS: plain db reads saw no versions or attempts, so questions were
+  // never locked, even after students had answered them. Read under the
+  // quiz's tenant.
+  const [quiz, versionRow, attemptRow] =
+    (await withQuizTenant(quizId, null, async (tx) => [
+      await tx.query.quizzes.findFirst({
+        where: eq(quizzes.id, quizId),
+        columns: { gradesReleasedAt: true },
+      }),
+      await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(quizVersions)
+        .where(eq(quizVersions.quizId, quizId)),
+      await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(attempts)
+        .where(eq(attempts.quizId, quizId)),
+    ] as const)) ?? [undefined, [], []];
 
   const reasons: string[] = [];
   if ((versionRow[0]?.count ?? 0) > 0) reasons.push('published_versions');

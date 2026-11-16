@@ -4,28 +4,34 @@
  */
 import { and, eq, isNull } from 'drizzle-orm';
 
-import { db } from '@/app/db';
-import { attempts, quizSections } from '@/app/db/schema';
+import { attempts } from '@/app/db/schema';
+import { withQuizTenant } from '@/lib/db/sectionTenants';
 
 /** True when the student has an open (unsubmitted) attempt on this quiz. */
 export async function studentHasActiveAttemptForQuiz(
   studentId: string,
   quizId: string,
 ): Promise<boolean> {
-  const open = await db.query.attempts.findFirst({
-    where: and(
-      eq(attempts.studentId, studentId),
-      eq(attempts.quizId, quizId),
-      isNull(attempts.submittedAt),
-    ),
-    columns: { id: true },
-  });
+  // FORCE RLS: a plain db read never saw the open attempt, so the lock never
+  // engaged and quiz content could reach the tutor mid-attempt. Read under
+  // the quiz's tenant.
+  const open = await withQuizTenant(quizId, studentId, (tx) =>
+    tx.query.attempts.findFirst({
+      where: and(
+        eq(attempts.studentId, studentId),
+        eq(attempts.quizId, quizId),
+        isNull(attempts.submittedAt),
+      ),
+      columns: { id: true },
+    }),
+  );
   return Boolean(open);
 }
 
 /**
- * True when the student has any open attempt on a quiz assigned to this section
- * that is linked to the chatbot's related quiz.
+ * True when the student has an open attempt on the chatbot's related quiz.
+ * (`sectionId` is accepted for callers; the old section branch re-checked the
+ * same quiz, so it never changed the answer.)
  */
 export async function shouldLockQuizContext(opts: {
   studentId: string;
@@ -33,23 +39,7 @@ export async function shouldLockQuizContext(opts: {
   sectionId?: string | null;
 }): Promise<boolean> {
   if (!opts.relatedQuizId) return false;
-  if (await studentHasActiveAttemptForQuiz(opts.studentId, opts.relatedQuizId)) {
-    return true;
-  }
-  // Also lock if they have an open attempt on the same quiz via section assignment
-  if (opts.sectionId) {
-    const linked = await db.query.quizSections.findFirst({
-      where: and(
-        eq(quizSections.sectionId, opts.sectionId),
-        eq(quizSections.quizId, opts.relatedQuizId),
-      ),
-      columns: { quizId: true },
-    });
-    if (linked) {
-      return studentHasActiveAttemptForQuiz(opts.studentId, linked.quizId);
-    }
-  }
-  return false;
+  return studentHasActiveAttemptForQuiz(opts.studentId, opts.relatedQuizId);
 }
 
 export const NOT_IN_MATERIALS_REPLY =

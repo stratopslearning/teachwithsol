@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
+import { ApiError, apiErrorResponse } from '@/lib/api/errors';
+import { userCanWriteQuiz } from '@/lib/quizAccess';
 import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import {
   approveQuestionRubric,
+  loadQuestionForActor,
   proposeQuestionRubric,
   testRubricSampleSeparation,
 } from '@/lib/authoring/rubricApprove';
@@ -39,6 +41,13 @@ export async function POST(
     const { questionId } = await ctx.params;
     const body = postSchema.parse(await readJsonBody(req));
 
+    // Only teachers who can edit the question's quiz may change its rubric
+    // (previously any professor token could act on any question id).
+    const { question } = await loadQuestionForActor(questionId, auth.user.id);
+    if (!(await userCanWriteQuiz(auth.user, question.quizId))) {
+      throw ApiError.forbidden('You do not have access to this question');
+    }
+
     if (body.action === 'propose') {
       const result = await proposeQuestionRubric({
         questionId,
@@ -49,6 +58,7 @@ export async function POST(
     if (body.action === 'test') {
       const result = await testRubricSampleSeparation({
         questionId,
+        actorUserId: auth.user.id,
         samples: body.samples,
       });
       return NextResponse.json(result);

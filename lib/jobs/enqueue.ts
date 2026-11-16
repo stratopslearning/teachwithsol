@@ -8,10 +8,6 @@ import { syncConnector } from '@/lib/knowledge/connectors/sync';
 import { processPendingPassbackJobs } from '@/lib/lti/passback';
 import { regradeAttempt } from '@/lib/regradeAttempt';
 
-import { db } from '@/app/db';
-import { attempts, sections } from '@/app/db/schema';
-import { eq } from 'drizzle-orm';
-
 import { jobsBackend } from '@/lib/jobs/backend';
 import { inngest } from '@/lib/jobs/client';
 import { checkAiBandAvailable, getCourseWorkspaceId } from '@/lib/workspace';
@@ -49,16 +45,16 @@ async function resolveAttemptWorkspaceId(
   workspaceId: string,
 ): Promise<string | null> {
   if (workspaceId && workspaceId !== 'default') return workspaceId;
-  const attempt = await db.query.attempts.findFirst({
-    where: eq(attempts.id, attemptId),
-    columns: { sectionId: true },
-  });
+  // FORCE RLS: plain db reads find nothing here; use the definer lookups.
+  const { loadAttemptForGrading } = await import('@/lib/quiz/gradingData');
+  const attempt = await loadAttemptForGrading(attemptId);
+  if (attempt?.tenantId) return attempt.tenantId;
   if (!attempt?.sectionId) return null;
-  const section = await db.query.sections.findFirst({
-    where: eq(sections.id, attempt.sectionId),
-    columns: { courseId: true, workspaceId: true },
-  });
-  if (section?.workspaceId) return section.workspaceId;
+  const { fetchSectionById } = await import('@/lib/db/entityScopedReads');
+  const section = await fetchSectionById(attempt.sectionId);
+  if (section?.tenantId ?? section?.workspaceId) {
+    return section!.tenantId ?? section!.workspaceId;
+  }
   if (section?.courseId) return getCourseWorkspaceId(section.courseId);
   return null;
 }

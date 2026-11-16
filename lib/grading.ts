@@ -97,13 +97,10 @@ export async function resolveMaterialsContext(
   }
   if (!request.courseId) return '';
   try {
-    const { db } = await import('@/app/db');
-    const { courses } = await import('@/app/db/schema');
-    const { eq } = await import('drizzle-orm');
-    const course = await db.query.courses.findFirst({
-      where: eq(courses.id, request.courseId),
-      columns: { tenantId: true, workspaceId: true },
-    });
+    // FORCE RLS: a plain db read finds no course (materials context was
+    // always empty). Use the definer.
+    const { fetchCourseById } = await import('@/lib/db/entityScopedReads');
+    const course = await fetchCourseById(request.courseId);
     const tenantId = course?.tenantId ?? course?.workspaceId;
     if (!tenantId) return '';
     const chunks = await retrieveCourseChunks(

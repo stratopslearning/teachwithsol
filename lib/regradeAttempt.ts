@@ -234,6 +234,7 @@ export async function regradeAttempt(
       correctAnswer: question.correctAnswer,
       rubric: question.rubric,
       rubricVersion: question.rubricVersion ?? 1,
+      tenantId: question.tenantId,
     });
 
     shortAnswerGradingRequests.push({
