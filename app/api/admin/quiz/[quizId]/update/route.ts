@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 
 import { db } from '@/app/db';
 import { quizzes, users } from '@/app/db/schema';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
 import { updateQuizDefiner } from '@/lib/db/entityScopedReads';
-import {
-  DEFAULT_PASSING_SCORE,
-  isoDateTimeRequired,
-  quizWindowSuperRefine,
-} from '@/lib/quizSchemas';
-import { QUESTION_TYPES } from '@/app/db/enums';
+import { quizUpdateSchema } from '@/lib/quizSchemas';
 import {
   buildQuizDescriptionWithMetadata,
   extractQuizMetadata,
@@ -22,34 +16,7 @@ import { readJsonBody } from '@/lib/api/readJsonBody';
 
 export const dynamic = 'force-dynamic';
 
-const adminQuizUpdateSchema = z
-  .object({
-  title: z.string().min(1).max(200),
-  description: z.string().max(8_000).optional().nullable(),
-  maxAttempts: z.number().int().min(1).max(20),
-  timeLimit: z.number().int().min(1).max(24 * 60).optional().nullable(),
-  passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
-  startDate: isoDateTimeRequired,
-  endDate: isoDateTimeRequired,
-  isActive: z.boolean().default(true),
-  questions: z
-    .array(
-      z.object({
-        id: z.string().optional(),
-        type: z.enum(QUESTION_TYPES),
-        question: z.string().min(1).max(4_000),
-        options: z.array(z.string().max(2_000)).optional().nullable(),
-        correctAnswer: z.string().max(2_000).optional().nullable(),
-        points: z.number().int().min(1).max(100).default(1),
-        order: z.number().int().min(0).optional(),
-      }),
-    )
-    .default([]),
-  sectionIds: z
-    .array(z.string().uuid())
-    .min(1, 'At least one section must be assigned to the quiz.'),
-})
-  .superRefine(quizWindowSuperRefine);
+const adminQuizUpdateSchema = quizUpdateSchema;
 
 export async function PUT(
   request: NextRequest,

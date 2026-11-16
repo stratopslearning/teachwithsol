@@ -42,3 +42,33 @@ describe('quizCreateBaseSchema window', () => {
     expect(result.success).toBe(true);
   });
 });
+
+describe('quizUpdateSchema (shared by professor and admin update)', () => {
+  const base = {
+    title: 'Quiz',
+    sectionIds: ['s1'],
+    startDate: '2026-01-01T00:00:00.000Z',
+    endDate: '2026-01-08T00:00:00.000Z',
+    questions: [{ type: 'TRUE_FALSE', question: 'Q?', correctAnswer: 'True', order: 0 }],
+  };
+
+  it('treats null description / time limit (from edit forms) as unset', async () => {
+    const { quizUpdateSchema } = await import('@/lib/quizSchemas');
+    const out = quizUpdateSchema.parse({ ...base, description: null, timeLimit: null });
+    expect(out.description).toBeUndefined();
+    expect(out.timeLimit).toBeUndefined();
+    expect(out.isActive).toBe(true);
+  });
+
+  it('accepts admin-set attempt limits up to 20, not beyond', async () => {
+    const { quizUpdateSchema } = await import('@/lib/quizSchemas');
+    expect(quizUpdateSchema.safeParse({ ...base, maxAttempts: 20 }).success).toBe(true);
+    expect(quizUpdateSchema.safeParse({ ...base, maxAttempts: 21 }).success).toBe(false);
+  });
+
+  it('rejects an end date before the start date', async () => {
+    const { quizUpdateSchema } = await import('@/lib/quizSchemas');
+    const r = quizUpdateSchema.safeParse({ ...base, endDate: '2025-12-01T00:00:00.000Z' });
+    expect(r.success).toBe(false);
+  });
+});

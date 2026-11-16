@@ -48,19 +48,39 @@ export function quizWindowSuperRefine(
 /** One default for quizzes created without an explicit passing score (matches the DB column default). */
 export const DEFAULT_PASSING_SCORE = 60;
 
-export const quizCreateBaseSchema = z
-  .object({
-    title: z.string().min(1).max(200),
-    description: z.string().max(8_000).optional(),
-    sectionIds: z
-      .array(z.string().min(1))
-      .min(1, 'Select at least one section')
-      .max(50),
-    maxAttempts: z.number().min(1).max(10).default(1),
-    timeLimit: z.number().min(1).max(24 * 60).optional(),
-    passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
-    startDate: isoDateTimeRequired,
-    endDate: isoDateTimeRequired,
-    questions: z.array(quizQuestionInputSchema).max(200),
-  })
+/**
+ * Fields shared by quiz create and update (professor, admin and MCP routes).
+ * `null` from edit forms means "unset" for description and time limit.
+ */
+const quizFields = z.object({
+  title: z.string().min(1).max(200),
+  description: z
+    .string()
+    .max(8_000)
+    .nullish()
+    .transform((v) => v ?? undefined),
+  sectionIds: z
+    .array(z.string().min(1))
+    .min(1, 'Select at least one section')
+    .max(50),
+  // 20 covers quizzes admins already saved above the UI's limit of 10.
+  maxAttempts: z.number().int().min(1).max(20).default(1),
+  timeLimit: z
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 60)
+    .nullish()
+    .transform((v) => v ?? undefined),
+  passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
+  startDate: isoDateTimeRequired,
+  endDate: isoDateTimeRequired,
+  questions: z.array(quizQuestionInputSchema).max(200),
+});
+
+export const quizCreateBaseSchema = quizFields.superRefine(quizWindowSuperRefine);
+
+/** Update = create + whether the quiz is active. */
+export const quizUpdateSchema = quizFields
+  .extend({ isActive: z.boolean().default(true) })
   .superRefine(quizWindowSuperRefine);
