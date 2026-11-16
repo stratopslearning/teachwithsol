@@ -42,6 +42,23 @@ describe('loadTestAuth', () => {
     ).toBeNull();
   });
 
+  it('is disabled on a production build off Vercel', () => {
+    delete process.env.VERCEL_ENV;
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(isLoadTestRuntimeAllowed()).toBe(false);
+  });
+
+  it('is disabled for unknown VERCEL_ENV values', () => {
+    vi.stubEnv('VERCEL_ENV', 'staging-typo');
+    expect(isLoadTestRuntimeAllowed()).toBe(false);
+  });
+
+  it('is allowed on Vercel preview even though NODE_ENV is production', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(isLoadTestRuntimeAllowed()).toBe(true);
+  });
+
   it('is allowed locally when VERCEL_ENV is unset', () => {
     vi.stubEnv('VERCEL_ENV', undefined as unknown as string);
     delete process.env.VERCEL_ENV;
