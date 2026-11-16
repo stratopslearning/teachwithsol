@@ -15,6 +15,7 @@ import {
 } from '@/lib/db/lmsDefiners';
 import { fetchOutlineTreeById } from '@/lib/db/entityScopedReads';
 import { planQuizWindowFromToday } from '@/lib/authoring/schedule';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
 
 export type SmartModulesBuildResult = {
   modulesCreated: number;
@@ -28,10 +29,12 @@ function completionForItem(
   body: OutlineItemBody | null | undefined,
 ): ModuleItemRow['completionRequirement'] {
   if (type === 'QUIZ') {
-    const min = Number(body?.passingScore ?? 70);
+    const min = Number(body?.passingScore ?? DEFAULT_PASSING_SCORE);
     return {
       type: 'score_at_least',
-      minPercent: Number.isFinite(min) ? Math.min(100, Math.max(0, min)) : 70,
+      minPercent: Number.isFinite(min)
+        ? Math.min(100, Math.max(0, min))
+        : DEFAULT_PASSING_SCORE,
     };
   }
   // Interactive chapters: complete when all practice section checks pass (submit).

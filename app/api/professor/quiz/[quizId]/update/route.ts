@@ -7,6 +7,7 @@ import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { updateQuiz } from '@/lib/professor/mutations';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import {
+  DEFAULT_PASSING_SCORE,
   isoDateTimeRequired,
   quizQuestionInputSchema,
   quizWindowSuperRefine,
@@ -27,7 +28,7 @@ const updateQuizSchema = z
     startDate: isoDateTimeRequired,
     endDate: isoDateTimeRequired,
     isActive: z.boolean().default(true),
-    passingScore: z.number().int().min(0).max(100).default(60),
+    passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
     questions: z.array(quizQuestionInputSchema).max(200),
   })
   .superRefine(quizWindowSuperRefine);

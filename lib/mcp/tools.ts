@@ -52,7 +52,11 @@ import {
   updateQuiz,
 } from '@/lib/professor/mutations';
 import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
-import { isoDateTimeRequired, quizWindowSuperRefine } from '@/lib/quizSchemas';
+import {
+  DEFAULT_PASSING_SCORE,
+  isoDateTimeRequired,
+  quizWindowSuperRefine,
+} from '@/lib/quizSchemas';
 import {
   addMaterialFromUrl,
   getCourseMaterial,
@@ -319,7 +323,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         .int()
         .min(0)
         .max(100)
-        .default(60)
+        .default(DEFAULT_PASSING_SCORE)
         .describe('Passing percentage threshold'),
       startDate: isoDateTimeRequired.describe('ISO datetime quiz opens'),
       endDate: isoDateTimeRequired.describe(
@@ -347,7 +351,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       sectionIds: z.array(z.string().uuid()).min(1),
       maxAttempts: z.number().int().min(1).max(10).default(1),
       timeLimit: z.number().int().min(1).optional(),
-      passingScore: z.number().int().min(0).max(100).default(60),
+      passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
       startDate: isoDateTimeRequired.describe('ISO datetime quiz opens'),
       endDate: isoDateTimeRequired.describe(
         'ISO datetime quiz closes (due date)',

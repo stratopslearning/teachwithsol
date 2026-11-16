@@ -21,6 +21,7 @@ import {
   AlertCircle
 } from '@/components/icons';
 import { SectionMultiSelect } from '@/components/ui/SectionMultiSelect';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
 import {
   buildQuizDescriptionWithMetadata,
   cleanQuizDescription,
@@ -121,9 +122,12 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
     description: cleanQuizDescription(quiz.description),
     courseId: quiz.courseId || 'global',
     maxAttempts: quiz.maxAttempts,
-    timeLimit: quiz.timeLimit || 30,
+    // null = untimed; editing must not invent a limit.
+    timeLimit: (quiz.timeLimit ?? null) as number | null,
     passingScore:
-      typeof quiz.passingScore === 'number' ? quiz.passingScore : 60,
+      typeof quiz.passingScore === 'number'
+        ? quiz.passingScore
+        : DEFAULT_PASSING_SCORE,
     startDate: startDateTime.date,
     startTime: startDateTime.time,
     endDate: endDateTime.date,
@@ -271,7 +275,7 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
             formData.hideFeedbackAfterDue,
           ),
           maxAttempts: formData.maxAttempts,
-          timeLimit: formData.timeLimit,
+          timeLimit: formData.timeLimit ?? undefined,
           passingScore: formData.passingScore,
           isActive: formData.isActive,
           startDate: startDateTime,
@@ -473,8 +477,12 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
                 type="number"
                 min="1"
                 max="180"
-                value={typeof formData.timeLimit === 'number' && !isNaN(formData.timeLimit) ? formData.timeLimit : 30}
-                onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) || 30 })}
+                placeholder="No limit"
+                value={formData.timeLimit ?? ''}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  setFormData({ ...formData, timeLimit: Number.isFinite(n) && n > 0 ? n : null });
+                }}
               />
             </div>
 
@@ -758,7 +766,9 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
                 </div>
                 <div className="flex gap-2">
                   <dt className="text-ink-muted w-32 shrink-0">Time limit</dt>
-                  <dd className="text-ink tnum">{formData.timeLimit} min</dd>
+                  <dd className="text-ink tnum">
+                    {formData.timeLimit ? `${formData.timeLimit} min` : 'No limit'}
+                  </dd>
                 </div>
               </dl>
             </div>

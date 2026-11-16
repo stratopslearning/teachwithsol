@@ -9,6 +9,7 @@ import { apiErrorResponse } from '@/lib/api/errors';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
 import { updateQuizDefiner } from '@/lib/db/entityScopedReads';
 import {
+  DEFAULT_PASSING_SCORE,
   isoDateTimeRequired,
   quizWindowSuperRefine,
 } from '@/lib/quizSchemas';
@@ -26,7 +27,7 @@ const adminQuizUpdateSchema = z
   description: z.string().max(8_000).optional().nullable(),
   maxAttempts: z.number().int().min(1).max(20),
   timeLimit: z.number().int().min(1).max(24 * 60).optional().nullable(),
-  passingScore: z.number().int().min(0).max(100).default(60),
+  passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
   startDate: isoDateTimeRequired,
   endDate: isoDateTimeRequired,
   isActive: z.boolean().default(true),

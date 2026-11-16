@@ -18,6 +18,7 @@ import { getLatestQuizVersionId } from '@/lib/quiz/versions';
 import { assertOfferingWritable } from '@/lib/offerings/lifecycle';
 import { ApiError } from '@/lib/api/errors';
 import { normalizeDatabaseDate } from '@/lib/utils';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
 
 function rowsFromExecute<T>(result: unknown): T[] {
   return (
@@ -195,7 +196,7 @@ export async function executeQuizSubmit(
     });
 
   const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-  const passingScore = quiz.passingScore ?? 60;
+  const passingScore = quiz.passingScore ?? DEFAULT_PASSING_SCORE;
   const passed = maxScore > 0 ? percentage >= passingScore : false;
   const attemptGradingStatus: 'complete' | 'partial' =
     pendingQuestionIds.length > 0 ? 'partial' : 'complete';

@@ -2,6 +2,7 @@
  * Runtime course modules (Canvas-like) — delivery surface.
  */
 import { ApiError } from '@/lib/api/errors';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
 import {
   assignModuleSectionsDefiner,
   completeModuleItemDefiner,
@@ -332,6 +333,8 @@ export async function syncPublishedOutlineItemToModule(opts: {
   publishedChatbotId?: string | null;
   publishedInteractiveId?: string | null;
   sectionIds?: string[];
+  /** Quiz passing score; module completion uses it as the minimum percent. */
+  passingScore?: number | null;
 }) {
   const existing = await listCourseModulesDefiner(opts.courseId);
   // Match by title+position first; otherwise create.
@@ -373,7 +376,10 @@ export async function syncPublishedOutlineItemToModule(opts: {
     published: false,
     completionRequirement:
       opts.itemType === 'QUIZ'
-        ? { type: 'score_at_least', minPercent: 70 }
+        ? {
+            type: 'score_at_least',
+            minPercent: opts.passingScore ?? DEFAULT_PASSING_SCORE,
+          }
         : opts.itemType === 'LESSON'
           ? { type: 'view' }
           : { type: 'submit' },

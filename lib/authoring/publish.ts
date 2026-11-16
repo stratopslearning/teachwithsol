@@ -26,6 +26,7 @@ import {
   setInteractiveVisibility,
 } from '@/lib/interactives';
 import type { UserData } from '@/lib/getOrCreateUser';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
 
 type AuthUser = Pick<UserData, 'id' | 'clerkId'> & { platformStaff?: boolean | null };
 
@@ -206,7 +207,7 @@ export async function publishOutlineItem(
       sectionIds,
       maxAttempts: body.maxAttempts ?? 1,
       timeLimit: body.timeLimit ?? undefined,
-      passingScore: body.passingScore ?? 70,
+      passingScore: body.passingScore ?? DEFAULT_PASSING_SCORE,
       startDate,
       endDate,
       questions: mapQuestions(body.questions),
@@ -294,6 +295,7 @@ export async function publishOutlineItem(
       publishedChatbotId,
       publishedInteractiveId,
       sectionIds,
+      passingScore: body.passingScore ?? DEFAULT_PASSING_SCORE,
     });
   } catch (err) {
     console.warn('[publishOutlineItem] module sync skipped', err);
