@@ -806,6 +806,45 @@ async function planTools(opts: {
   }
 }
 
+/** Scope / count / item types a message asks about ("the last 2 quizzes"). */
+function itemSelector(
+  message: string,
+  defaultScope: 'all' | 'focus',
+): { scope: 'all' | 'focus' | 'first' | 'last'; count?: number; types?: Array<'QUIZ' | 'DISCUSSION'> } {
+  const quantity = parseQuantityLimit(message);
+  const scope =
+    quantity == null ? defaultScope : quantity.fromEnd ? ('last' as const) : ('first' as const);
+  const m = message.toLowerCase();
+  const types = /\bquiz/.test(m)
+    ? (['QUIZ'] as Array<'QUIZ' | 'DISCUSSION'>)
+    : /\bdiscussion/.test(m)
+      ? (['DISCUSSION'] as Array<'QUIZ' | 'DISCUSSION'>)
+      : undefined;
+  return { scope, count: quantity?.count, types };
+}
+
+/** The tool call for one action verb (shared by the intent and fallback planners). */
+function toolForVerb(
+  verb: 'publish' | 'release' | 'schedule' | 'refine' | 'ensure_lessons' | 'restore',
+  sel: ReturnType<typeof itemSelector>,
+  message: string,
+): ToolCall {
+  switch (verb) {
+    case 'publish':
+      return { name: 'publish_items', args: { selector: { scope: sel.scope, count: sel.count, types: sel.types ?? ['QUIZ'], published: false } } };
+    case 'release':
+      return { name: 'release_items', args: { selector: { scope: sel.scope, count: sel.count, types: sel.types ?? ['QUIZ'], published: true } } };
+    case 'schedule':
+      return { name: 'schedule_items', args: { selector: { scope: sel.scope, count: sel.count, types: sel.types }, schedule: {} } };
+    case 'refine':
+      return { name: 'refine_items', args: { selector: { scope: sel.scope, count: sel.count, types: sel.types }, instruction: message } };
+    case 'ensure_lessons':
+      return { name: 'ensure_interactive_lessons', args: {} };
+    case 'restore':
+      return { name: 'restore_revision', args: { latest: true } };
+  }
+}
+
 function planFromIntentVerbs(
   message: string,
   inventory: ReturnType<typeof buildOutlineInventory>,
@@ -813,78 +852,8 @@ function planFromIntentVerbs(
 ): PlannerPlan | null {
   const verbs = intent.verbs ?? [];
   if (verbs.length === 0) return null;
-  const quantity = parseQuantityLimit(message);
-  const scope =
-    quantity == null
-      ? inventory.focus
-        ? ('focus' as const)
-        : ('all' as const)
-      : quantity.fromEnd
-        ? ('last' as const)
-        : ('first' as const);
-  const count = quantity?.count;
-  const m = message.toLowerCase();
-  const types = /\bquiz/.test(m)
-    ? (['QUIZ'] as const)
-    : /\bdiscussion/.test(m)
-      ? (['DISCUSSION'] as const)
-      : undefined;
-  const tools: ToolCall[] = [];
-  for (const verb of verbs) {
-    if (verb === 'publish') {
-      tools.push({
-        name: 'publish_items',
-        args: {
-          selector: {
-            scope,
-            count,
-            types: types ? [...types] : ['QUIZ'],
-            published: false,
-          },
-        },
-      });
-    } else if (verb === 'release') {
-      tools.push({
-        name: 'release_items',
-        args: {
-          selector: {
-            scope,
-            count,
-            types: types ? [...types] : ['QUIZ'],
-            published: true,
-          },
-        },
-      });
-    } else if (verb === 'schedule') {
-      tools.push({
-        name: 'schedule_items',
-        args: {
-          selector: {
-            scope,
-            count,
-            types: types ? [...types] : undefined,
-          },
-          schedule: {},
-        },
-      });
-    } else if (verb === 'refine') {
-      tools.push({
-        name: 'refine_items',
-        args: {
-          selector: {
-            scope,
-            count,
-            types: types ? [...types] : undefined,
-          },
-          instruction: message,
-        },
-      });
-    } else if (verb === 'ensure_lessons') {
-      tools.push({ name: 'ensure_interactive_lessons', args: {} });
-    } else if (verb === 'restore') {
-      tools.push({ name: 'restore_revision', args: { latest: true } });
-    }
-  }
+  const sel = itemSelector(message, inventory.focus ? 'focus' : 'all');
+  const tools = verbs.map((verb) => toolForVerb(verb, sel, message));
   return tools.length > 0 ? { tools } : null;
 }
 
@@ -920,20 +889,8 @@ export function fallbackPlan(
     };
   }
 
-  const m = message.toLowerCase();
-  const quantity = parseQuantityLimit(message);
-  const scope =
-    quantity == null
-      ? ('all' as const)
-      : quantity.fromEnd
-        ? ('last' as const)
-        : ('first' as const);
-  const count = quantity?.count;
-  const types = /\bquiz/.test(m)
-    ? (['QUIZ'] as const)
-    : /\bdiscussion/.test(m)
-      ? (['DISCUSSION'] as const)
-      : undefined;
+  const sel = itemSelector(message, 'all');
+  const { types } = sel;
 
   let wantsPublish = looksLikePublishRequest(message);
   let wantsRelease = looksLikeReleaseRequest(message);
@@ -950,51 +907,15 @@ export function fallbackPlan(
 
   if ((wantsPublish || wantsRelease) && !looksLikeRewriteRequest(message)) {
     const tools: ToolCall[] = [];
-    if (wantsPublish) {
-      tools.push({
-        name: 'publish_items',
-        args: {
-          selector: {
-            scope,
-            count,
-            types: types ? [...types] : ['QUIZ'],
-            published: false,
-          },
-        },
-      });
-    }
-    if (wantsRelease) {
-      tools.push({
-        name: 'release_items',
-        args: {
-          selector: {
-            scope,
-            count,
-            types: types ? [...types] : ['QUIZ'],
-            published: true,
-          },
-        },
-      });
-    }
+    if (wantsPublish) tools.push(toolForVerb('publish', sel, message));
+    if (wantsRelease) tools.push(toolForVerb('release', sel, message));
     return { tools };
   }
 
   if (looksLikeScheduleRequest(message) && !looksLikeRewriteRequest(message)) {
-    return {
-      tools: [
-        {
-          name: 'schedule_items',
-          args: {
-            selector: {
-              scope: inventory.focus ? 'focus' : scope,
-              count,
-              types: types ? [...types] : undefined,
-            },
-            schedule: {},
-          },
-        },
-      ],
-    };
+    // Schedule prefers the focused item even when a count is given.
+    const scheduleSel = { ...sel, scope: inventory.focus ? ('focus' as const) : sel.scope };
+    return { tools: [toolForVerb('schedule', scheduleSel, message)] };
   }
 
   if (looksLikeEnsureLessonsRequest(message)) {
@@ -1010,21 +931,9 @@ export function fallbackPlan(
   }
 
   if (looksLikeRewriteRequest(message)) {
-    return {
-      tools: [
-        {
-          name: 'refine_items',
-          args: {
-            selector: {
-              scope: inventory.focus && !quantity ? 'focus' : scope,
-              count,
-              types: types ? [...types] : undefined,
-            },
-            instruction: message,
-          },
-        },
-      ],
-    };
+    // Refine targets the focused item unless a count was given.
+    const refineSel = itemSelector(message, inventory.focus ? 'focus' : 'all');
+    return { tools: [toolForVerb('refine', refineSel, message)] };
   }
 
   if (
