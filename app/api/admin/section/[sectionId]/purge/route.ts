@@ -2,42 +2,19 @@
  * Hard delete (purge) of a section. FK CASCADE wipes attempts, quiz_sections,
  * professor_sections, and student_sections automatically.
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 
-import { db } from '@/app/db';
-import { users } from '@/app/db/schema';
-import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
-import {
-  adminFetchSectionDefiner,
-  adminPurgeSectionDefiner,
-} from '@/lib/db/tenantWriteDefiners';
+import { adminFetchSectionDefiner, adminPurgeSectionDefiner } from '@/lib/db/tenantWriteDefiners';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ sectionId: string }> },
-) {
-  try {
-    const { sectionId } = await params;
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
-    });
-    if (!user || !user.platformStaff) {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 },
-      );
-    }
+export const DELETE = route<{ sectionId: string }>(
+  { auth: 'staff' },
+  async ({ req: request, params, user }) => {
+    const { sectionId } = params;
 
     const targetSection = await adminFetchSectionDefiner(sectionId);
     if (!targetSection) {
@@ -74,8 +51,5 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error purging section:', error);
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

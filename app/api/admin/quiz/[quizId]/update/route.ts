@@ -1,40 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
-import { db } from '@/app/db';
-import { users } from '@/app/db/schema';
 import { loadAdminRecord } from '@/lib/admin/records';
-import { apiErrorResponse } from '@/lib/api/errors';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
 import { updateQuizDefiner } from '@/lib/db/entityScopedReads';
 import { quizUpdateSchema } from '@/lib/quizSchemas';
 import { readJsonBody } from '@/lib/api/readJsonBody';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
 const adminQuizUpdateSchema = quizUpdateSchema;
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ quizId: string }> },
-) {
-  try {
-    const { quizId } = await params;
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
-    });
-    if (!user || !user.platformStaff) {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 },
-      );
-    }
+export const PUT = route<{ quizId: string }>(
+  { auth: 'staff' },
+  async ({ req: request, params, user }) => {
+    const { quizId } = params;
 
     // FORCE RLS: a plain db read finds no quiz; load it via the definer.
     const existingQuiz = await loadAdminRecord('quiz', quizId);
@@ -89,8 +69,5 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error updating quiz:', error);
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

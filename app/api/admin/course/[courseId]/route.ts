@@ -1,14 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { and, eq, isNull } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
 
-import { db } from '@/app/db';
-import { courses, sections, users } from '@/app/db/schema';
+import { courses, sections } from '@/app/db/schema';
 import { loadAdminRecord } from '@/lib/admin/records';
 import { withTenant } from '@/lib/db/tenantContext';
-import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,25 +15,10 @@ export const dynamic = 'force-dynamic';
  * the same transaction so the entire course tree disappears from listings
  * atomically. Hard delete is at /api/admin/course/[courseId]/purge.
  */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
-    });
-    if (!user || !user.platformStaff) {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 },
-      );
-    }
-    const { courseId } = await params;
+export const DELETE = route<{ courseId: string }>(
+  { auth: 'staff' },
+  async ({ req, params, user }) => {
+    const { courseId } = params;
 
     // FORCE RLS: a plain db read finds no course; load it via the definer.
     const targetCourse = await loadAdminRecord('course', courseId);
@@ -96,8 +79,5 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting course:', error);
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

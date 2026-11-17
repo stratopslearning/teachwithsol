@@ -2,42 +2,19 @@
  * Hard delete (purge) of a course. CASCADE wipes the section tree and
  * everything under it (attempts, assignments, quiz_sections, etc.).
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 
-import { db } from '@/app/db';
-import { users } from '@/app/db/schema';
-import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
-import {
-  adminFetchCourseDefiner,
-  adminPurgeCourseDefiner,
-} from '@/lib/db/tenantWriteDefiners';
+import { adminFetchCourseDefiner, adminPurgeCourseDefiner } from '@/lib/db/tenantWriteDefiners';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const { courseId } = await params;
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
-    });
-    if (!user || !user.platformStaff) {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 },
-      );
-    }
+export const DELETE = route<{ courseId: string }>(
+  { auth: 'staff' },
+  async ({ req: request, params, user }) => {
+    const { courseId } = params;
 
     const targetCourse = await adminFetchCourseDefiner(courseId);
     if (!targetCourse) {
@@ -74,8 +51,5 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error purging course:', error);
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
