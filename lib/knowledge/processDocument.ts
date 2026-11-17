@@ -14,8 +14,7 @@ import {
   updateKnowledgeVersionMetaDefiner,
 } from '@/lib/db/knowledgeJobDefiners';
 import { rowsFromExecute } from '@/lib/db/rows';
-import { chunkText } from '@/lib/knowledge/chunk';
-import { embedTexts } from '@/lib/knowledge/embed';
+import { indexText } from '@/lib/knowledge/indexText';
 import {
   extractTextFromUpload,
   extractTextFromUrl,
@@ -107,43 +106,20 @@ export async function processKnowledgeDocument(
       }
     }
 
-    if (!text || text.length < 20) {
-      throw new Error('No usable text extracted from document');
-    }
-
-    const chunks = chunkText(text);
-    if (chunks.length === 0) {
-      throw new Error('Chunking produced no content');
-    }
-
-    const { checkAiBandAvailable } = await import('@/lib/workspace/aiCapGuard');
-    const aiCap = await checkAiBandAvailable(doc.workspaceId);
-    if (!aiCap.ok) {
-      await setKnowledgeDocumentStatusDefiner(
-        documentId,
-        'FAILED',
-        aiCap.reason.slice(0, 500),
-      );
-      return;
-    }
-
-    // Embed before superseding the current chunks: if the embedding call
-    // fails, the document keeps its current search content.
-    const embeddings = await embedTexts(chunks.map((c) => c.content));
-
-    await supersedeKnowledgeChunksDefiner(documentId);
-
-    await insertKnowledgeChunksDefiner({
-      documentId,
-      versionId: version.id,
+    await indexText({
+      text,
       workspaceId: doc.workspaceId,
-      tenantId: doc.tenantId ?? doc.workspaceId,
-      chunks: chunks.map((chunk, i) => ({
-        chunkIndex: chunk.index,
-        content: chunk.content,
-        tokenCount: chunk.tokenCount,
-        embedding: embeddings[i]!,
-      })),
+      emptyMessage: 'No usable text extracted from document',
+      write: async (chunks) => {
+        await supersedeKnowledgeChunksDefiner(documentId);
+        await insertKnowledgeChunksDefiner({
+          documentId,
+          versionId: version.id,
+          workspaceId: doc.workspaceId,
+          tenantId: doc.tenantId ?? doc.workspaceId,
+          chunks,
+        });
+      },
     });
 
     await updateKnowledgeVersionMetaDefiner({
@@ -161,14 +137,6 @@ export async function processKnowledgeDocument(
       await setCourseMaterialStatusDefiner(doc.legacyMaterialId, 'READY', null);
     }
 
-    void (async () => {
-      try {
-        const { recordAiUsage } = await import('@/lib/workspace');
-        await recordAiUsage(doc.workspaceId, 'embed', chunks.length);
-      } catch (err) {
-        console.warn('[processKnowledgeDocument] usage meter failed', err);
-      }
-    })();
   } catch (err) {
     const message =
       err instanceof Error ? err.message.slice(0, 500) : 'Processing failed';

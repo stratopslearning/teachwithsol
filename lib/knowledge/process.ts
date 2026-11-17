@@ -1,5 +1,4 @@
-import { chunkText } from '@/lib/knowledge/chunk';
-import { embedTexts } from '@/lib/knowledge/embed';
+import { indexText } from '@/lib/knowledge/indexText';
 import {
   extractTextFromUpload,
   extractTextFromUrl,
@@ -36,61 +35,22 @@ export async function processMaterial(materialId: string): Promise<void> {
       throw new Error('Material has no fetchable source');
     }
 
-    if (!text || text.length < 20) {
-      throw new Error('No usable text extracted from material');
-    }
-
-    const chunks = chunkText(text);
-    if (chunks.length === 0) {
-      throw new Error('Chunking produced no content');
-    }
-
-    const { getCourseWorkspaceId, checkAiBandAvailable } = await import(
-      '@/lib/workspace'
-    );
-    const workspaceId = await getCourseWorkspaceId(material.courseId);
-    const aiCap = await checkAiBandAvailable(workspaceId);
-    if (!aiCap.ok) {
-      await setCourseMaterialStatusDefiner(
-        materialId,
-        'FAILED',
-        aiCap.reason.slice(0, 500),
-      );
-      return;
-    }
-
-    // Embed before touching the existing chunks: if the embedding call fails,
-    // the material keeps its current search content.
-    const embeddings = await embedTexts(chunks.map((c) => c.content));
-
-    await deleteCourseMaterialChunksDefiner(materialId);
-
-    await insertCourseMaterialChunksDefiner({
-      materialId,
-      courseId: material.courseId,
-      chunks: chunks.map((chunk, i) => ({
-        chunkIndex: chunk.index,
-        content: chunk.content,
-        tokenCount: chunk.tokenCount,
-        embedding: embeddings[i]!,
-      })),
+    const { getCourseWorkspaceId } = await import('@/lib/workspace');
+    await indexText({
+      text,
+      workspaceId: await getCourseWorkspaceId(material.courseId),
+      emptyMessage: 'No usable text extracted from material',
+      write: async (chunks) => {
+        await deleteCourseMaterialChunksDefiner(materialId);
+        await insertCourseMaterialChunksDefiner({
+          materialId,
+          courseId: material.courseId,
+          chunks,
+        });
+      },
     });
 
     await setCourseMaterialStatusDefiner(materialId, 'READY', null);
-
-    void (async () => {
-      try {
-        const { getCourseWorkspaceId, recordAiUsage } = await import(
-          '@/lib/workspace'
-        );
-        const workspaceId = await getCourseWorkspaceId(material.courseId);
-        if (workspaceId) {
-          await recordAiUsage(workspaceId, 'embed', chunks.length);
-        }
-      } catch (err) {
-        console.warn('[processMaterial] usage meter failed', err);
-      }
-    })();
   } catch (err) {
     const message =
       err instanceof Error ? err.message.slice(0, 500) : 'Processing failed';
