@@ -29,6 +29,7 @@ import {
   getActiveWorkspaceId,
   listActiveMembershipsForUser,
 } from '@/lib/workspace';
+import { PassFailBadge } from '@/components/status/badges';
 
 export default async function ProfessorDashboard() {
   const user = await requireTeachingAccess();
@@ -470,9 +471,7 @@ export default async function ProfessorDashboard() {
                     <span className="font-mono tnum text-sm text-ink">
                       {attempt.percentage ?? 0}%
                     </span>
-                    <Badge variant={attempt.passed ? 'success' : 'destructive'}>
-                      {attempt.passed ? 'Passed' : 'Failed'}
-                    </Badge>
+                    <PassFailBadge passed={attempt.passed} />
                   </div>
                 </li>
               ))}

@@ -37,6 +37,7 @@ import {
 } from "@/lib/quizAccess";
 import { computeQuestionStatsForAttempts } from "@/lib/quizQuestionStats";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
+import { ReleaseBadge } from "@/components/status/badges";
 
 export default async function QuizResultsPage({
   params,
@@ -156,9 +157,7 @@ export default async function QuizResultsPage({
               </p>
             </div>
             <div className="flex flex-wrap gap-2 lg:justify-end">
-              <Badge variant={quiz.isActive ? "success" : "outline"}>
-                {quiz.isActive ? "Active" : "Inactive"}
-              </Badge>
+              <ReleaseBadge isActive={quiz.isActive} />
               {visibleSectionAssignments.map((assignment) => (
                 <Badge key={assignment.section.id} variant="info">
                   {assignment.section.name}

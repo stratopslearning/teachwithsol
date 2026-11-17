@@ -20,6 +20,7 @@ import { cleanQuizDescription } from "@/lib/utils";
 import { isSectionConcluded } from "@/lib/sectionAvailability";
 
 import { CreateEditableCopyButton } from "./CreateEditableCopyButton";
+import { ReleaseBadge } from "@/components/status/badges";
 
 export default async function EditQuizPage({
   params,
@@ -269,9 +270,7 @@ export default async function EditQuizPage({
           <div>
             <dt className="eyebrow text-ink-faint">Status</dt>
             <dd className="mt-2">
-              <Badge variant={quiz.isActive ? "success" : "outline"}>
-                {quiz.isActive ? "Active" : "Inactive"}
-              </Badge>
+              <ReleaseBadge isActive={quiz.isActive} />
             </dd>
           </div>
           <div>

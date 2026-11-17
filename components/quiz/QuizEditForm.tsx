@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { 
   Plus, 
   Trash2, 
@@ -29,6 +28,7 @@ import {
   extractQuizMetadata,
 } from '@/lib/utils';
 import { toast } from 'sonner';
+import { ReleaseBadge } from '@/components/status/badges';
 
 interface Question {
   id: string;
@@ -757,9 +757,7 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
                 <div className="flex gap-2 items-center">
                   <dt className="text-ink-muted w-32 shrink-0">Status</dt>
                   <dd>
-                    <Badge variant={formData.isActive ? 'success' : 'outline'}>
-                      {formData.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
+                    <ReleaseBadge isActive={formData.isActive} />
                   </dd>
                 </div>
                 <div className="flex gap-2">
