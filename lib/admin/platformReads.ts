@@ -134,3 +134,19 @@ export async function fetchAdminSectionsAll() {
     facultyCount: Number(r.faculty_count ?? 0),
   }));
 }
+
+/** All users (the users table is not tenant-scoped). */
+export async function listAllUsers() {
+  return db.query.users.findMany();
+}
+
+/** User totals for the admin overview, without loading every row. */
+export async function countUsers(): Promise<{ total: number; platformStaff: number }> {
+  const result = await db.execute(sql`
+    SELECT count(*)::int AS total,
+           count(*) FILTER (WHERE platform_staff)::int AS platform_staff
+    FROM users
+  `);
+  const row = rowsFromExecute<{ total: number; platform_staff: number }>(result)[0];
+  return { total: Number(row?.total ?? 0), platformStaff: Number(row?.platform_staff ?? 0) };
+}

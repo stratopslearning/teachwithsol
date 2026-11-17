@@ -1,15 +1,12 @@
-import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
-import { db } from "@/app/db";
-import { interactiveProgress } from "@/app/db/schema";
 import { InteractiveTakeClient } from "@/components/interactives/InteractiveTakeClient";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { requireAuth } from "@/lib/auth";
 import { withBasePath } from "@/lib/basePath";
 import { assertStudentCanAccessInteractive } from "@/lib/interactives/access";
-import { withTenant } from "@/lib/db/tenantContext";
+import { getInteractiveProgress } from "@/lib/interactives/progress";
 
 export default async function InteractiveTakePage({
   params,
@@ -26,17 +23,7 @@ export default async function InteractiveTakePage({
     return notFound();
   }
 
-  // FORCE RLS: a plain db read finds no progress row, so a completed
-  // interactive always showed as not completed. Read under its tenant.
-  const progressWhere = and(
-    eq(interactiveProgress.interactiveId, id),
-    eq(interactiveProgress.studentId, user.id),
-  );
-  const progress = interactive.tenantId
-    ? await withTenant(interactive.tenantId, user.id, (tx) =>
-        tx.query.interactiveProgress.findFirst({ where: progressWhere }),
-      )
-    : await db.query.interactiveProgress.findFirst({ where: progressWhere });
+  const progress = await getInteractiveProgress(interactive, user.id);
 
   return (
     <AppShell

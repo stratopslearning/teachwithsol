@@ -1,4 +1,3 @@
-import { and, eq, inArray } from "drizzle-orm";
 import {
   CheckCircle,
   Eye,
@@ -9,8 +8,7 @@ import {
 } from "@/components/icons";
 import { notFound } from "next/navigation";
 
-import { withQuizTenant } from "@/lib/db/sectionTenants";
-import { questions, quizSections } from "@/app/db/schema";
+import { loadQuizResultsAssignment } from "@/lib/data/pages/professorQuizzes";
 import ExportResultsWrapper from "@/components/ExportResultsWrapper";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -52,26 +50,7 @@ export default async function QuizResultsPage({
   const enrolledSectionIds = await accessibleQuizSectionIds(user, quizId);
   if (enrolledSectionIds.length === 0) notFound();
 
-  // FORCE RLS: a plain db read finds nothing (the page was always a 404).
-  const quizAssignment = await withQuizTenant(quizId, user.id, (tx) =>
-    tx.query.quizSections.findFirst({
-      where: and(
-        eq(quizSections.quizId, quizId),
-        inArray(quizSections.sectionId, enrolledSectionIds),
-      ),
-      with: {
-        quiz: {
-          with: {
-            professor: true,
-            questions: { orderBy: questions.order },
-            sectionAssignments: {
-              with: { section: { with: { course: true } } },
-            },
-          },
-        },
-      },
-    }),
-  );
+  const quizAssignment = await loadQuizResultsAssignment(quizId, enrolledSectionIds, user.id);
 
   if (!quizAssignment) notFound();
   const quiz = quizAssignment.quiz;
