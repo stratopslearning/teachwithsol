@@ -14,7 +14,7 @@ import { z } from 'zod';
 
 import { withTenant } from '@/lib/db/tenantContext';
 import { questions } from '@/app/db/schema';
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import {
   buildRubricDesignerSystemPrompt,
   buildRubricDesignerUserPrompt,
@@ -26,10 +26,6 @@ import { GRADING_MODEL_VERSION, type RubricCriterion } from '@/lib/gradingTypes'
 
 const RUBRIC_DERIVATION_TIMEOUT_MS = 20_000;
 
-const openai = getAiClientForTask('rubric', {
-  maxRetries: 2,
-  timeout: RUBRIC_DERIVATION_TIMEOUT_MS,
-});
 
 const rubricSchemaZod = z.object({
   criteria: z
@@ -281,6 +277,13 @@ export async function callRubricModelFull(
   const model = resolveModel('rubric').model;
   const supportsReasoningEffort =
     /^gpt-5/i.test(model) || /^o\d/i.test(model) || /reasoning/i.test(model);
+  // Per call (was a module-level client). No tenant in scope here, so the
+  // workspace budget isn't reserved for rubric derivation.
+  const openai = await aiClientFor(
+    'rubric',
+    {},
+    { maxRetries: 2, timeout: RUBRIC_DERIVATION_TIMEOUT_MS },
+  );
   const completion = await openai.chat.completions.create({
     model,
     messages: [

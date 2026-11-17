@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { outlineItems, type OutlineItemBody } from '@/app/db/schema';
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import { temperatureForModel } from '@/lib/ai/modelRouter';
 import { hashId, logAiSpan } from '@/lib/ai/tracing';
 import { ApiError } from '@/lib/api/errors';
@@ -134,7 +134,7 @@ export async function proposeSwitchUp(
     throw ApiError.badRequest('OpenAI is not configured');
   }
 
-  const openai = getAiClientForTask('switch_up', { timeout: 90_000 });
+  const openai = await aiClientFor('switch_up', { courseId: outlineRow.courseId }, { timeout: 90_000 });
   const switchModel = resolveModel('switch_up').model;
   const policyBlock = formatAuthoringPolicyPrompt(policy);
   const courseCtx = await loadCoursePromptContext(detail.courseId);

@@ -27,6 +27,7 @@ import {
 } from '@/lib/interactives';
 import type { AuthUser } from '@/lib/getOrCreateUser';
 import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import type { OutlineItemType } from '@/app/db/enums';
 
 function quizWindowIso() {
   const start = new Date();
@@ -287,7 +288,7 @@ export async function publishOutlineItem(
       outlineModuleTitle: outlineModule.title,
       outlineModulePosition: outlineModule.position,
       itemTitle: item.title,
-      itemType: item.type as 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE',
+      itemType: item.type as OutlineItemType,
       publishedLessonId,
       publishedQuizId,
       publishedChatbotId,

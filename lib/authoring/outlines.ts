@@ -30,6 +30,7 @@ import {
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import type { AuthUser } from '@/lib/getOrCreateUser';
 import type { OutlineSnapshot } from '@/lib/authoring/revisions';
+import type { OutlineItemType } from '@/app/db/enums';
 
 export type AuthoringSessionSummary = {
   id: string;
@@ -44,7 +45,7 @@ export type AuthoringSessionSummary = {
 export type OutlineItemSummary = {
   id: string;
   moduleId: string;
-  type: 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE';
+  type: OutlineItemType;
   title: string;
   status: 'DRAFT' | 'PREVIEW' | 'PUBLISHED';
   body: OutlineItemBody;
@@ -457,7 +458,7 @@ export async function persistGeneratedOutline(opts: {
     title: string;
     summary?: string | null;
     items: Array<{
-      type: 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE';
+      type: OutlineItemType;
       title: string;
       body: OutlineItemBody;
       sourceMaterialIds?: string[];

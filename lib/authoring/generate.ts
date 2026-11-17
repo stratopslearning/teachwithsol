@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import { temperatureForModel } from '@/lib/ai/modelRouter';
 import { ApiError } from '@/lib/api/errors';
 import { logAudit } from '@/lib/audit';
@@ -910,7 +910,7 @@ export async function generateOutlineFromContext(opts: {
     throw ApiError.badRequest('No materials context provided for outline generation');
   }
 
-  const openai = getAiClientForTask('outline', { timeout: 90_000 });
+  const openai = await aiClientFor('outline', { tenantId: opts.workspaceId }, { timeout: 90_000 });
   const outlineModel = resolveModel('outline').model;
   const userMsg = `Course: ${opts.courseTitle}
 ${opts.brief?.trim() ? `Instructor brief: ${opts.brief.trim()}\n` : ''}${

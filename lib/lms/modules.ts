@@ -16,6 +16,7 @@ import {
   upsertCourseModuleDefiner,
   upsertModuleItemDefiner,
 } from '@/lib/db/lmsDefiners';
+import type { OutlineItemType } from '@/app/db/enums';
 
 export type ModuleWithItems = CourseModuleRow & {
   items: Array<ModuleItemRow & { completed?: boolean }>;
@@ -327,7 +328,7 @@ export async function syncPublishedOutlineItemToModule(opts: {
   outlineModuleTitle: string;
   outlineModulePosition: number;
   itemTitle: string;
-  itemType: 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE';
+  itemType: OutlineItemType;
   publishedLessonId?: string | null;
   publishedQuizId?: string | null;
   publishedChatbotId?: string | null;

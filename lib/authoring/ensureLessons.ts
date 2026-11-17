@@ -1,4 +1,4 @@
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import { temperatureForModel } from '@/lib/ai/modelRouter';
 import { loadCoursePromptContext } from '@/lib/ai/prompts/courseContext';
 import { hashId, logAiSpan } from '@/lib/ai/tracing';
@@ -31,6 +31,7 @@ import { applyOutlineBuildDefiner } from '@/lib/db/entityScopedReads';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import type { AuthUser } from '@/lib/getOrCreateUser';
 import { isInteractiveChapterReady } from '@/lib/lms/interactiveChapter';
+import type { OutlineItemType } from '@/app/db/enums';
 
 export function moduleNeedsInteractiveLesson(mod: {
   items: Array<{ type: string; body?: { chapter?: unknown } | null }>;
@@ -129,7 +130,7 @@ export async function ensureInteractiveLessonsForOutline(
       title: mod.title,
       summary: mod.summary,
       items: items.map((item) => ({
-        type: item.type as 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE',
+        type: item.type as OutlineItemType,
         title: item.title,
         body: item.body ?? {},
         sourceMaterialIds: item.sourceMaterialIds ?? [],
@@ -214,7 +215,7 @@ async function buildLessonBodies(
     throw ApiError.badRequest('No materials context for interactive lessons');
   }
 
-  const openai = getAiClientForTask('build', { timeout: 90_000 });
+  const openai = await aiClientFor('build', { courseId: detail.courseId }, { timeout: 90_000 });
   const buildModel = resolveModel('build').model;
   const courseCtx = await loadCoursePromptContext(detail.courseId);
   const buildSystem = buildFaithfulBuildSystemPrompt(courseCtx);

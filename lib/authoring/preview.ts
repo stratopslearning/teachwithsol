@@ -6,12 +6,13 @@ import { assertCanManageItem } from '@/lib/authoring/access';
 import type { OutlineItemSummary } from '@/lib/authoring/outlines';
 import { withItemTenant } from '@/lib/authoring/tenant';
 import type { AuthUser } from '@/lib/getOrCreateUser';
+import type { OutlineItemType } from '@/app/db/enums';
 
 export type ItemPreview = {
   item: OutlineItemSummary;
   mode: 'faculty' | 'student';
   preview: {
-    type: 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE';
+    type: OutlineItemType;
     title: string;
     markdown?: string;
     description?: string;

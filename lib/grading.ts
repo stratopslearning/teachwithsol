@@ -2,7 +2,7 @@
  * Deterministic rubric-based grading with smart model routing, structured
  * outputs, evidence quote verification, and dual-run review escalation.
  */
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import { minimizeStudentTextForAi } from '@/lib/ai/minimizeEducationPayload';
 import {
   buildGraderSystemPrompt,
@@ -359,6 +359,7 @@ async function callGradeOnce(
   systemPrompt: string,
   prompt: string,
   task: 'grade' | 'grade_escalate',
+  tenantId: string | null,
 ): Promise<
   | {
       kind: 'ok';
@@ -368,7 +369,7 @@ async function callGradeOnce(
     }
   | { kind: 'fail'; reason: FailureReason; message?: string; model: string }
 > {
-  const client = getAiClientForTask(task, {
+  const client = await aiClientFor(task, { tenantId }, {
     maxRetries: 2,
     timeout: task === 'grade_escalate' ? 45_000 : 25_000,
   });
@@ -572,7 +573,7 @@ export async function gradeShortAnswer(
     materialsContext,
   );
 
-  const first = await callGradeOnce(systemPrompt, prompt, 'grade');
+  const first = await callGradeOnce(systemPrompt, prompt, 'grade', tenantId || null);
   if (first.kind === 'fail') {
     logGradingFailure(request, first.reason, first.message);
     return {
@@ -634,7 +635,7 @@ export async function gradeShortAnswer(
     confidence < GRADING_CONFIDENCE_REVIEW_THRESHOLD || evidenceRejected;
 
   if (needsSecond) {
-    const second = await callGradeOnce(systemPrompt, prompt, 'grade_escalate');
+    const second = await callGradeOnce(systemPrompt, prompt, 'grade_escalate', tenantId || null);
     if (second.kind === 'ok') {
       const secondMatches = applyEvidenceChecks(
         fillMissingMatches(rubric, second.value.rubricMatches),

@@ -9,7 +9,7 @@ import {
   type AuthoringReviewFlag,
   type OutlineItemBody,
 } from '@/app/db/schema';
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import {
   buildReviewSystemPrompt,
   buildReviewUserPrompt,
@@ -203,7 +203,7 @@ export async function reviewOutlineDraft(
 
   if (process.env.OPENAI_API_KEY) {
     try {
-      const client = getAiClientForTask('review', { timeout: 90_000 });
+      const client = await aiClientFor('review', { courseId: detail.courseId }, { timeout: 90_000 });
       const model = resolveModel('review').model;
       const payload = flat.map((item) => ({
         itemId: item.itemId,
