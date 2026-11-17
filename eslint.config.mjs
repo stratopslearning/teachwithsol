@@ -4,6 +4,7 @@ import { FlatCompat } from "@eslint/eslintrc";
 
 import noLegacyAuthz from "./eslint-rules/no-legacy-authz.js";
 import { LEGACY_ROUTE_FILES } from "./eslint-rules/legacy-route-files.mjs";
+import { LEGACY_DB_IMPORTERS } from "./eslint-rules/legacy-db-importers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const compat = new FlatCompat({ baseDirectory: __dirname });
@@ -133,6 +134,28 @@ export default [
           selector:
             "ExportNamedDeclaration > FunctionDeclaration[id.name=/^(GET|POST|PUT|PATCH|DELETE)$/]",
           message: "Build API handlers with route() from '@/lib/api/route'.",
+        },
+      ],
+    },
+  },
+  {
+    // The database client is used only in the data layer (lib/db, lib/data).
+    // Older files are listed in legacy-db-importers.mjs.
+    files: ["lib/**/*.ts", "lib/**/*.tsx", "components/**/*.tsx", "components/**/*.ts"],
+    ignores: ["lib/db/**", "lib/data/**", ...LEGACY_DB_IMPORTERS.map((f) => f.replace(/[[\]]/g, '\\$&'))],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            ...openAiRestrictedPaths,
+            {
+              name: "@/app/db",
+              importNames: ["db", "pool"],
+              allowTypeImports: true,
+              message: "Query through lib/db (definers, withTenant helpers) or a lib/data loader.",
+            },
+          ],
         },
       ],
     },
