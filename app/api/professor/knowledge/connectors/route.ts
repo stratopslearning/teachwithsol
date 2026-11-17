@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse, ApiError } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
+import { ApiError } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import {
   isConnectorProviderConfigured,
@@ -11,6 +10,7 @@ import {
   upsertConnectorDraft,
 } from '@/lib/knowledge';
 import type { KnowledgeProvider } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,9 +27,10 @@ const createSchema = z.object({
   config: z.record(z.string(), z.unknown()).optional(),
 });
 
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route(
+  { auth: { professorApi: 'read' } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const workspaceId = req.nextUrl.searchParams.get('workspaceId');
     if (!workspaceId) {
       return NextResponse.json(
@@ -40,17 +41,13 @@ export async function GET(req: NextRequest) {
     const connectors = await listWorkspaceConnectors(auth.user, workspaceId);
     const providers = listConnectorProviderStatus();
     return NextResponse.json({ connectors, providers });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function POST(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const POST = route(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-knowledge-write:${auth.user.id}`,
       limit: 30,
@@ -67,7 +64,5 @@ export async function POST(req: NextRequest) {
     }
     const connector = await upsertConnectorDraft(auth.user, body);
     return NextResponse.json({ connector }, { status: 201 });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

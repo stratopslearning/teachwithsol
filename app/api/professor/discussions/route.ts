@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { listProfessorDiscussions } from '@/lib/professor/discussions';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
 /** Discussion bots the caller owns, plus duplicatable templates. */
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route(
+  { auth: { professorApi: 'read' } },
+  async ({ apiAuth }) => {
+    const auth = apiAuth!;
 
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
@@ -22,7 +22,5 @@ export async function GET(req: NextRequest) {
 
     const discussions = await listProfessorDiscussions(auth.user);
     return NextResponse.json({ discussions });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

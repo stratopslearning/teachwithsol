@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta } from '@/lib/audit';
 import {
@@ -13,6 +11,7 @@ import {
   listCourseMaterials,
   listTeachableCourses,
 } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -24,9 +23,10 @@ const urlBodySchema = z.object({
 });
 
 /** List materials for a course, or teachable courses when courseId omitted. */
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route(
+  { auth: { professorApi: 'read' } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
       limit: 120,
@@ -43,18 +43,14 @@ export async function GET(req: NextRequest) {
 
     const materials = await listCourseMaterials(auth.user, courseId);
     return NextResponse.json({ materials });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
 /** Create material from JSON URL body or multipart file upload (incl. zip pack). */
-export async function POST(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const POST = route(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-materials-write:${auth.user.id}`,
       limit: 30,
@@ -123,7 +119,5 @@ export async function POST(req: NextRequest) {
       meta,
     );
     return NextResponse.json({ material }, { status: 201 });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { previewOutlineItem } from '@/lib/authoring/preview';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,15 +13,10 @@ const bodySchema = z
   })
   .optional();
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ itemId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'authoring:write',
-      professorOnly: true,
-    });
+export const POST = route<{ itemId: string }>(
+  { auth: { professorApi: 'authoring:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-authoring-write:${auth.user.id}`,
       limit: 60,
@@ -31,7 +25,7 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { itemId } = await ctx.params;
+    const { itemId } = params;
     let mode: 'faculty' | 'student' = 'faculty';
     try {
       const json = await req.json();
@@ -42,7 +36,5 @@ export async function POST(
     }
     const result = await previewOutlineItem(auth.user, itemId, { mode });
     return NextResponse.json(result);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

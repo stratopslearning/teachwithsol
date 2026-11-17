@@ -1,20 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { unassignQuizFromSection } from '@/lib/professor/mutations';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(
-  _req: NextRequest,
-  context: { params: Promise<{ sectionId: string; quizId: string }> },
-) {
-  try {
-    const { user } = await requireProfessorApi(_req, {
-      scope: 'sections:write',
-    });
+export const POST = route<{ sectionId: string; quizId: string }>(
+  { auth: { professorApi: 'sections:write' } },
+  async ({ params, user }) => {
 
     const limited = await enforceRateLimit({
       key: `quiz-unassign:${user.id}`,
@@ -25,11 +19,9 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { sectionId, quizId } = await context.params;
+    const { sectionId, quizId } = params;
     await unassignQuizFromSection(user, sectionId, quizId);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

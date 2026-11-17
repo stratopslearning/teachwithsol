@@ -1,19 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { getSectionGradebook } from '@/lib/professor/grading';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
 /** Section gradebook matrix (best score per learner): audited disclosure. */
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ sectionId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route<{ sectionId: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ params, apiAuth }) => {
+    const auth = apiAuth!;
 
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
@@ -23,10 +20,8 @@ export async function GET(
     });
     if (limited) return limited;
 
-    const { sectionId } = await context.params;
+    const { sectionId } = params;
     const gradebook = await getSectionGradebook(auth.user, sectionId);
     return NextResponse.json({ gradebook });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

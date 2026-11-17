@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta } from '@/lib/audit';
 import { refineOutlineChat } from '@/lib/authoring/refine';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -16,15 +15,10 @@ const chatSchema = z.object({
   materialIds: z.array(z.string().uuid()).max(40).optional(),
 });
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'authoring:write',
-      professorOnly: true,
-    });
+export const POST = route<{ id: string }>(
+  { auth: { professorApi: 'authoring:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-authoring-chat:${auth.user.id}`,
       limit: 20,
@@ -33,7 +27,7 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { id } = await ctx.params;
+    const { id } = params;
     const body = chatSchema.parse(await req.json());
     const meta = extractRequestMeta(req);
     const result = await refineOutlineChat(
@@ -47,7 +41,5 @@ export async function POST(
       meta,
     );
     return NextResponse.json(result);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

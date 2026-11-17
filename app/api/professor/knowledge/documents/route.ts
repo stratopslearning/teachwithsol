@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import {
   addWorkspaceDocumentFromUpload,
@@ -13,6 +11,7 @@ import {
   listWorkspaceDocuments,
   renameKnowledgeFolder,
 } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -31,9 +30,10 @@ const renameFolderSchema = z.object({
   toFolder: z.string().min(1).max(200),
 });
 
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route(
+  { auth: { professorApi: 'read' } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
       limit: 120,
@@ -57,17 +57,13 @@ export async function GET(req: NextRequest) {
     }
     const documents = await listWorkspaceDocuments(auth.user, workspaceId);
     return NextResponse.json({ documents });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function PATCH(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const PATCH = route(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-knowledge-write:${auth.user.id}`,
       limit: 30,
@@ -84,17 +80,13 @@ export async function PATCH(req: NextRequest) {
       body.toFolder,
     );
     return NextResponse.json(result);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function POST(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const POST = route(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-knowledge-write:${auth.user.id}`,
       limit: 30,
@@ -162,7 +154,5 @@ export async function POST(req: NextRequest) {
       courseId: json.courseId,
     });
     return NextResponse.json({ document }, { status: 201 });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

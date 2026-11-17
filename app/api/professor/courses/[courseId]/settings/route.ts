@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { withCourseTenant } from '@/lib/db/sectionTenants';
 import { courses } from '@/app/db/schema';
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import { parseAiPolicy } from '@/lib/chatbot/aiPolicy';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,13 +23,11 @@ const patchSchema = z.object({
   feedbackTone: z.string().min(1).max(80).optional(),
 });
 
-export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
-    const { courseId } = await ctx.params;
+export const GET = route<{ courseId: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { courseId } = params;
     await assertCanManageCourse(auth.user, courseId);
 
     // FORCE RLS: plain db reads/updates see no rows; run under the course's tenant.
@@ -51,18 +48,14 @@ export async function GET(
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
     return NextResponse.json({ course });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function PATCH(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'authoring:write' });
-    const { courseId } = await ctx.params;
+export const PATCH = route<{ courseId: string }>(
+  { auth: { professorApi: 'authoring:write' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { courseId } = params;
     await assertCanManageCourse(auth.user, courseId);
     const body = patchSchema.parse(await readJsonBody(req));
 
@@ -116,7 +109,5 @@ export async function PATCH(
     }
 
     return NextResponse.json({ ok: true, course: updated });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

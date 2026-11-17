@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import {
   disconnectConnector,
@@ -10,6 +8,7 @@ import {
   scheduleConnectorSync,
   updateConnectorConfig,
 } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -18,47 +17,31 @@ const patchSchema = z.object({
   config: z.record(z.string(), z.unknown()),
 });
 
-export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
-    const { id } = await ctx.params;
+export const GET = route<{ id: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { id } = params;
     const runs = await listRecentSyncRuns(auth.user, id);
     return NextResponse.json({ runs });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function PATCH(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
-    const { id } = await ctx.params;
+export const PATCH = route<{ id: string }>(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { id } = params;
     const body = patchSchema.parse(await req.json());
     const connector = await updateConnectorConfig(auth.user, id, body.config);
     return NextResponse.json({ connector });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const POST = route<{ id: string }>(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-knowledge-write:${auth.user.id}`,
       limit: 10,
@@ -67,31 +50,22 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { id } = await ctx.params;
+    const { id } = params;
     const action = req.nextUrl.searchParams.get('action') ?? 'sync';
     if (action === 'sync') {
       await scheduleConnectorSync(auth.user, id);
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function DELETE(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
-    const { id } = await ctx.params;
+export const DELETE = route<{ id: string }>(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { id } = params;
     await disconnectConnector(auth.user, id);
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

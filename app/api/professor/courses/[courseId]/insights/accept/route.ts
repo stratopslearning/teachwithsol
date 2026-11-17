@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { and, eq, isNull, ne } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { withCourseTenant } from '@/lib/db/sectionTenants';
 import { courseOutlines } from '@/app/db/schema';
-import { ApiError, apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
+import { ApiError } from '@/lib/api/errors';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import { withBasePath } from '@/lib/basePath';
 import { getCourseWorkspaceId } from '@/lib/workspace';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,13 +19,11 @@ const bodySchema = z.object({
   description: z.string().max(2000).optional(),
 });
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'authoring:write' });
-    const { courseId } = await ctx.params;
+export const POST = route<{ courseId: string }>(
+  { auth: { professorApi: 'authoring:write' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { courseId } = params;
     await assertCanManageCourse(auth.user, courseId);
     const contentType = req.headers.get('content-type') ?? '';
     let raw: unknown;
@@ -109,7 +107,5 @@ export async function POST(
       ),
       303,
     );
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

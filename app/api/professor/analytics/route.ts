@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse, ApiError } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
+import { ApiError } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { getCourseAnalytics } from '@/lib/analytics';
 import { listTeachableCourses } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +15,10 @@ const querySchema = z.object({
 });
 
 /** List teachable courses, or course analytics when courseId is set. */
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route(
+  { auth: { professorApi: 'read' } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-analytics:${auth.user.id}`,
       limit: 60,
@@ -45,7 +46,5 @@ export async function GET(req: NextRequest) {
       { sectionId: parsed.data.sectionId },
     );
     return NextResponse.json({ analytics });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

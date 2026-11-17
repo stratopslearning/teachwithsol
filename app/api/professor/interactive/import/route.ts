@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { fetchCourseById } from '@/lib/db/entityScopedReads';
-import { ApiError, apiErrorResponse } from '@/lib/api/errors';
+import { ApiError } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { MAX_UPLOAD_BYTES } from '@/lib/knowledge/constants';
 import { isS3Configured } from '@/lib/knowledge/storage';
 import {
@@ -14,10 +13,11 @@ import {
   createInteractive,
   setInteractivePackageStorageKey,
 } from '@/lib/interactives';
+import { route } from '@/lib/api/route';
 
-export async function POST(req: Request) {
-  try {
-    const { user } = await requireProfessorApi(req);
+export const POST = route(
+  { auth: { professorApi: null } },
+  async ({ req, user }) => {
     if (!isS3Configured()) {
       throw ApiError.badRequest('File storage is not configured');
     }
@@ -91,7 +91,5 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ interactive: updated });
-  } catch (err) {
-    return apiErrorResponse(err);
-  }
-}
+  },
+);

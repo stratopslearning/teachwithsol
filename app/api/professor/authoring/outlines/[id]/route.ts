@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import {
   archiveOutline,
@@ -11,6 +9,7 @@ import {
   restoreOutlineAsCurrent,
   updateOutlineMeta,
 } from '@/lib/authoring/outlines';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,12 +20,10 @@ const patchSchema = z.object({
   restore: z.boolean().optional(),
 });
 
-export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route<{ id: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
       limit: 120,
@@ -35,7 +32,7 @@ export async function GET(
     });
     if (limited) return limited;
 
-    const { id } = await ctx.params;
+    const { id } = params;
     const outline = await getOutlineDetail(auth.user, id);
     const includeMessages =
       req.nextUrl.searchParams.get('messages') === '1';
@@ -43,20 +40,13 @@ export async function GET(
       ? await listAuthoringMessages(auth.user, id)
       : undefined;
     return NextResponse.json({ outline, messages });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function PATCH(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'authoring:write',
-      professorOnly: true,
-    });
+export const PATCH = route<{ id: string }>(
+  { auth: { professorApi: 'authoring:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-authoring-write:${auth.user.id}`,
       limit: 60,
@@ -65,7 +55,7 @@ export async function PATCH(
     });
     if (limited) return limited;
 
-    const { id } = await ctx.params;
+    const { id } = params;
     const body = patchSchema.parse(await req.json());
     if (body.restore) {
       const outline = await restoreOutlineAsCurrent(auth.user, id);
@@ -78,7 +68,5 @@ export async function PATCH(
     }
     const outline = await updateOutlineMeta(auth.user, id, body);
     return NextResponse.json({ outline });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

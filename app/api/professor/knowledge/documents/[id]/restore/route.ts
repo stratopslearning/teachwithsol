@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { restoreDocumentVersionForUser } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -13,15 +12,10 @@ const bodySchema = z.object({
   versionId: z.string().uuid(),
 });
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const POST = route<{ id: string }>(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-knowledge-write:${auth.user.id}`,
       limit: 20,
@@ -30,11 +24,9 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { id } = await ctx.params;
+    const { id } = params;
     const body = bodySchema.parse(await req.json());
     await restoreDocumentVersionForUser(auth.user, id, body.versionId);
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

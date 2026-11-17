@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta } from '@/lib/audit';
 import { publishOutlineItems } from '@/lib/authoring/publish';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 180;
@@ -15,15 +14,10 @@ const bodySchema = z.object({
   sectionIds: z.array(z.string().uuid()).optional(),
 });
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'authoring:write',
-      professorOnly: true,
-    });
+export const POST = route<{ id: string }>(
+  { auth: { professorApi: 'authoring:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-authoring-bulk-publish:${auth.user.id}`,
       limit: 8,
@@ -32,7 +26,7 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { id } = await ctx.params;
+    const { id } = params;
     const json = bodySchema.parse(await req.json());
     const meta = extractRequestMeta(req);
     const result = await publishOutlineItems(
@@ -43,7 +37,5 @@ export async function POST(
       meta,
     );
     return NextResponse.json(result);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

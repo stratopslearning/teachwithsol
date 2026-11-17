@@ -1,19 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { resolveRegradeRequestForProfessor } from '@/lib/regradeRequests';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ requestId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'grades:write' });
+export const POST = route<{ requestId: string }>(
+  { auth: { professorApi: 'grades:write' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
 
     const limited = await enforceRateLimit({
       key: `professor-regrade-resolve:${auth.user.id}`,
@@ -23,7 +20,7 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { requestId } = await context.params;
+    const { requestId } = params;
     const updated = await resolveRegradeRequestForProfessor({
       requestId,
       professorId: auth.user.id,
@@ -41,7 +38,5 @@ export async function POST(
     });
 
     return NextResponse.json({ request: updated });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

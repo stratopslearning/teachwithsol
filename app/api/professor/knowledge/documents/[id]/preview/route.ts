@@ -1,18 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { getKnowledgePreviewMeta } from '@/lib/knowledge/preview';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
-    const { id } = await ctx.params;
+export const GET = route<{ id: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { id } = params;
     const courseId = req.nextUrl.searchParams.get('courseId');
     const preview = await getKnowledgePreviewMeta(
       auth.user,
@@ -20,7 +17,5 @@ export async function GET(
       courseId,
     );
     return NextResponse.json({ preview });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

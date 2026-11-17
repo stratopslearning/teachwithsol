@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta } from '@/lib/audit';
 import {
@@ -10,6 +8,7 @@ import {
   completeBookDirectUpload,
 } from '@/lib/books';
 import { MAX_BOOK_UPLOAD_BYTES } from '@/lib/books/constants';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -28,12 +27,10 @@ const completeSchema = z.object({
 });
 
 /** Begin (JSON) or complete a browser → S3 book upload. */
-export async function POST(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const POST = route(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-books-write:${auth.user.id}`,
       limit: 20,
@@ -68,7 +65,5 @@ export async function POST(req: NextRequest) {
       title: parsed.title,
     });
     return NextResponse.json(started);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
