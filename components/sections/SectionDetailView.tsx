@@ -16,9 +16,19 @@ import { Button } from '@/components/ui/button';
 import { isSectionConcluded } from '@/lib/sectionAvailability';
 import type { SectionDetailData } from '@/lib/sectionDetailData';
 
+/** What the viewer may do on this page (admin and professor pages differ). */
+export type SectionDetailCapabilities = {
+  canInvite: boolean;
+  canRemoveStudents: boolean;
+  /** Link each discussion to its sessions page. */
+  showDiscussionSessions: boolean;
+  /** Which API saves the end date (admin PUT or professor PATCH). */
+  endsAtSaveVia: 'admin' | 'professor';
+};
+
 type SectionDetailViewProps = {
   data: SectionDetailData;
-  role: 'admin' | 'professor';
+  capabilities: SectionDetailCapabilities;
   sectionId: string;
   enrollmentActions?: ReactNode;
   quizRowActions?: (quizId: string) => ReactNode;
@@ -26,13 +36,12 @@ type SectionDetailViewProps = {
   headerActions?: ReactNode;
   /** e.g. “Assign existing” for professor section detail */
   courseworkActions?: ReactNode;
-  /** Override default section gradebook path. */
-  gradebookHref?: string;
+  gradebookHref: string;
 };
 
 export function SectionDetailView({
   data,
-  role,
+  capabilities,
   sectionId,
   enrollmentActions,
   quizRowActions,
@@ -45,12 +54,8 @@ export function SectionDetailView({
     data;
   const concluded = isSectionConcluded(section);
   const courseworkCount = quizzes.length + discussions.length;
-  const gradebookBase =
-    gradebookHref ??
-    (role === 'admin'
-      ? `/dashboard/admin/sections/${sectionId}/gradebook`
-      : `/dashboard/professor/sections/${sectionId}/gradebook`);
-  const canInvite = role === 'professor';
+  const gradebookBase = gradebookHref;
+  const { canInvite } = capabilities;
 
   return (
     <>
@@ -105,7 +110,7 @@ export function SectionDetailView({
           <SectionEndsAtEditor
             sectionId={sectionId}
             endsAt={section.endsAt}
-            mode={role}
+            saveVia={capabilities.endsAtSaveVia}
             sectionName={section.name}
           />
         </div>
@@ -190,7 +195,7 @@ export function SectionDetailView({
             emptyTitle="No learners enrolled yet."
             emptyDescription="Use Add learners to invite by email or CSV, or share the learner enrolment code."
             sectionId={sectionId}
-            canRemoveStudents={role === 'professor'}
+            canRemoveStudents={capabilities.canRemoveStudents}
           />
         </div>
       </section>
@@ -206,7 +211,7 @@ export function SectionDetailView({
         />
         <div className="mt-6">
           <SectionCourseworkTable
-            role={role}
+            showDiscussionSessions={capabilities.showDiscussionSessions}
             quizzes={quizzes}
             discussions={discussions}
             quizRowActions={
