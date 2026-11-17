@@ -8,6 +8,7 @@ import {
 } from '@/lib/api/sameOrigin';
 import { BASE_PATH, withBasePath } from '@/lib/basePath';
 import { CAL_BOOKING_URL } from '@/lib/calBooking';
+import { hasApiTokenHeader, isPublicPath } from '@/lib/routes';
 import { clerkSatelliteProviderProps } from '@/lib/clerkMultiDomain';
 import { isLoadTestRequest } from '@/lib/loadTestAuth';
 import {
@@ -43,6 +44,25 @@ function redirectToSolHost(role: SolHostRole, path: string, search: string) {
   return NextResponse.redirect(url);
 }
 
+/** Which paths each Sol host owns, and where the rest of its traffic goes. */
+const HOST_RULES: Record<
+  SolHostRole,
+  {
+    owns: (path: string) => boolean;
+    /** Where '/' goes when this host doesn't own it. */
+    home: SolHostRole | null;
+    /** Hosts checked, in order, for a path this host doesn't own. */
+    handOff: SolHostRole[];
+    /** Everything else; null = stay on this host. */
+    fallback: SolHostRole | null;
+  }
+> = {
+  marketing: { owns: isMarketingPath, home: null, handOff: ['docs', 'trust'], fallback: 'app' },
+  docs: { owns: isDocsPath, home: 'marketing', handOff: ['trust', 'marketing'], fallback: 'app' },
+  trust: { owns: isTrustPath, home: 'marketing', handOff: ['docs', 'marketing'], fallback: 'app' },
+  app: { owns: () => false, home: 'marketing', handOff: ['docs', 'trust'], fallback: null },
+};
+
 /**
  * Sol multi-subdomain map (only when BASE_PATH is empty and SOL_* hosts are set).
  * StratOps `/learning` skips this entirely.
@@ -71,43 +91,15 @@ function solHostRedirect(req: {
     return null;
   }
 
-  if (role === 'marketing') {
-    if (isMarketingPath(path)) return null;
-    if (isDocsPath(path)) return redirectToSolHost('docs', path, search);
-    if (isTrustPath(path)) return redirectToSolHost('trust', path, search);
-    return redirectToSolHost('app', path, search);
+  // A host serves its own paths; '/' on docs / trust / app goes to the
+  // marketing site; other paths go to the host that owns them.
+  const rule = HOST_RULES[role];
+  if (rule.owns(path)) return null;
+  if (path === '/' && rule.home) return redirectToSolHost(rule.home, '/', search);
+  for (const other of rule.handOff) {
+    if (HOST_RULES[other].owns(path)) return redirectToSolHost(other, path, search);
   }
-
-  if (role === 'docs') {
-    if (isDocsPath(path)) return null;
-    if (path === '/' || path.startsWith('/#')) {
-      return redirectToSolHost('marketing', '/', search);
-    }
-    if (isTrustPath(path)) return redirectToSolHost('trust', path, search);
-    if (isMarketingPath(path)) {
-      return redirectToSolHost('marketing', path, search);
-    }
-    return redirectToSolHost('app', path, search);
-  }
-
-  if (role === 'trust') {
-    if (isTrustPath(path)) return null;
-    if (path === '/' || path.startsWith('/#')) {
-      return redirectToSolHost('marketing', '/', search);
-    }
-    if (isDocsPath(path)) return redirectToSolHost('docs', path, search);
-    if (isMarketingPath(path)) {
-      return redirectToSolHost('marketing', path, search);
-    }
-    return redirectToSolHost('app', path, search);
-  }
-
-  // app.
-  if (path === '/' || path.startsWith('/#')) {
-    return redirectToSolHost('marketing', path === '/' ? '/' : path, search);
-  }
-  if (isDocsPath(path)) return redirectToSolHost('docs', path, search);
-  if (isTrustPath(path)) return redirectToSolHost('trust', path, search);
+  return rule.fallback ? redirectToSolHost(rule.fallback, path, search) : null;
   return null;
 }
 
@@ -202,7 +194,7 @@ export default clerkMiddleware(async (auth, req) => {
   // must not bounce them to the login page. Every handler on these paths
   // still enforces auth itself (verifyProfessorApiToken / getOrCreateUser).
   const authHeader = req.headers.get('authorization') ?? '';
-  const hasApiToken = authHeader.startsWith('Bearer sol_pat_');
+  const hasApiToken = hasApiTokenHeader(authHeader);
   const loadTest = isLoadTestRequest(req.headers);
 
   // CSRF: cookie-authenticated mutating /api/* must be same-origin.
@@ -235,7 +227,6 @@ export default clerkMiddleware(async (auth, req) => {
     );
   }
 
-  if (appPath === '/api/mcp' || appPath.startsWith('/api/mcp/')) return;
   if (hasApiToken && appPath.startsWith('/api/professor/')) return;
 
   // k6 impersonation: skip the Clerk login redirect. The Node handler still
@@ -243,65 +234,9 @@ export default clerkMiddleware(async (auth, req) => {
   // when VERCEL_ENV=production (see lib/loadTestAuth.ts).
   if (loadTest) return;
 
-  // OAuth discovery metadata (RFC 8414 / RFC 9728) must be fetchable without
-  // a session — Claude.ai / ChatGPT read it before any user is signed in.
-  // (/.well-known/* rewrites above bypass this; this covers direct hits.)
-  if (appPath.startsWith('/well-known/')) return;
-
-  const isPublic =
-    appPath === '/' ||
-    // File-based metadata icon routes (extensionless dynamic ones like
-    // /apple-icon aren't excluded by the static-asset matcher below).
-    appPath === '/apple-icon' ||
-    appPath.startsWith('/apple-icon/') ||
-    appPath === '/icon' ||
-    appPath.startsWith('/icon/') ||
-    appPath === '/opengraph-image' ||
-    appPath.startsWith('/opengraph-image/') ||
-    appPath === '/twitter-image' ||
-    appPath.startsWith('/twitter-image/') ||
-    appPath === '/docs' ||
-    appPath.startsWith('/docs/') ||
-    appPath === '/docs.md' ||
-    appPath === '/blog' ||
-    appPath.startsWith('/blog/') ||
-    appPath === '/blog.md' ||
-    appPath === '/privacy' ||
-    appPath === '/terms' ||
-    appPath === '/security' ||
-    appPath === '/dmca' ||
-    appPath === '/unsubscribe' ||
-    appPath === '/api/demo-request' ||
-    appPath === '/llms.txt' ||
-    appPath === '/robots.txt' ||
-    appPath === '/sitemap.xml' ||
-    appPath === '/login' ||
-    appPath.startsWith('/login/') ||
-    appPath === '/signup' ||
-    appPath.startsWith('/signup/') ||
-    // Workspace owner claim: page shows sign-in CTA; POST still requires session.
-    appPath === '/workspaces/claim' ||
-    appPath.startsWith('/workspaces/claim/') ||
-    appPath === '/api/user' ||
-    appPath.startsWith('/api/user/') ||
-    appPath === '/api/stripe/product' ||
-    appPath.startsWith('/api/stripe/product') ||
-    appPath.startsWith('/api/stripe/webhook') ||
-    appPath.startsWith('/api/clerk/webhook') ||
-    // LTI 1.3 OIDC login/launch/JWKS (Canvas posts cross-site; no Clerk session yet).
-    appPath === '/api/lti' ||
-    appPath.startsWith('/api/lti/') ||
-    appPath === '/lti/bridge' ||
-    appPath.startsWith('/lti/bridge/') ||
-    // Cron authenticates with CRON_SECRET in the route handler — must not
-    // bounce to /login before that check runs.
-    appPath === '/api/cron' ||
-    appPath.startsWith('/api/cron/') ||
-    // Inngest Dev Server / Cloud (signed requests; no Clerk session).
-    appPath === '/api/inngest' ||
-    appPath.startsWith('/api/inngest/');
-
-  if (isPublic) return;
+  // Public pages, public APIs and machine-called APIs (lib/routes.ts). MCP,
+  // cron, webhooks and LTI authenticate inside their handlers.
+  if (isPublicPath(appPath)) return;
 
   const { userId } = await auth();
   if (!userId) {

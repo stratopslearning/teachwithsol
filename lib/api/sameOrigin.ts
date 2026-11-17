@@ -12,6 +12,13 @@
  */
 
 import {
+  BOOK_UPLOAD_API_PATHS,
+  hasApiTokenHeader,
+  LARGE_UPLOAD_API_PATHS,
+  MACHINE_API_PATHS,
+  matchesPath,
+} from '@/lib/routes';
+import {
   MAX_BOOK_UPLOAD_BYTES,
   MAX_ZIP_UPLOAD_BYTES,
   MULTIPART_HEADROOM_BYTES,
@@ -40,20 +47,12 @@ export const MIDDLEWARE_BOOK_UPLOAD_MAX_BODY_BYTES =
 
 /** Paths that may receive multipart file uploads up to the materials budget. */
 export function isLargeUploadApiPath(appPath: string): boolean {
-  if (appPath === '/api/professor/materials') return true;
-  if (appPath.startsWith('/api/professor/materials/')) return true;
-  if (appPath === '/api/professor/knowledge/documents') return true;
-  if (appPath.startsWith('/api/professor/knowledge/documents/')) return true;
-  if (appPath === '/api/professor/interactive/import') return true;
-  if (appPath.startsWith('/api/professor/interactive/import/')) return true;
-  return false;
+  return matchesPath(appPath, LARGE_UPLOAD_API_PATHS);
 }
 
 /** Paths that may receive book EPUB/XML uploads up to the book budget. */
 export function isBookUploadApiPath(appPath: string): boolean {
-  if (appPath === '/api/professor/books') return true;
-  if (appPath.startsWith('/api/professor/books/')) return true;
-  return false;
+  return matchesPath(appPath, BOOK_UPLOAD_API_PATHS);
 }
 
 export function middlewareBodyLimitBytes(appPath: string): number {
@@ -71,17 +70,7 @@ export function isMutatingMethod(method: string): boolean {
  * must not require a same-origin Origin/Referer.
  */
 export function isOriginExemptPath(appPath: string): boolean {
-  if (appPath.startsWith('/api/stripe/webhook')) return true;
-  if (appPath.startsWith('/api/clerk/webhook')) return true;
-  if (appPath === '/api/cron' || appPath.startsWith('/api/cron/')) return true;
-  if (appPath === '/api/mcp' || appPath.startsWith('/api/mcp/')) return true;
-  // Canvas LTI OIDC form_post + tool JWKS (no browser cookie session yet).
-  if (appPath === '/api/lti' || appPath.startsWith('/api/lti/')) return true;
-  // Inngest Dev Server / Cloud invokes this route without our browser Origin.
-  if (appPath === '/api/inngest' || appPath.startsWith('/api/inngest/')) {
-    return true;
-  }
-  return false;
+  return matchesPath(appPath, MACHINE_API_PATHS);
 }
 
 /**
@@ -198,18 +187,9 @@ export function shouldEnforceSameOrigin(
   if (!appPath.startsWith('/api/')) return false;
   if (isOriginExemptPath(appPath)) return false;
   if (isLoadTest) return false;
-  if (authHeader?.startsWith('Bearer sol_pat_')) return false;
-  // Clerk OAuth access tokens on professor routes (rare; MCP is already exempt)
-  if (
-    authHeader?.startsWith('Bearer ') &&
-    !authHeader.startsWith('Bearer sol_pat_') &&
-    appPath.startsWith('/api/professor/')
-  ) {
-    // Could be a Clerk session JWT sent as Bearer: still cookie-primary for
-    // dashboard. Only skip when it looks like a PAT (handled above). Keep
-    // enforcing for cookie sessions; Bearer without sol_pat_ still goes
-    // through Clerk cookie path in practice. Do not exempt.
-  }
+  // Personal access tokens carry no cookie. Other Bearer values (e.g. a
+  // Clerk session JWT) are still checked.
+  if (hasApiTokenHeader(authHeader)) return false;
   return true;
 }
 

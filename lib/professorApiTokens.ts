@@ -13,10 +13,11 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '@/app/db';
 import { professorApiTokens, users } from '@/app/db/schema';
 import { withTenant } from '@/lib/db/tenantContext';
+import { TOKEN_PREFIX } from '@/lib/routes';
 import { findInUserTenants, readInUserTenants } from '@/lib/db/userTenants';
 import { toUserData, type UserData } from '@/lib/getOrCreateUser';
 
-export const TOKEN_PREFIX = 'sol_pat_';
+export { TOKEN_PREFIX };
 
 export const TOKEN_SCOPES = [
   'read',
