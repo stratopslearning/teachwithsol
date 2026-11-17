@@ -6,7 +6,7 @@ import { QuizCreationForm } from "@/components/quiz/QuizCreationForm";
 import { withBasePath } from "@/lib/basePath";
 import { fetchSectionsByIds } from "@/lib/db/entityScopedReads";
 import { listTeachingSectionIds } from "@/lib/professor/graderSections";
-import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
+import { partitionEnrollmentsByConclusion } from "@/lib/sections/availability";
 
 export default async function CreateQuizPage({
   searchParams,

@@ -1,4 +1,4 @@
-import { SECTION_CONCLUDED_MESSAGE } from '@/lib/sectionAvailability';
+import { SECTION_CONCLUDED_MESSAGE } from '@/lib/sections/availability';
 
 export type QuizBlockCode =
   | 'quiz_not_started'

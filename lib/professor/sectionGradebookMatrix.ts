@@ -6,7 +6,7 @@ import type { GradebookLearnerRow } from '@/components/sections/SectionGradebook
 import { fetchAttemptScoreRowsForSections } from '@/lib/db/facultyStudentReads';
 import { fetchSectionById } from '@/lib/db/entityScopedReads';
 import { comparePersonsByLastName } from '@/lib/personName';
-import { loadSectionDetailData } from '@/lib/sectionDetailData';
+import { loadSectionDetailData } from '@/lib/sections/detailData';
 
 export type SectionGradebookMatrix = {
   sectionId: string;

@@ -13,8 +13,8 @@ import {
   getBlogMtime,
   getBlogSlugs,
   kindLabel,
-} from "@/lib/blog";
-import { socialMetadata, titledPage } from "@/lib/pageMeta";
+} from "@/lib/marketing/blog";
+import { socialMetadata, titledPage } from "@/lib/marketing/pageMeta";
 import { absoluteUrl } from "@/lib/siteUrl";
 
 type PageProps = {

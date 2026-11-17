@@ -4,7 +4,7 @@ import {
   buildDocMarkdown,
   buildDocsIndexMarkdown,
   getDocBySlug,
-} from '@/lib/docs';
+} from '@/lib/marketing/docs';
 
 type RouteContext = {
   params: Promise<{ slug: string }>;

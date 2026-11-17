@@ -7,7 +7,7 @@ import {
   listChapterSectionProgressDefiner,
 } from '@/lib/db/studentReadDefiners';
 import { assertStudentCanAccessLesson } from '@/lib/learning/access';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
+import { isSectionConcluded } from '@/lib/sections/availability';
 
 export type StudentLessonListItem = {
   id: string;

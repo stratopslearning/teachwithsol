@@ -7,7 +7,7 @@ import {
   LEGAL_ENTITY,
   publicPrivacyContactEmail,
   legalMailingLines,
-} from "@/lib/legal";
+} from "@/lib/marketing/legal";
 import { absoluteUrl } from "@/lib/siteUrl";
 
 export const metadata: Metadata = {

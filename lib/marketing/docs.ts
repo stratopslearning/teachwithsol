@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { blogLlmsEntries } from '@/lib/blog';
+import { blogLlmsEntries } from '@/lib/marketing/blog';
 import { absoluteUrl } from '@/lib/siteUrl';
 
 export type DocAudience = 'faculty' | 'students';

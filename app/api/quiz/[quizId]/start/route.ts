@@ -6,21 +6,21 @@ import { db } from '@/app/db';
 import { attempts } from '@/app/db/schema';
 import { fetchSectionById } from '@/lib/db/entityScopedReads';
 import { withTenant } from '@/lib/db/tenantContext';
-import { autoSubmitInProgressAttempt } from '@/lib/autoSubmitInProgressAttempt';
+import { autoSubmitInProgressAttempt } from '@/lib/quiz/autoSubmit';
 import { ApiError, apiErrorResponse } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import { logQuizAttemptAudit } from '@/lib/audit';
-import { loadExamContext, missingExamResource } from '@/lib/examContext';
+import { loadExamContext, missingExamResource } from '@/lib/quiz/examContext';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { assertQuizAccess, quizAccessError } from '@/lib/quiz/accessPolicy';
-import { resolveAttemptSectionId } from '@/lib/resolveAttemptSection';
-import { shouldForceAutoSubmitInProgress } from '@/lib/shouldForceAutoSubmit';
+import { resolveAttemptSectionId } from '@/lib/quiz/attemptSection';
+import { shouldForceAutoSubmitInProgress } from '@/lib/quiz/forceAutoSubmit';
 import {
   getRemainingSeconds,
   isTimeLimitExceeded,
-} from '@/lib/quizTimeLimit';
+} from '@/lib/quiz/timeLimit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;

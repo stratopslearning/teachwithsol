@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   redactAttemptFeedbackForViewer,
   stripQuestionSecrets,
-} from '@/lib/quizAccess';
+} from '@/lib/quiz/access';
 
 describe('redactAttemptFeedbackForViewer', () => {
   const attempt = {

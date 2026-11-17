@@ -7,7 +7,7 @@ import {
   shouldEnforceSameOrigin,
 } from '@/lib/api/sameOrigin';
 import { BASE_PATH, withBasePath } from '@/lib/basePath';
-import { CAL_BOOKING_URL } from '@/lib/calBooking';
+import { CAL_BOOKING_URL } from '@/lib/marketing/calBooking';
 import { hasApiTokenHeader, isPublicPath } from '@/lib/routes';
 import { clerkSatelliteProviderProps } from '@/lib/clerkMultiDomain';
 import { isLoadTestRequest } from '@/lib/loadTestAuth';

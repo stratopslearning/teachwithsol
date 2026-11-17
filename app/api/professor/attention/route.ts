@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
-import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
+import { getAttentionItemsForProfessor } from '@/lib/professor/attention';
 import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';

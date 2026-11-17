@@ -5,7 +5,7 @@
  *   - Vercel's Hobby plan caps cron frequency at once per day, so the
  *     real-time recovery of pending grades doesn't depend on this cron.
  *     The submit handler and the student/professor view pages each enqueue
- *     grading via `lib/backgroundRetry.ts` (Inngest or `after()`), which
+ *     grading via `lib/quiz/backgroundRetry.ts` (Inngest or `after()`), which
  *     makes the system self-healing within seconds of any user activity.
  *   - This cron is a long-tail safety net: it sweeps up attempts that have
  *     been sitting for hours with no user activity (e.g. nightly when
@@ -21,11 +21,11 @@ import { listAllTenantIds } from '@/lib/db/allTenants';
 import { withTenant } from '@/lib/db/tenantContext';
 import { attempts } from '@/app/db/schema';
 import { isCronAuthorized } from '@/lib/api/cronAuth';
-import { sweepStaleInProgressAttempts } from '@/lib/autoSubmitInProgressAttempt';
+import { sweepStaleInProgressAttempts } from '@/lib/quiz/autoSubmit';
 import {
   gradePendingForAttempt,
   type GradePendingResult,
-} from '@/lib/pendingGrader';
+} from '@/lib/grading/pendingGrader';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;

@@ -11,13 +11,13 @@ import {
   type gradeOverrides as gradeOverridesTable,
 } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
-import { computeScoreFromRubric } from '@/lib/gradingRubric';
-import type { RubricCriterion, StoredFeedback } from '@/lib/gradingTypes';
+import { computeScoreFromRubric } from '@/lib/grading/rubric';
+import type { RubricCriterion, StoredFeedback } from '@/lib/grading/types';
 import {
   buildLegacyQuestionKeyMap,
   resolveAttemptAnswer,
   resolveAttemptFeedback,
-} from '@/lib/quizAttemptAnswers';
+} from '@/lib/quiz/attemptAnswers';
 import { scoreOutcome } from '@/lib/quiz/score';
 import { loadAttemptForGrading, loadQuizQuestions } from '@/lib/quiz/gradingData';
 import { withTenant } from '@/lib/db/tenantContext';
@@ -369,7 +369,7 @@ export async function insertGradeOverride(
         keyMap,
       );
       const { recordOverrideExample } = await import(
-        '@/lib/gradingOverrideExamples'
+        '@/lib/grading/overrideExamples'
       );
       await recordOverrideExample({
         tenantId,

@@ -2,7 +2,7 @@ import { ChevronRight } from '@/components/icons';
 
 import { SolMark } from '@/components/brand/SolMark';
 import { withBasePath } from '@/lib/basePath';
-import type { DocMeta } from '@/lib/docs';
+import type { DocMeta } from '@/lib/marketing/docs';
 import { cn } from '@/lib/utils';
 
 export function DocsNav({

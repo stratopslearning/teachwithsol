@@ -6,7 +6,7 @@ import UnassignDiscussionButton from '@/app/dashboard/professor/sections/[sectio
 import UnassignQuizButton from '@/app/dashboard/professor/sections/[sectionId]/UnassignQuizButton';
 import { listCourseActivities } from '@/lib/assignments';
 import { entityIdForActivity } from '@/lib/professor/activityEntity';
-import type { SectionDetailData } from '@/lib/sectionDetailData';
+import type { SectionDetailData } from '@/lib/sections/detailData';
 
 /**
  * Shared section roster / invites / coursework body used by the course hub

@@ -2,7 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { requireProfessor } from "@/lib/auth";
 import { withBasePath } from "@/lib/basePath";
-import { listProfessorApiTokens } from "@/lib/professorApiTokens";
+import { listProfessorApiTokens } from "@/lib/professor/apiTokens";
 
 import AgentAccessClient from "./AgentAccessClient";
 

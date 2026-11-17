@@ -26,7 +26,7 @@ import {
   requireTeachingApi,
 } from '@/lib/api/sessionAuth';
 import type { UserData } from '@/lib/getOrCreateUser';
-import type { TokenScope } from '@/lib/professorApiTokens';
+import type { TokenScope } from '@/lib/professor/apiTokens';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 
 /**

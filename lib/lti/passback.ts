@@ -23,7 +23,7 @@ import {
   ensurePlatformFromEnv,
   resolveLtiWorkspaceId,
 } from '@/lib/lti/platform';
-import { isPendingStatus, type StoredFeedback } from '@/lib/gradingTypes';
+import { isPendingStatus, type StoredFeedback } from '@/lib/grading/types';
 
 const MAX_JOB_ATTEMPTS = 8;
 

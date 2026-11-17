@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import type { RubricCriterion } from '@/lib/gradingTypes';
+import type { RubricCriterion } from '@/lib/grading/types';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 import { useRouter } from 'next/navigation';
 

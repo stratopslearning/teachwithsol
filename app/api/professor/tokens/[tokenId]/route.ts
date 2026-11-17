@@ -4,7 +4,7 @@ import { ApiError, apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { userCanAccessTeachingArea } from '@/lib/authz';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
-import { revokeProfessorApiToken } from '@/lib/professorApiTokens';
+import { revokeProfessorApiToken } from '@/lib/professor/apiTokens';
 
 export const dynamic = 'force-dynamic';
 

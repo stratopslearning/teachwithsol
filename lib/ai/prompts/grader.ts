@@ -1,6 +1,6 @@
 import { fillPrompt, PROMPT_VERSION, withCommon } from '@/lib/ai/prompts/common';
 import type { CoursePromptContext } from '@/lib/ai/prompts/courseContext';
-import type { RubricCriterion } from '@/lib/gradingTypes';
+import type { RubricCriterion } from '@/lib/grading/types';
 
 export { PROMPT_VERSION as GRADING_PROMPT_VERSION };
 

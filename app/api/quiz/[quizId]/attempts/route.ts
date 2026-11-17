@@ -5,7 +5,7 @@ import { attempts, assignments, quizzes } from '@/app/db/schema';
 import {
   professorCanAccessQuiz,
   redactAttemptFeedbackForViewer,
-} from '@/lib/quizAccess';
+} from '@/lib/quiz/access';
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { fetchQuizById } from '@/lib/db/entityScopedReads';

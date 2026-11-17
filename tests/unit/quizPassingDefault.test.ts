@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ensureQuizAssignmentDefaults } from '@/lib/authoring/schedule';
-import { DEFAULT_PASSING_SCORE, quizCreateBaseSchema } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE, quizCreateBaseSchema } from '@/lib/quiz/schemas';
 
 // Regression: authored quizzes defaulted to 70% while hand-built quizzes,
 // grading and the DB column defaulted to 60%.

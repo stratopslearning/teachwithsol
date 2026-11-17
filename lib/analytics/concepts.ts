@@ -13,11 +13,11 @@ import {
 import { suppressConceptRows } from '@/lib/analytics/kAnonymity';
 import { activeOnly } from '@/lib/db/filters';
 import type { AuthUser } from '@/lib/getOrCreateUser';
-import { fetchSubmittedAttemptsForProfessorSections } from '@/lib/professorVisibleAttempts';
+import { fetchSubmittedAttemptsForProfessorSections } from '@/lib/professor/visibleAttempts';
 import {
   computeQuestionStatsForAttempts,
   type QuizQuestionForStats,
-} from '@/lib/quizQuestionStats';
+} from '@/lib/quiz/questionStats';
 
 export async function getConceptMastery(
   user: AuthUser,

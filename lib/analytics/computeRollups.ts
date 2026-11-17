@@ -8,8 +8,8 @@ import {
   sections,
 } from '@/app/db/schema';
 import { withTenant } from '@/lib/db/tenantContext';
-import type { RubricMatch, StoredFeedback } from '@/lib/gradingTypes';
-import { parseAttemptJsonRecord } from '@/lib/quizQuestionStats';
+import type { RubricMatch, StoredFeedback } from '@/lib/grading/types';
+import { parseAttemptJsonRecord } from '@/lib/quiz/questionStats';
 
 export type CriterionMissRate = {
   criterionId: string;

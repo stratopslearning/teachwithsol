@@ -2,12 +2,12 @@ import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import { authorize } from '@/lib/authz';
-import { scheduleAttemptRetry } from '@/lib/backgroundRetry';
-import { loadExamContext, missingExamResource } from '@/lib/examContext';
-import { mergeAttemptAnswers } from '@/lib/shouldForceAutoSubmit';
-import { resolveAttemptSectionId } from '@/lib/resolveAttemptSection';
+import { scheduleAttemptRetry } from '@/lib/quiz/backgroundRetry';
+import { loadExamContext, missingExamResource } from '@/lib/quiz/examContext';
+import { mergeAttemptAnswers } from '@/lib/quiz/forceAutoSubmit';
+import { resolveAttemptSectionId } from '@/lib/quiz/attemptSection';
 import { assertQuizAccess, MaxAttemptsExceededError } from '@/lib/quiz/accessPolicy';
-import { scoreSubmittedQuestions } from '@/lib/scoreSubmittedQuestions';
+import { scoreSubmittedQuestions } from '@/lib/grading/scoreSubmittedQuestions';
 import { loadQuizQuestions } from '@/lib/quiz/gradingData';
 import { parseJsonb, rowsFromExecute } from '@/lib/db/rows';
 import { maybeEncryptAttemptAnswers } from '@/lib/crypto/fieldEncryption';

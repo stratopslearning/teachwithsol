@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { QUIZ_LIMITS, quizCreateBaseSchema } from '@/lib/quizSchemas';
+import { QUIZ_LIMITS, quizCreateBaseSchema } from '@/lib/quiz/schemas';
 
 const validQuestion = {
   type: 'TRUE_FALSE' as const,
@@ -53,7 +53,7 @@ describe('quizUpdateSchema (shared by professor and admin update)', () => {
   };
 
   it('treats null description / time limit (from edit forms) as unset', async () => {
-    const { quizUpdateSchema } = await import('@/lib/quizSchemas');
+    const { quizUpdateSchema } = await import('@/lib/quiz/schemas');
     const out = quizUpdateSchema.parse({ ...base, description: null, timeLimit: null });
     expect(out.description).toBeUndefined();
     expect(out.timeLimit).toBeUndefined();
@@ -61,13 +61,13 @@ describe('quizUpdateSchema (shared by professor and admin update)', () => {
   });
 
   it('accepts admin-set attempt limits up to 20, not beyond', async () => {
-    const { quizUpdateSchema } = await import('@/lib/quizSchemas');
+    const { quizUpdateSchema } = await import('@/lib/quiz/schemas');
     expect(quizUpdateSchema.safeParse({ ...base, maxAttempts: 20 }).success).toBe(true);
     expect(quizUpdateSchema.safeParse({ ...base, maxAttempts: 21 }).success).toBe(false);
   });
 
   it('rejects an end date before the start date', async () => {
-    const { quizUpdateSchema } = await import('@/lib/quizSchemas');
+    const { quizUpdateSchema } = await import('@/lib/quiz/schemas');
     const r = quizUpdateSchema.safeParse({ ...base, endDate: '2025-12-01T00:00:00.000Z' });
     expect(r.success).toBe(false);
   });

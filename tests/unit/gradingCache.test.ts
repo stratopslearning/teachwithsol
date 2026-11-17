@@ -18,7 +18,7 @@ vi.mock('@/app/db', () => ({
 import {
   computeCacheKey,
   normalizeAnswerForCache,
-} from '@/lib/gradingCache';
+} from '@/lib/grading/cache';
 
 describe('normalizeAnswerForCache', () => {
   it('lowercases', () => {
@@ -84,7 +84,7 @@ describe('computeCacheKey', () => {
   });
 
   it('invalidates when SCORING_VERSION changes', async () => {
-    const { SCORING_VERSION } = await import('@/lib/gradingCache');
+    const { SCORING_VERSION } = await import('@/lib/grading/cache');
     expect(SCORING_VERSION).toBeGreaterThan(1);
   });
 

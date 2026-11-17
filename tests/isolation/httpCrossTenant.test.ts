@@ -21,7 +21,7 @@ describe.skipIf(skip)('http cross-tenant (authz layer)', () => {
   let fixtureB: TenantFixture;
   let adminNoGrant: { id: string; platformStaff: boolean };
   let authorize: typeof import('@/lib/authz/authorize').authorize;
-  let professorCanAccessQuiz: typeof import('@/lib/quizAccess').professorCanAccessQuiz;
+  let professorCanAccessQuiz: typeof import('@/lib/quiz/access').professorCanAccessQuiz;
 
   beforeAll(async () => {
     process.env.DATABASE_URL = process.env.TEST_DATABASE_URL!;
@@ -39,7 +39,7 @@ describe.skipIf(skip)('http cross-tenant (authz layer)', () => {
 
     const authz = await import('@/lib/authz/authorize');
     authorize = authz.authorize;
-    const quizAccess = await import('@/lib/quizAccess');
+    const quizAccess = await import('@/lib/quiz/access');
     professorCanAccessQuiz = quizAccess.professorCanAccessQuiz;
   });
 

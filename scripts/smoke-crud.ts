@@ -131,7 +131,7 @@ async function main() {
         where: eq(schema.sections.id, sectionId),
       });
       if (!concluded?.endsAt) throw new Error('endsAt not persisted');
-      const { isSectionConcluded } = await import('../lib/sectionAvailability');
+      const { isSectionConcluded } = await import('../lib/sections/availability');
       if (!isSectionConcluded(concluded)) {
         throw new Error('section should be concluded after past endsAt');
       }

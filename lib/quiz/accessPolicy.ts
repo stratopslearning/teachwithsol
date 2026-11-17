@@ -6,9 +6,9 @@
  * ApiError), so routes never need to match error text.
  */
 import { ApiError } from '@/lib/api/errors';
-import { getQuizAvailability } from '@/lib/quizAvailability';
-import { getElapsedMinutes, isTimeLimitExceeded } from '@/lib/quizTimeLimit';
-import { isSectionConcluded, SECTION_CONCLUDED_MESSAGE } from '@/lib/sectionAvailability';
+import { getQuizAvailability } from '@/lib/quiz/availability';
+import { getElapsedMinutes, isTimeLimitExceeded } from '@/lib/quiz/timeLimit';
+import { isSectionConcluded, SECTION_CONCLUDED_MESSAGE } from '@/lib/sections/availability';
 import { normalizeDatabaseDate } from '@/lib/utils';
 
 /**

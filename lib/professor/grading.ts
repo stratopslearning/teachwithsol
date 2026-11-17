@@ -20,11 +20,11 @@ import { logAudit, logGradebookAccess } from '@/lib/audit';
 import { activeOnly } from '@/lib/db/filters';
 import type { UserData } from '@/lib/getOrCreateUser';
 import { comparePersonsByLastName } from '@/lib/personName';
-import { buildGradebookScoresForSection, fetchSubmittedAttemptsForProfessorSections } from '@/lib/professorVisibleAttempts';
+import { buildGradebookScoresForSection, fetchSubmittedAttemptsForProfessorSections } from '@/lib/professor/visibleAttempts';
 import {
   accessibleQuizSectionIds,
   professorCanAccessQuiz,
-} from '@/lib/quizAccess';
+} from '@/lib/quiz/access';
 import { assertTeachesSection } from '@/lib/professor/sections';
 import { loadAttemptForGrading } from '@/lib/quiz/gradingData';
 import { withTenant } from '@/lib/db/tenantContext';

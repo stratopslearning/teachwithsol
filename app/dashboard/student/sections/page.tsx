@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { appPath, withBasePath } from "@/lib/basePath";
 import { requireStudent } from "@/lib/auth";
 import { fetchUserEnrollmentsDetail } from "@/lib/db/facultyStudentReads";
-import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
+import { partitionEnrollmentsByConclusion } from "@/lib/sections/availability";
 
 import StudentSectionsPageContentClient from "./StudentSectionsPageContentClient";
 

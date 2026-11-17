@@ -25,8 +25,8 @@ import {
   fetchUserEnrollmentsDetail,
   fetchUserSubmittedAttempts,
 } from '@/lib/db/facultyStudentReads';
-import { partitionEnrollmentsByConclusion } from '@/lib/sectionAvailability';
-import { isQuizListedForStudents } from '@/lib/quizAvailability';
+import { partitionEnrollmentsByConclusion } from '@/lib/sections/availability';
+import { isQuizListedForStudents } from '@/lib/quiz/availability';
 
 export default async function StudentDashboard() {
   const user = await requireStudent();

@@ -24,7 +24,7 @@ describe.skipIf(skip)('tenant isolation', () => {
   let fixtureA: TenantFixture;
   let fixtureB: TenantFixture;
   let authorize: typeof import('@/lib/authz/authorize').authorize;
-  let professorCanAccessQuiz: typeof import('@/lib/quizAccess').professorCanAccessQuiz;
+  let professorCanAccessQuiz: typeof import('@/lib/quiz/access').professorCanAccessQuiz;
 
   beforeAll(async () => {
     process.env.DATABASE_URL = process.env.TEST_DATABASE_URL!;
@@ -38,7 +38,7 @@ describe.skipIf(skip)('tenant isolation', () => {
 
     const authz = await import('@/lib/authz/authorize');
     authorize = authz.authorize;
-    const quizAccess = await import('@/lib/quizAccess');
+    const quizAccess = await import('@/lib/quiz/access');
     professorCanAccessQuiz = quizAccess.professorCanAccessQuiz;
   });
 

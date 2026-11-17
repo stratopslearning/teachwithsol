@@ -6,7 +6,7 @@ import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { authorizeOnSection } from '@/lib/authz/courseAccess';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
-import { regradeAttempt } from '@/lib/regradeAttempt';
+import { regradeAttempt } from '@/lib/grading/regradeAttempt';
 import { loadAttemptForGrading } from '@/lib/quiz/gradingData';
 
 export const dynamic = 'force-dynamic';

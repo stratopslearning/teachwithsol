@@ -26,7 +26,7 @@ import {
   setInteractiveVisibility,
 } from '@/lib/interactives';
 import type { AuthUser } from '@/lib/getOrCreateUser';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quiz/schemas';
 import type { OutlineItemType } from '@/app/db/enums';
 
 function quizWindowIso() {

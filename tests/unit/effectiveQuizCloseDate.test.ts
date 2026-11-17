@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { effectiveQuizCloseDate } from '@/lib/quizAvailability';
+import { effectiveQuizCloseDate } from '@/lib/quiz/availability';
 
 describe('effectiveQuizCloseDate', () => {
   it('prefers the quiz end date', () => {

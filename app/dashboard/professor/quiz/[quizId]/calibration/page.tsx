@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { fetchQuizById } from '@/lib/db/entityScopedReads';
 import { appPath, withBasePath } from '@/lib/basePath';
-import { userCanWriteQuiz } from '@/lib/quizAccess';
+import { userCanWriteQuiz } from '@/lib/quiz/access';
 import { getCalibrationStubForQuiz } from '@/lib/quiz/calibrationStub';
 import { appRedirect } from '@/lib/serverRedirect';
 

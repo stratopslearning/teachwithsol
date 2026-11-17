@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { ApiError } from '@/lib/api/errors';
-import { userCanWriteQuiz } from '@/lib/quizAccess';
+import { userCanWriteQuiz } from '@/lib/quiz/access';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import {
   approveQuestionRubric,

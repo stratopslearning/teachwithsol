@@ -7,7 +7,7 @@ import { db } from '@/app/db';
 import { gradingOverrideExamples } from '@/app/db/schema';
 import { minimizeStudentTextForAi } from '@/lib/ai/minimizeEducationPayload';
 import { wrapStudentData } from '@/lib/ai/structured';
-import type { RubricMatch } from '@/lib/gradingTypes';
+import type { RubricMatch } from '@/lib/grading/types';
 
 const MAX_SNIPPET = 1_200;
 const MAX_EXAMPLES = 5;

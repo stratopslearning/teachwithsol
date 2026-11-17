@@ -19,8 +19,8 @@ vi.mock('@/app/db', () => ({
   },
 }));
 
-vi.mock('@/lib/gradingCache', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/gradingCache')>();
+vi.mock('@/lib/grading/cache', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/grading/cache')>();
   return { ...actual, lookupCachedGrading: mocks.lookupCachedGrading };
 });
 
@@ -29,15 +29,15 @@ vi.mock('@/lib/grading', async (importOriginal) => {
   return { ...actual, gradeMultipleQuestions: mocks.gradeMultipleQuestions };
 });
 
-vi.mock('@/lib/gradingRubric', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/gradingRubric')>();
+vi.mock('@/lib/grading/rubric', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/grading/rubric')>();
   return { ...actual, getOrDeriveRubric: mocks.getOrDeriveRubric };
 });
 
 import { gradeMultipleQuestions } from '@/lib/grading';
-import { getOrDeriveRubric } from '@/lib/gradingRubric';
-import { scoreSubmittedQuestions } from '@/lib/scoreSubmittedQuestions';
-import { GRADING_MODEL_VERSION } from '@/lib/gradingTypes';
+import { getOrDeriveRubric } from '@/lib/grading/rubric';
+import { scoreSubmittedQuestions } from '@/lib/grading/scoreSubmittedQuestions';
+import { GRADING_MODEL_VERSION } from '@/lib/grading/types';
 
 const rubric = [
   { id: 'c1', description: 'Mentions long-term supplier relationships', weight: 1 },

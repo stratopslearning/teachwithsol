@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 import { ApiError } from '@/lib/api/errors';
 import type { ProfessorApiAuth } from '@/lib/api/professorAuth';
-import type { TokenScope } from '@/lib/professorApiTokens';
+import type { TokenScope } from '@/lib/professor/apiTokens';
 import {
   getProfessorSectionDetail,
   listProfessorSections,
@@ -52,12 +52,12 @@ import {
   updateDiscussion,
   updateQuiz,
 } from '@/lib/professor/mutations';
-import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
+import { getAttentionItemsForProfessor } from '@/lib/professor/attention';
 import {
   DEFAULT_PASSING_SCORE,
   isoDateTimeRequired,
   quizWindowSuperRefine,
-} from '@/lib/quizSchemas';
+} from '@/lib/quiz/schemas';
 import {
   addMaterialFromUrl,
   getCourseMaterial,

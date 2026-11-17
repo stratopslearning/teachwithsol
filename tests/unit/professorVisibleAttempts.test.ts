@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('professorVisibleAttempts exports', () => {
   it('exports section-scoped helpers', async () => {
-    const mod = await import('@/lib/professorVisibleAttempts');
+    const mod = await import('@/lib/professor/visibleAttempts');
     expect(typeof mod.fetchSubmittedAttemptsForProfessorSections).toBe('function');
     expect(typeof mod.buildGradebookScoresForSection).toBe('function');
   });
@@ -11,7 +11,7 @@ describe('professorVisibleAttempts exports', () => {
 describe('buildGradebookScoresForSection', () => {
   it('returns empty object when quiz or student lists are empty', async () => {
     const { buildGradebookScoresForSection } = await import(
-      '@/lib/professorVisibleAttempts'
+      '@/lib/professor/visibleAttempts'
     );
     await expect(
       buildGradebookScoresForSection({

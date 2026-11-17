@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { ChevronRight } from '@/components/icons';
 
 import { DocsNav } from '@/components/docs/DocsNav';
-import type { DocMeta } from '@/lib/docs';
+import type { DocMeta } from '@/lib/marketing/docs';
 
 export function DocsLayout({
   docs,

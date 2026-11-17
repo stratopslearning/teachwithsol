@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 import { LegalShell } from '@/components/legal/LegalShell';
 import { withBasePath } from '@/lib/basePath';
-import { socialMetadata, titledPage } from '@/lib/pageMeta';
+import { socialMetadata, titledPage } from '@/lib/marketing/pageMeta';
 import { absoluteUrl } from '@/lib/siteUrl';
 
 const termsDescription =

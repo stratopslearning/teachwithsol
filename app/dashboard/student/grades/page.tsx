@@ -5,7 +5,7 @@ import { withBasePath } from "@/lib/basePath";
 import { requireStudent } from "@/lib/auth";
 import { fetchUserEnrollmentsDetail } from "@/lib/db/facultyStudentReads";
 import { fetchStudentGradebookAttemptsDefiner } from "@/lib/db/studentWriteDefiners";
-import { isSectionConcluded, partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
+import { isSectionConcluded, partitionEnrollmentsByConclusion } from "@/lib/sections/availability";
 
 import StudentGradesTableClient from "./StudentGradesTableClient";
 import StudentCompletionsClient from "./StudentCompletionsClient";

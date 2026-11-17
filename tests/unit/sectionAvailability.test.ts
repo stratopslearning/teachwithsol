@@ -4,7 +4,7 @@ import {
   isSectionConcluded,
   partitionBySectionConclusion,
   partitionEnrollmentsByConclusion,
-} from '@/lib/sectionAvailability';
+} from '@/lib/sections/availability';
 
 describe('isSectionConcluded', () => {
   const now = new Date('2026-08-15T12:00:00.000Z');

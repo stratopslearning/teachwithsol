@@ -10,7 +10,7 @@ import {
   type BindingRole,
   type Permission,
 } from '@/lib/authz/permissions';
-import type { TokenScope } from '@/lib/professorApiTokens';
+import type { TokenScope } from '@/lib/professor/apiTokens';
 
 /** A token scope is usable when the user holds ANY of these permissions. */
 export const TOKEN_SCOPE_PERMISSIONS: Record<TokenScope, readonly Permission[]> = {

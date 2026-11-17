@@ -27,7 +27,7 @@ vi.mock('@/app/db', () => ({
 }));
 
 import { gradeShortAnswer } from '@/lib/grading';
-import { fallbackRubric } from '@/lib/gradingRubric';
+import { fallbackRubric } from '@/lib/grading/rubric';
 
 const create = mocks.create;
 

@@ -2,7 +2,7 @@ import { quizzes, sections } from '@/app/db/schema';
 import { fetchAdminWorkspaceDirectory } from '@/lib/admin/platformReads';
 import { activeOnly } from '@/lib/db/filters';
 import { withTenant } from '@/lib/db/tenantContext';
-import { partitionBySectionConclusion } from '@/lib/sectionAvailability';
+import { partitionBySectionConclusion } from '@/lib/sections/availability';
 import { listCoursesForWorkspace } from '@/lib/workspace/queries';
 
 /**

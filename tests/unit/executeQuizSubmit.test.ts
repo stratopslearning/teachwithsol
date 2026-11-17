@@ -20,22 +20,22 @@ const mocks = vi.hoisted(() => ({
   getOrDeriveRubric: vi.fn(),
 }));
 
-vi.mock('@/lib/examContext', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/examContext')>();
+vi.mock('@/lib/quiz/examContext', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/quiz/examContext')>();
   return { ...actual, loadExamContext: mocks.loadExamContext };
 });
 
-vi.mock('@/lib/resolveAttemptSection', () => ({
+vi.mock('@/lib/quiz/attemptSection', () => ({
   resolveAttemptSectionId: (...args: unknown[]) =>
     mocks.resolveAttemptSectionId(...args),
 }));
 
-vi.mock('@/lib/scoreSubmittedQuestions', () => ({
+vi.mock('@/lib/grading/scoreSubmittedQuestions', () => ({
   scoreSubmittedQuestions: (...args: unknown[]) =>
     mocks.scoreSubmittedQuestions(...args),
 }));
 
-vi.mock('@/lib/backgroundRetry', () => ({
+vi.mock('@/lib/quiz/backgroundRetry', () => ({
   scheduleAttemptRetry: (...args: unknown[]) =>
     mocks.scheduleAttemptRetry(...args),
 }));
@@ -66,8 +66,8 @@ vi.mock('@/lib/grading', async (importOriginal) => {
   return { ...actual, gradeMultipleQuestions: mocks.gradeMultipleQuestions };
 });
 
-vi.mock('@/lib/gradingRubric', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/gradingRubric')>();
+vi.mock('@/lib/grading/rubric', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/grading/rubric')>();
   return { ...actual, getOrDeriveRubric: mocks.getOrDeriveRubric };
 });
 
@@ -118,9 +118,9 @@ vi.mock('@/app/db', () => ({
   },
 }));
 
-import { executeQuizSubmit } from '@/lib/executeQuizSubmit';
+import { executeQuizSubmit } from '@/lib/quiz/submit';
 import { gradeMultipleQuestions } from '@/lib/grading';
-import { getOrDeriveRubric } from '@/lib/gradingRubric';
+import { getOrDeriveRubric } from '@/lib/grading/rubric';
 
 const assignment = {
   id: 'asg-1',

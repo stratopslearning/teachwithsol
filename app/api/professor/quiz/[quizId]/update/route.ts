@@ -6,7 +6,7 @@ import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { updateQuiz } from '@/lib/professor/mutations';
 import { readJsonBody } from '@/lib/api/readJsonBody';
-import { quizUpdateSchema } from '@/lib/quizSchemas';
+import { quizUpdateSchema } from '@/lib/quiz/schemas';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { SEO } from '@/lib/seo';
+import { SEO } from '@/lib/marketing/seo';
 
 /** Shared Open Graph + Twitter card fields so pages do not inherit homepage cards. */
 export function socialMetadata(opts: {

@@ -1,6 +1,6 @@
 import type { OutlineItemBody } from '@/app/db/schema';
 import { DEFAULT_QUIZ_WINDOW_DAYS } from '@/lib/authoring/constants';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quiz/schemas';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

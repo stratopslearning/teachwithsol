@@ -7,7 +7,7 @@ import {
   QUIZ_QUESTIONS_CSV_TEMPLATE,
 } from '@/lib/csv/downloadTemplate';
 import { QUESTION_TYPES } from '@/app/db/enums';
-import { QUIZ_LIMITS } from '@/lib/quizSchemas';
+import { QUIZ_LIMITS } from '@/lib/quiz/schemas';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';

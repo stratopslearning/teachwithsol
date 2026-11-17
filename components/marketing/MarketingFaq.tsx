@@ -14,8 +14,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { withBasePath } from "@/lib/basePath";
-import { FOUNDERS_EMAIL } from "@/lib/legal";
-import { MARKETING_FAQS } from "@/lib/marketingFaq";
+import { FOUNDERS_EMAIL } from "@/lib/marketing/legal";
+import { MARKETING_FAQS } from "@/lib/marketing/faq";
 
 function FaqAnswer({ text }: { text: string }) {
   if (!text.includes(FOUNDERS_EMAIL)) return text;

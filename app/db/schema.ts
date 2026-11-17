@@ -1174,7 +1174,7 @@ export const regradeRequests = pgTable(
  *
  * Only a SHA-256 hash of the secret is stored; the plaintext (`sol_pat_…`) is
  * shown exactly once at mint time. `scopes` gates which tool families a token
- * may call (see `lib/professorApiTokens.ts`). Revocation is a tombstone so the
+ * may call (see `lib/professor/apiTokens.ts`). Revocation is a tombstone so the
  * audit trail keeps the row.
  */
 export const professorApiTokens = pgTable(

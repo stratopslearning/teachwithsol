@@ -9,7 +9,7 @@ import { requireStudent } from "@/lib/auth";
 import { appPath, withBasePath } from "@/lib/basePath";
 import { listStudentBooks } from "@/lib/books";
 import { fetchUserEnrollmentsDetail } from "@/lib/db/facultyStudentReads";
-import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
+import { partitionEnrollmentsByConclusion } from "@/lib/sections/availability";
 
 export default async function StudentAssignmentsPage() {
   const user = await requireStudent();

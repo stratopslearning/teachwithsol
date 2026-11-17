@@ -1,8 +1,8 @@
-import { isQuizWindowClosed } from '@/lib/quizAvailability';
+import { isQuizWindowClosed } from '@/lib/quiz/availability';
 import {
   isNominalTimeLimitReached,
   isTimeLimitExceeded,
-} from '@/lib/quizTimeLimit';
+} from '@/lib/quiz/timeLimit';
 
 export type ForceAutoSubmitReason = 'timer' | 'dueDate' | 'timeGrace';
 

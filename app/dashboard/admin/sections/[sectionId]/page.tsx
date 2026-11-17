@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { requireAdmin } from '@/lib/auth';
 import { withBasePath } from '@/lib/basePath';
-import { loadSectionDetailData } from '@/lib/sectionDetailData';
+import { loadSectionDetailData } from '@/lib/sections/detailData';
 
 export default async function AdminSectionDetailPage({
   params,

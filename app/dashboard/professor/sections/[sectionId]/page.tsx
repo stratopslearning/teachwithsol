@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireTeachingAccess } from '@/lib/authz/gates';
 import { assertTeachesSection } from '@/lib/professor/sections';
 import { appRedirect } from '@/lib/serverRedirect';
-import { loadSectionDetailData } from '@/lib/sectionDetailData';
+import { loadSectionDetailData } from '@/lib/sections/detailData';
 
 export const dynamic = 'force-dynamic';
 

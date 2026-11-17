@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { aggregateConceptMastery } from '@/lib/analytics/aggregateConcepts';
-import type { QuestionStatRow } from '@/lib/quizQuestionStats';
+import type { QuestionStatRow } from '@/lib/quiz/questionStats';
 
 function q(
   partial: Partial<QuestionStatRow> & Pick<QuestionStatRow, 'id'>,

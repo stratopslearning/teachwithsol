@@ -17,7 +17,7 @@ import {
 import { rowsFromExecute } from '@/lib/db/rows';
 import type { AuthUser } from '@/lib/getOrCreateUser';
 import { assignInteractiveSections } from '@/lib/interactives/mutations';
-import { userCanWriteQuiz } from '@/lib/quizAccess';
+import { userCanWriteQuiz } from '@/lib/quiz/access';
 import {
   getActiveChatbot,
   userCanWriteChatbot,

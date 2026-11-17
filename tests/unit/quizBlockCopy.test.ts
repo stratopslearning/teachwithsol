@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { SECTION_CONCLUDED_MESSAGE } from '@/lib/sectionAvailability';
+import { SECTION_CONCLUDED_MESSAGE } from '@/lib/sections/availability';
 import {
   getQuizBlockCopy,
   isInformationalQuizBlock,
   parseQuizBlockCode,
   startApiErrorToBlockCode,
-} from '@/lib/quizBlockCopy';
+} from '@/lib/quiz/blockCopy';
 
 describe('quizBlockCopy', () => {
   it('maps start-API extras to block codes', () => {

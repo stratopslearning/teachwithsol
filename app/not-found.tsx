@@ -10,7 +10,7 @@ import { useGSAP } from "@gsap/react";
 import { SolMark } from "@/components/brand/SolMark";
 import { Button } from "@/components/ui/button";
 import { appPath, withBasePath } from "@/lib/basePath";
-import { CAL_BOOKING_URL } from "@/lib/calBooking";
+import { CAL_BOOKING_URL } from "@/lib/marketing/calBooking";
 import { solDemoOnly } from "@/lib/solHosts";
 
 const GROVE = withBasePath("/marketing/hero-grove.jpg");

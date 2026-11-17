@@ -1,5 +1,5 @@
 import { fetchUserEnrollmentsDetail } from '@/lib/db/facultyStudentReads';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
+import { isSectionConcluded } from '@/lib/sections/availability';
 
 /** Resolve an optional ?section= id to a breadcrumb-safe label if the student is enrolled. */
 export async function resolveStudentSectionBreadcrumb(

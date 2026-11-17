@@ -8,7 +8,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import { authorizeOnSection } from '@/lib/authz/courseAccess';
-import { professorCanAccessQuiz, userCanWriteQuiz } from '@/lib/quizAccess';
+import { professorCanAccessQuiz, userCanWriteQuiz } from '@/lib/quiz/access';
 import {
   assignments,
   attempts,
@@ -38,9 +38,9 @@ import {
 import { CHATBOT_MODEL } from '@/lib/chatbot/constants';
 import { activeOnly } from '@/lib/db/filters';
 import type { UserData } from '@/lib/getOrCreateUser';
-import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
-import { regradeAttempt } from '@/lib/regradeAttempt';
-import { parseOptionalEndsAt } from '@/lib/sectionAvailability';
+import { getAttentionItemsForProfessor } from '@/lib/professor/attention';
+import { regradeAttempt } from '@/lib/grading/regradeAttempt';
+import { parseOptionalEndsAt } from '@/lib/sections/availability';
 import { assertTeachesSection } from '@/lib/professor/sections';
 type ProfessorUser = Pick<UserData, 'id' | 'clerkId'> & {
   platformStaff?: boolean | null;

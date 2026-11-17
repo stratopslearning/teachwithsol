@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { QuizCreationForm } from "@/components/quiz/QuizCreationForm";
 import { withBasePath } from "@/lib/basePath";
 import { requireAdmin } from "@/lib/auth";
-import { partitionBySectionConclusion } from "@/lib/sectionAvailability";
+import { partitionBySectionConclusion } from "@/lib/sections/availability";
 
 export default async function AdminQuizNewPage() {
   await requireAdmin();

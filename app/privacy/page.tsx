@@ -6,8 +6,8 @@ import {
   LEGAL_ENTITY,
   publicPrivacyContactEmail,
   legalMailingLines,
-} from '@/lib/legal';
-import { socialMetadata, titledPage } from '@/lib/pageMeta';
+} from '@/lib/marketing/legal';
+import { socialMetadata, titledPage } from '@/lib/marketing/pageMeta';
 import { absoluteUrl } from '@/lib/siteUrl';
 
 const privacyDescription =

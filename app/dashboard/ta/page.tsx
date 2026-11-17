@@ -21,7 +21,7 @@ import {
   isGrantOnlyTeachingAssistant,
   listGradeableSectionIdsFromGrants,
 } from '@/lib/professor/graderSections';
-import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
+import { getAttentionItemsForProfessor } from '@/lib/professor/attention';
 import { appRedirect } from '@/lib/serverRedirect';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 

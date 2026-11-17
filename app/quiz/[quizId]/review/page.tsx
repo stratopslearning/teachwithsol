@@ -11,12 +11,12 @@ import {
   buildLegacyQuestionKeyMap,
   resolveAttemptAnswer,
   resolveAttemptFeedback,
-} from "@/lib/quizAttemptAnswers";
-import { isPendingStatus } from "@/lib/gradingTypes";
+} from "@/lib/quiz/attemptAnswers";
+import { isPendingStatus } from "@/lib/grading/types";
 import {
   attemptNeedsBackgroundRetry,
   scheduleAttemptRetry,
-} from "@/lib/backgroundRetry";
+} from "@/lib/quiz/backgroundRetry";
 import {
   listGradeOverrideHistoryForAttempt,
   quizGradesAreReleased,

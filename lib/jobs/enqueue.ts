@@ -1,12 +1,12 @@
 import { after } from 'next/server';
 
 import { processBook } from '@/lib/books/process';
-import { gradePendingForAttemptId } from '@/lib/pendingGrader';
+import { gradePendingForAttemptId } from '@/lib/grading/pendingGrader';
 import { processMaterial } from '@/lib/knowledge/process';
 import { processKnowledgeDocument } from '@/lib/knowledge/processDocument';
 import { syncConnector } from '@/lib/knowledge/connectors/sync';
 import { processPendingPassbackJobs } from '@/lib/lti/passback';
-import { regradeAttempt } from '@/lib/regradeAttempt';
+import { regradeAttempt } from '@/lib/grading/regradeAttempt';
 
 import { jobsBackend } from '@/lib/jobs/backend';
 import { inngest } from '@/lib/jobs/client';

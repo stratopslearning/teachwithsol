@@ -4,7 +4,7 @@ import {
   buildBlogIndexMarkdown,
   buildBlogMarkdown,
   getBlogBySlug,
-} from '@/lib/blog';
+} from '@/lib/marketing/blog';
 
 type RouteContext = {
   params: Promise<{ slug: string }>;

@@ -21,8 +21,8 @@ import {
 } from '@/lib/ai/prompts/rubric';
 import { defaultCoursePromptContext } from '@/lib/ai/prompts/courseContext';
 import { hashId, logAiSpan } from '@/lib/ai/tracing';
-import { detectRequiredMatchCount } from '@/lib/gradingQuestionIntent';
-import { GRADING_MODEL_VERSION, type RubricCriterion } from '@/lib/gradingTypes';
+import { detectRequiredMatchCount } from '@/lib/grading/questionIntent';
+import { GRADING_MODEL_VERSION, type RubricCriterion } from '@/lib/grading/types';
 
 const RUBRIC_DERIVATION_TIMEOUT_MS = 20_000;
 

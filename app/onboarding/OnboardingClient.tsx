@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { appPath } from '@/lib/basePath';
-import { FOUNDERS_EMAIL } from '@/lib/legal';
+import { FOUNDERS_EMAIL } from '@/lib/marketing/legal';
 
 type Path = 'teach' | 'student' | 'department';
 

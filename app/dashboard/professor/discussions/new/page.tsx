@@ -6,7 +6,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { withBasePath } from '@/lib/basePath';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
-import { partitionEnrollmentsByConclusion } from '@/lib/sectionAvailability';
+import { partitionEnrollmentsByConclusion } from '@/lib/sections/availability';
 import { listTeachingSectionIds } from '@/lib/professor/graderSections';
 import { fetchSectionsByIds } from '@/lib/db/entityScopedReads';
 

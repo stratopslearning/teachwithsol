@@ -11,8 +11,8 @@ import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { jobsBackend } from '@/lib/jobs/backend';
 
-import { enqueueBulkRegrades } from '@/lib/gradingBatch';
-import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
+import { enqueueBulkRegrades } from '@/lib/grading/batch';
+import { getAttentionItemsForProfessor } from '@/lib/professor/attention';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;

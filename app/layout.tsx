@@ -22,7 +22,7 @@ import {
   clerkAllowedRedirectOrigins,
   clerkSatelliteProviderProps,
 } from "@/lib/clerkMultiDomain";
-import { SEO, seoMetadataBase } from "@/lib/seo";
+import { SEO, seoMetadataBase } from "@/lib/marketing/seo";
 import { absoluteUrl } from "@/lib/siteUrl";
 
 const fraunces = Fraunces({

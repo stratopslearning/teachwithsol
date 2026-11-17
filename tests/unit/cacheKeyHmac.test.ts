@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/app/db', () => ({ db: {} }));
 
 import { hashCacheKey } from '@/lib/crypto/cacheKeyHmac';
-import { computeCacheKey } from '@/lib/gradingCache';
+import { computeCacheKey } from '@/lib/grading/cache';
 
 const args = {
   questionId: 'q', studentAnswer: 'True', rubricVersion: 1, modelVersion: 'm',

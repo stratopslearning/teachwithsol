@@ -6,7 +6,7 @@ import {
   getRemainingSeconds,
   isNominalTimeLimitReached,
   isTimeLimitExceeded,
-} from '@/lib/quizTimeLimit';
+} from '@/lib/quiz/timeLimit';
 
 describe('quizTimeLimit', () => {
   const startedAt = new Date('2026-01-01T12:00:00.000Z');

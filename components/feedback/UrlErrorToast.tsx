@@ -8,7 +8,7 @@ import {
   getQuizBlockCopy,
   isInformationalQuizBlock,
   parseQuizBlockCode,
-} from '@/lib/quizBlockCopy';
+} from '@/lib/quiz/blockCopy';
 
 /**
  * Surfaces `?error=` / `?message=` query params as a toast, then strips them

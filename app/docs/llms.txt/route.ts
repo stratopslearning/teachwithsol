@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { buildLlmsTxt } from '@/lib/docs';
+import { buildLlmsTxt } from '@/lib/marketing/docs';
 
 export function GET() {
   return new NextResponse(buildLlmsTxt({ docsScoped: true }), {

@@ -27,12 +27,12 @@ import { Clock } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { useRef, useEffect, useCallback } from "react";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
-import { getRemainingSeconds } from "@/lib/quizTimeLimit";
+import { getRemainingSeconds } from "@/lib/quiz/timeLimit";
 import { appPath, withBasePath } from "@/lib/basePath";
 import {
   startApiErrorToBlockCode,
   type QuizBlockCode,
-} from "@/lib/quizBlockCopy";
+} from "@/lib/quiz/blockCopy";
 import { shouldHideFeedbackForStudent } from "@/lib/quiz/feedback";
 
 interface QuizTakeFormProps {

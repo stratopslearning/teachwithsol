@@ -1,4 +1,4 @@
-import { FOUNDERS_EMAIL } from "@/lib/legal";
+import { FOUNDERS_EMAIL } from "@/lib/marketing/legal";
 import { foundersContactEnabled } from "@/lib/solHosts";
 
 export const MARKETING_FAQS = [

@@ -24,7 +24,7 @@ import {
   looksLikeApiToken,
   TOKEN_SCOPES,
   verifyProfessorApiToken,
-} from '@/lib/professorApiTokens';
+} from '@/lib/professor/apiTokens';
 
 export type McpAuthResult =
   | { ok: true; auth: ProfessorApiAuth }

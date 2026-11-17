@@ -3,9 +3,9 @@ import Link from "next/link";
 
 import { LegalShell } from "@/components/legal/LegalShell";
 import { appPath } from "@/lib/basePath";
-import { CAL_BOOKING_URL } from "@/lib/calBooking";
-import { publicPrivacyContactEmail } from "@/lib/legal";
-import { socialMetadata, titledPage } from "@/lib/pageMeta";
+import { CAL_BOOKING_URL } from "@/lib/marketing/calBooking";
+import { publicPrivacyContactEmail } from "@/lib/marketing/legal";
+import { socialMetadata, titledPage } from "@/lib/marketing/pageMeta";
 import { absoluteUrl } from "@/lib/siteUrl";
 
 const securityDescription =

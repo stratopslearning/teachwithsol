@@ -7,8 +7,8 @@ import {
   getAllBlogPosts,
   kindLabel,
   type BlogMeta,
-} from "@/lib/blog";
-import { socialMetadata, titledPage } from "@/lib/pageMeta";
+} from "@/lib/marketing/blog";
+import { socialMetadata, titledPage } from "@/lib/marketing/pageMeta";
 import { absoluteUrl } from "@/lib/siteUrl";
 
 const blogDescription =

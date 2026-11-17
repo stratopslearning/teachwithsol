@@ -8,9 +8,9 @@ import {
   fetchChatbotSectionIdsDefiner,
 } from '@/lib/db/studentReadDefiners';
 import type { UserData } from '@/lib/getOrCreateUser';
-import { professorCanAccessQuiz } from '@/lib/quizAccess';
+import { professorCanAccessQuiz } from '@/lib/quiz/access';
 import type { SafeQuizInput } from '@/lib/chatbot/safeQuizContext';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
+import { isSectionConcluded } from '@/lib/sections/availability';
 
 export async function getActiveChatbot(chatbotId: string) {
   const bot = await fetchChatbotByIdDefiner(chatbotId);

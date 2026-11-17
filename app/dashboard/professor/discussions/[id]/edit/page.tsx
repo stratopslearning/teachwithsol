@@ -11,7 +11,7 @@ import { appRedirect } from '@/lib/serverRedirect';
 import {
   isSectionConcluded,
   partitionEnrollmentsByConclusion,
-} from '@/lib/sectionAvailability';
+} from '@/lib/sections/availability';
 
 interface PageProps {
   params: Promise<{ id: string }>;
