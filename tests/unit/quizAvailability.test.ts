@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getQuizAvailability,
   isQuizListedForStudents,
-} from '@/lib/quizAvailability';
+} from '@/lib/quiz/availability';
 
 describe('getQuizAvailability', () => {
   const now = new Date('2026-06-15T18:00:00.000Z');

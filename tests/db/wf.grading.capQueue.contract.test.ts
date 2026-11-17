@@ -18,7 +18,7 @@ describe('wf.grading.capQueue.contract', () => {
 
   it('pendingGrader records ai_band_exceeded failure reason', () => {
     const src = fs.readFileSync(
-      path.join(process.cwd(), 'lib/pendingGrader.ts'),
+      path.join(process.cwd(), 'lib/grading/pendingGrader.ts'),
       'utf8',
     );
     expect(src).toContain('ai_band_exceeded');

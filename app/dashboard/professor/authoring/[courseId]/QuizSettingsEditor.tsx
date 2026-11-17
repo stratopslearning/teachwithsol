@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import type { OutlineItemBody } from "@/app/db/schema";
-import { DEFAULT_PASSING_SCORE } from "@/lib/quizSchemas";
+import { DEFAULT_PASSING_SCORE } from "@/lib/quiz/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

@@ -1,8 +1,8 @@
 import {
   isFallbackGradingFeedback,
   isPendingFeedback,
-} from '@/lib/regradeAttempt';
-import type { StoredFeedback } from '@/lib/gradingTypes';
+} from '@/lib/grading/regradeAttempt';
+import type { StoredFeedback } from '@/lib/grading/types';
 
 /** Gradebook status labels from SOL platform doc §9 (Assessment module). */
 export type AttemptGradebookStatus =

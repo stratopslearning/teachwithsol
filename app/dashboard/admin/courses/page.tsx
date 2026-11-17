@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { fetchAdminCoursesAll } from '@/lib/admin/platformReads';
 import { requireAdmin } from '@/lib/auth';
 import { withBasePath } from '@/lib/basePath';
-import { partitionBySectionConclusion } from '@/lib/sectionAvailability';
+import { partitionBySectionConclusion } from '@/lib/sections/availability';
 import {
   listCoursesForWorkspace,
   resolveWorkspaceScopeParam,

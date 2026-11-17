@@ -1,11 +1,11 @@
-import type { StoredFeedback } from '@/lib/gradingTypes';
+import type { StoredFeedback } from '@/lib/grading/types';
 
 import {
   buildLegacyQuestionKeyMap,
   resolveAttemptAnswer,
   resolveAttemptFeedback,
   type QuizQuestionRef,
-} from '@/lib/quizAttemptAnswers';
+} from '@/lib/quiz/attemptAnswers';
 
 export type QuizQuestionForStats = QuizQuestionRef & {
   type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';

@@ -10,8 +10,8 @@ import {
 } from '@/lib/api/readJsonBody';
 import { sanitizeAnswerRecord } from '@/lib/api/sanitizeStoredText';
 import { logQuizAttemptAudit } from '@/lib/audit';
-import { loadExamContext } from '@/lib/examContext';
-import { executeQuizSubmit } from '@/lib/executeQuizSubmit';
+import { loadExamContext } from '@/lib/quiz/examContext';
+import { executeQuizSubmit } from '@/lib/quiz/submit';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { isStudentEntitled } from '@/lib/featureFlags';
 

@@ -4,7 +4,7 @@
  * Two ways in:
  *   1. Clerk browser session (the dashboard): full access, all scopes.
  *   2. `Authorization: Bearer sol_pat_…` personal access token: scoped agent
- *      access (see `lib/professorApiTokens.ts`).
+ *      access (see `lib/professor/apiTokens.ts`).
  *
  * Both resolve to the same DB user row. Authority comes only from role_bindings;
  * PAT scopes are intersected with the owner's binding permissions in the token tenant.
@@ -20,7 +20,7 @@ import {
   TOKEN_SCOPES,
   verifyProfessorApiToken,
   type TokenScope,
-} from '@/lib/professorApiTokens';
+} from '@/lib/professor/apiTokens';
 
 export interface ProfessorApiAuth {
   user: UserData;

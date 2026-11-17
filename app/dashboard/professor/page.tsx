@@ -22,8 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { appPath, withBasePath } from '@/lib/basePath';
 import { requireTeachingAccess } from '@/lib/authz/gates';
-import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
-import { partitionEnrollmentsByConclusion } from '@/lib/sectionAvailability';
+import { getAttentionItemsForProfessor } from '@/lib/professor/attention';
+import { partitionEnrollmentsByConclusion } from '@/lib/sections/availability';
 import { getTeacherHomeChecklistSteps } from '@/lib/professor/teacherHomeChecklist';
 import {
   getActiveWorkspaceId,

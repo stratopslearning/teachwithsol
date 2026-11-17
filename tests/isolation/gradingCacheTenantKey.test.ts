@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeCacheKey } from '@/lib/gradingCache';
+import { computeCacheKey } from '@/lib/grading/cache';
 
 /** Isolation suite guard: grading cache keys must not collide across tenants. */
 describe('grading cache tenant isolation (unit)', () => {

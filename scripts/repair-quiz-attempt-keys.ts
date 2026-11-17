@@ -11,7 +11,7 @@ import { eq } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import { attempts, questions } from '@/app/db/schema';
-import { remapAttemptPayloadKeys } from '@/lib/quizAttemptAnswers';
+import { remapAttemptPayloadKeys } from '@/lib/quiz/attemptAnswers';
 
 const quizId = process.argv[2];
 const dryRun = process.argv.includes('--dry-run');

@@ -7,15 +7,15 @@ import { DocsMarkdown } from '@/components/docs/DocsMarkdown';
 import { DocsShell } from '@/components/docs/DocsShell';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { withBasePath } from '@/lib/basePath';
-import { docHowToJsonLd } from '@/lib/docHowTo';
+import { docHowToJsonLd } from '@/lib/marketing/docHowTo';
 import {
   buildDocMarkdown,
   getAllDocs,
   getDocBySlug,
   getDocMtime,
   getDocSlugs,
-} from '@/lib/docs';
-import { socialMetadata, titledPage } from '@/lib/pageMeta';
+} from '@/lib/marketing/docs';
+import { socialMetadata, titledPage } from '@/lib/marketing/pageMeta';
 import { absoluteUrl } from '@/lib/siteUrl';
 
 type PageProps = {

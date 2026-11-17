@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { requireAdmin } from '@/lib/auth';
 import { appPath, withBasePath } from '@/lib/basePath';
-import { partitionBySectionConclusion } from '@/lib/sectionAvailability';
+import { partitionBySectionConclusion } from '@/lib/sections/availability';
 import {
   LocalDateTime,
   TIMESTAMP_CELL_CLASS,

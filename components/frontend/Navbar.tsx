@@ -17,7 +17,7 @@ import { ThemedUserButton } from "@/components/auth/ThemedUserButton";
 import { SolMark } from "@/components/brand/SolMark";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { CAL_BOOKING_URL } from "@/lib/calBooking";
+import { CAL_BOOKING_URL } from "@/lib/marketing/calBooking";
 import type { DashboardAreas } from "@/lib/authz/gates";
 import {
   marketingDashboardCtaLabel,

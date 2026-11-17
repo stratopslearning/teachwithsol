@@ -1,9 +1,9 @@
 import {
   executeQuizSubmit,
   MaxAttemptsExceededError,
-} from '@/lib/executeQuizSubmit';
+} from '@/lib/quiz/submit';
 import { fetchAttemptWithQuizAssignmentDefiner } from '@/lib/db/studentWriteDefiners';
-import { shouldForceAutoSubmitInProgress } from '@/lib/shouldForceAutoSubmit';
+import { shouldForceAutoSubmitInProgress } from '@/lib/quiz/forceAutoSubmit';
 
 export type AutoSubmitAttemptResult =
   | { submitted: true; attemptId: string; reason: string }

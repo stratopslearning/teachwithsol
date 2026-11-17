@@ -5,7 +5,7 @@ import {
   classifyStudentAnswerSpecial,
   evidenceQuoteAppearsInAnswer,
   matchesDisagree,
-} from '@/lib/gradingEvidence';
+} from '@/lib/grading/evidence';
 
 describe('gradingEvidence', () => {
   it('detects quotes in student answers', () => {

@@ -9,10 +9,10 @@ import {
 } from '@/lib/api/readJsonBody';
 import { sanitizeAnswerRecord } from '@/lib/api/sanitizeStoredText';
 import { updateAttemptAnswersDefiner } from '@/lib/db/studentWriteDefiners';
-import { loadExamContext, missingExamResource } from '@/lib/examContext';
+import { loadExamContext, missingExamResource } from '@/lib/quiz/examContext';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
 import { isStudentEntitled } from '@/lib/featureFlags';
-import { isTimeLimitExceeded } from '@/lib/quizTimeLimit';
+import { isTimeLimitExceeded } from '@/lib/quiz/timeLimit';
 
 export const dynamic = 'force-dynamic';
 

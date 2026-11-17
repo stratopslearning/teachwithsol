@@ -10,7 +10,7 @@ import {
   listProfessorApiTokens,
   mintProfessorApiToken,
   TOKEN_SCOPES,
-} from '@/lib/professorApiTokens';
+} from '@/lib/professor/apiTokens';
 import { getActiveWorkspaceId } from '@/lib/workspace/activeWorkspace';
 
 export const dynamic = 'force-dynamic';

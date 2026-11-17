@@ -15,7 +15,7 @@ import {
   fetchSectionsByIds,
 } from '@/lib/db/entityScopedReads';
 import { assertCanManageCourse } from '@/lib/knowledge';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
+import { isSectionConcluded } from '@/lib/sections/availability';
 import { loadCourseNav } from '@/lib/lms/loadCourseNav';
 
 export const dynamic = 'force-dynamic';

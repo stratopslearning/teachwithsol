@@ -12,7 +12,7 @@ import {
   getQuizBlockCopy,
   isInformationalQuizBlock,
   type QuizBlockCode,
-} from '@/lib/quizBlockCopy';
+} from '@/lib/quiz/blockCopy';
 import { formatDateTimeStable } from '@/lib/utils';
 
 function labelFor(

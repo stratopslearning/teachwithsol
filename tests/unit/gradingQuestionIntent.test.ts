@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { detectRequiredMatchCount } from '@/lib/gradingQuestionIntent';
+import { detectRequiredMatchCount } from '@/lib/grading/questionIntent';
 
 describe('detectRequiredMatchCount', () => {
   it('detects "any two" with markdown bold', () => {

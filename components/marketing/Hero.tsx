@@ -10,7 +10,7 @@ import { SplitText } from "gsap/SplitText";
 
 import { Button } from "@/components/ui/button";
 import { withBasePath } from "@/lib/basePath";
-import { CAL_BOOKING_URL } from "@/lib/calBooking";
+import { CAL_BOOKING_URL } from "@/lib/marketing/calBooking";
 import type { DashboardAreas } from "@/lib/authz/gates";
 import {
   marketingDashboardCtaLabel,

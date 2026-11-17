@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { loadAdminRecord } from '@/lib/admin/records';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
 import { updateQuizDefiner } from '@/lib/db/entityScopedReads';
-import { quizUpdateSchema } from '@/lib/quizSchemas';
+import { quizUpdateSchema } from '@/lib/quiz/schemas';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import { route } from '@/lib/api/route';
 

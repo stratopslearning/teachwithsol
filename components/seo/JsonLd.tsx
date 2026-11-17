@@ -1,4 +1,4 @@
-import { serializeJsonLd } from '@/lib/jsonLd';
+import { serializeJsonLd } from '@/lib/marketing/jsonLd';
 
 type JsonLdProps = {
   data: Record<string, unknown> | Record<string, unknown>[];

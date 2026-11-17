@@ -4,7 +4,7 @@ import {
   computeQuestionStatsForAttempts,
   parseAttemptJsonRecord,
   type QuizQuestionForStats,
-} from '@/lib/quizQuestionStats';
+} from '@/lib/quiz/questionStats';
 
 const q1: QuizQuestionForStats = {
   id: '11111111-1111-1111-1111-111111111111',

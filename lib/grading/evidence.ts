@@ -2,7 +2,7 @@
  * Evidence quote verification and match comparison for dual-run grading.
  */
 
-import type { RubricCriterion, RubricMatch } from '@/lib/gradingTypes';
+import type { RubricCriterion, RubricMatch } from '@/lib/grading/types';
 
 /** Normalize for case-insensitive substring checks. */
 export function normalizeForEvidence(text: string): string {

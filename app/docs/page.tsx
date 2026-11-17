@@ -13,8 +13,8 @@ import { DocsLayout } from "@/components/docs/DocsLayout";
 import { DocsQuickstart } from "@/components/docs/DocsQuickstart";
 import { DocsShell } from "@/components/docs/DocsShell";
 import { withBasePath } from "@/lib/basePath";
-import { getAllDocs } from "@/lib/docs";
-import { socialMetadata, titledPage } from "@/lib/pageMeta";
+import { getAllDocs } from "@/lib/marketing/docs";
+import { socialMetadata, titledPage } from "@/lib/marketing/pageMeta";
 import { absoluteUrl } from "@/lib/siteUrl";
 
 const docsDescription =

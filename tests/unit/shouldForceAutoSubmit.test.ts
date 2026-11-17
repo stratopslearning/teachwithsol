@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   mergeAttemptAnswers,
   shouldForceAutoSubmitInProgress,
-} from '@/lib/shouldForceAutoSubmit';
+} from '@/lib/quiz/forceAutoSubmit';
 
 describe('shouldForceAutoSubmitInProgress', () => {
   const startedAt = new Date('2026-01-01T12:00:00.000Z');

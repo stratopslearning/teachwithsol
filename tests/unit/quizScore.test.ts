@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { scoreOutcome } from '@/lib/quiz/score';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quiz/schemas';
 
 describe('scoreOutcome', () => {
   it('rounds the percentage and compares it to the passing score', () => {

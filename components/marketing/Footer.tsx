@@ -10,8 +10,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SolMark } from "@/components/brand/SolMark";
 import { Button } from "@/components/ui/button";
 import { withBasePath } from "@/lib/basePath";
-import { CAL_BOOKING_URL } from "@/lib/calBooking";
-import { FOUNDERS_EMAIL, LEGAL_PRIVACY_EMAIL } from "@/lib/legal";
+import { CAL_BOOKING_URL } from "@/lib/marketing/calBooking";
+import { FOUNDERS_EMAIL, LEGAL_PRIVACY_EMAIL } from "@/lib/marketing/legal";
 import {
   foundersContactEnabled,
   privacyEmailEnabled,

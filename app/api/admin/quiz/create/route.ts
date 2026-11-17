@@ -14,7 +14,7 @@ import {
   fetchSectionById,
   fetchSectionsByIds,
 } from '@/lib/db/entityScopedReads';
-import { quizCreateBaseSchema } from '@/lib/quizSchemas';
+import { quizCreateBaseSchema } from '@/lib/quiz/schemas';
 
 export const dynamic = 'force-dynamic';
 

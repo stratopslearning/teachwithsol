@@ -13,7 +13,7 @@ import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { paymentsEnabled } from '@/lib/featureFlags';
 import { userMayUsePreEnrollStudentApi } from '@/lib/authz';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
+import { isSectionConcluded } from '@/lib/sections/availability';
 import {
   findSectionByStudentCode,
   findSectionByStudentCodeGloballyUnique,

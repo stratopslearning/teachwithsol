@@ -33,7 +33,7 @@ import {
 import { TeachingPaywallBanner } from '@/components/workspace/TeachingPaywallBanner';
 import { assertCanManageCourse, listCourseMaterials } from '@/lib/knowledge';
 import { loadCourseNav } from '@/lib/lms/loadCourseNav';
-import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
+import { getAttentionItemsForProfessor } from '@/lib/professor/attention';
 import { assertWorkspaceAllowsTeaching } from '@/lib/workspace';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 

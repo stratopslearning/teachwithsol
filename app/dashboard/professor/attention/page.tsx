@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/table";
 import { withBasePath } from "@/lib/basePath";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
-import { getAttentionItemsForProfessor } from "@/lib/professorAttention";
+import { getAttentionItemsForProfessor } from "@/lib/professor/attention";
 import { listTutorEscalationsForProfessor } from "@/lib/professor/tutorEscalations";
-import { listOpenRegradeRequestsForProfessor } from "@/lib/regradeRequests";
+import { listOpenRegradeRequestsForProfessor } from "@/lib/quiz/regradeRequests";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 
 export const dynamic = "force-dynamic";

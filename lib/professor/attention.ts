@@ -23,7 +23,7 @@ import { listTeachingSectionIds } from '@/lib/professor/graderSections';
 import {
   isFallbackGradingFeedback,
   isPendingFeedback,
-} from '@/lib/regradeAttempt';
+} from '@/lib/grading/regradeAttempt';
 
 export type AttentionItem = {
   /** Tenant that owns the attempt (bulk regrade queues jobs under it). */

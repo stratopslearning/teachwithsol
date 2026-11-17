@@ -23,7 +23,7 @@ import type {
   RubricCriterion,
   RubricMatch,
   StoredFeedback,
-} from '@/lib/gradingTypes';
+} from '@/lib/grading/types';
 
 /** Bump when deterministic score computation changes (e.g. any-N top-N scoring). */
 export const SCORING_VERSION = 2;

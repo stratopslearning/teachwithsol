@@ -28,12 +28,12 @@ import {
 import { requireTeachingAccess } from "@/lib/authz/gates";
 import { formatPersonName } from "@/lib/personName";
 import { withBasePath } from "@/lib/basePath";
-import { fetchSubmittedAttemptsForProfessorSections } from "@/lib/professorVisibleAttempts";
+import { fetchSubmittedAttemptsForProfessorSections } from "@/lib/professor/visibleAttempts";
 import {
   accessibleQuizSectionIds,
   professorCanAccessQuiz,
-} from "@/lib/quizAccess";
-import { computeQuestionStatsForAttempts } from "@/lib/quizQuestionStats";
+} from "@/lib/quiz/access";
+import { computeQuestionStatsForAttempts } from "@/lib/quiz/questionStats";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 import { ReleaseBadge } from "@/components/status/badges";
 

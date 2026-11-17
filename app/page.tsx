@@ -7,10 +7,10 @@ import { HumanSafety } from "@/components/marketing/HumanSafety";
 import { LoopSteps } from "@/components/marketing/LoopSteps";
 import { MarketingFaq } from "@/components/marketing/MarketingFaq";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { FOUNDERS_EMAIL, publicPrivacyContactEmail } from "@/lib/legal";
-import { MARKETING_FAQS } from "@/lib/marketingFaq";
-import { socialMetadata } from "@/lib/pageMeta";
-import { brandAliases, organizationSameAs, SEO } from "@/lib/seo";
+import { FOUNDERS_EMAIL, publicPrivacyContactEmail } from "@/lib/marketing/legal";
+import { MARKETING_FAQS } from "@/lib/marketing/faq";
+import { socialMetadata } from "@/lib/marketing/pageMeta";
+import { brandAliases, organizationSameAs, SEO } from "@/lib/marketing/seo";
 import { foundersContactEnabled } from "@/lib/solHosts";
 import { absoluteUrl } from "@/lib/siteUrl";
 

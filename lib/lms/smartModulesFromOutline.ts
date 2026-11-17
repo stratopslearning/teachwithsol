@@ -15,7 +15,7 @@ import {
 } from '@/lib/db/lmsDefiners';
 import { fetchOutlineTreeById } from '@/lib/db/entityScopedReads';
 import { planQuizWindowFromToday } from '@/lib/authoring/schedule';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quiz/schemas';
 import { isOutlineItemType, ITEM_TYPES } from '@/lib/authoring/itemTypes';
 
 export type SmartModulesBuildResult = {

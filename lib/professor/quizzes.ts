@@ -15,8 +15,8 @@ import {
   professorCanAccessQuiz,
   stripQuestionSecrets,
   userCanWriteQuiz,
-} from '@/lib/quizAccess';
-import { partitionEnrollmentsByConclusion } from '@/lib/sectionAvailability';
+} from '@/lib/quiz/access';
+import { partitionEnrollmentsByConclusion } from '@/lib/sections/availability';
 
 type ProfessorUser = Pick<UserData, 'id'> & { platformStaff?: boolean | null };
 

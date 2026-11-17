@@ -8,11 +8,11 @@ import { appRedirect } from "@/lib/serverRedirect";
 import {
   attemptNeedsBackgroundRetry,
   scheduleAttemptRetry,
-} from "@/lib/backgroundRetry";
+} from "@/lib/quiz/backgroundRetry";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { listGradeOverrideHistoryForAttempt } from "@/lib/professor/overrides";
 import { quizGradesAreReleased } from "@/lib/professor/gradesReleased";
-import { getOpenRegradeRequestForAttempt } from "@/lib/regradeRequests";
+import { getOpenRegradeRequestForAttempt } from "@/lib/quiz/regradeRequests";
 import { loadOwnAttempt, loadQuizQuestions } from "@/lib/quiz/gradingData";
 
 interface ResultsPageProps {

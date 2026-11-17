@@ -5,7 +5,7 @@ import {
 } from '@/lib/admin/platformReads';
 import { requireAdmin } from '@/lib/auth';
 import { appPath } from '@/lib/basePath';
-import { partitionBySectionConclusion } from '@/lib/sectionAvailability';
+import { partitionBySectionConclusion } from '@/lib/sections/availability';
 import {
   listCoursesForWorkspace,
   resolveWorkspaceScopeParam,

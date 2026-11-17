@@ -5,7 +5,7 @@ import {
 } from '@/lib/db/entityScopedReads';
 import type { AuthUserRef as AuthUser } from '@/lib/getOrCreateUser';
 import { adminSupportForTenant } from '@/lib/professor/adminSupport';
-import { parseOptionalEndsAt } from '@/lib/sectionAvailability';
+import { parseOptionalEndsAt } from '@/lib/sections/availability';
 import { generateEnrollmentCode } from '@/lib/utils';
 import {
   assertWorkspaceAllowsCourseCreate,

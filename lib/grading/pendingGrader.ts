@@ -30,8 +30,8 @@ import {
   buildLegacyQuestionKeyMap,
   resolveAttemptAnswer,
   resolveAttemptFeedback,
-} from '@/lib/quizAttemptAnswers';
-import { isPendingStatus, type StoredFeedback } from '@/lib/gradingTypes';
+} from '@/lib/quiz/attemptAnswers';
+import { isPendingStatus, type StoredFeedback } from '@/lib/grading/types';
 import { scoreOutcome } from '@/lib/quiz/score';
 
 export const MAX_GRADING_ATTEMPTS = 3;

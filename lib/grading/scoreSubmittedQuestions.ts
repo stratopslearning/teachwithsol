@@ -3,9 +3,9 @@ import {
   cachedPayloadToFeedback,
   hashMaterialsContext,
   lookupCachedGrading,
-} from '@/lib/gradingCache';
-import { readRubricFromColumn } from '@/lib/gradingRubric';
-import { GRADING_MODEL_VERSION } from '@/lib/gradingTypes';
+} from '@/lib/grading/cache';
+import { readRubricFromColumn } from '@/lib/grading/rubric';
+import { GRADING_MODEL_VERSION } from '@/lib/grading/types';
 import { getCourseWorkspaceId } from '@/lib/workspace';
 
 export type ScoreableQuestion = {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { missingExamResource } from '@/lib/examContext';
+import { missingExamResource } from '@/lib/quiz/examContext';
 
 describe('missingExamResource', () => {
   it('reports assignment missing first when both rows are absent', () => {
@@ -41,7 +41,7 @@ describe('loadExamContext (SECURITY DEFINER)', () => {
   it('passes ids through to the definer and returns its rows', async () => {
     definerMock.mockResolvedValue(full);
 
-    const { loadExamContext } = await import('@/lib/examContext');
+    const { loadExamContext } = await import('@/lib/quiz/examContext');
     const ctx = await loadExamContext({
       quizId: 'quiz-1',
       assignmentId: 'asg-1',
@@ -65,7 +65,7 @@ describe('loadExamContext (SECURITY DEFINER)', () => {
       quizSectionLinks: [],
     });
 
-    const { loadExamContext } = await import('@/lib/examContext');
+    const { loadExamContext } = await import('@/lib/quiz/examContext');
     const ctx = await loadExamContext({
       quizId: 'quiz-1',
       assignmentId: 'asg-1',
@@ -79,7 +79,7 @@ describe('loadExamContext (SECURITY DEFINER)', () => {
   it('honors includeSections / includeSubmittedAttempts = false', async () => {
     definerMock.mockResolvedValue(full);
 
-    const { loadExamContext } = await import('@/lib/examContext');
+    const { loadExamContext } = await import('@/lib/quiz/examContext');
     const ctx = await loadExamContext({
       quizId: 'quiz-1',
       assignmentId: 'asg-1',

@@ -9,7 +9,7 @@ import { appPath, withBasePath } from '@/lib/basePath';
 import { assertCanManageCourse } from '@/lib/knowledge';
 import { loadCourseNav } from '@/lib/lms/loadCourseNav';
 import { assertTeachesSection } from '@/lib/professor/sections';
-import { loadSectionDetailData } from '@/lib/sectionDetailData';
+import { loadSectionDetailData } from '@/lib/sections/detailData';
 
 export const dynamic = 'force-dynamic';
 

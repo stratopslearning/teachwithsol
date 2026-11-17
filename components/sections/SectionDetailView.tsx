@@ -13,8 +13,8 @@ import { StatCard } from '@/components/patterns/StatCard';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
-import type { SectionDetailData } from '@/lib/sectionDetailData';
+import { isSectionConcluded } from '@/lib/sections/availability';
+import type { SectionDetailData } from '@/lib/sections/detailData';
 
 /** What the viewer may do on this page (admin and professor pages differ). */
 export type SectionDetailCapabilities = {

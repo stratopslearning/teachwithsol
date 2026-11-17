@@ -18,7 +18,7 @@ import type {
 } from '@/app/db/schema';
 import { asDate, parseJsonb, rowsFromExecute } from '@/lib/db/rows';
 import { asUuidArray } from '@/lib/db/sqlArrays';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quiz/schemas';
 
 function pick<T = unknown>(
   row: Record<string, unknown> | null | undefined,

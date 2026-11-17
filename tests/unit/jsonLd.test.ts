@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { serializeJsonLd } from '@/lib/jsonLd';
+import { serializeJsonLd } from '@/lib/marketing/jsonLd';
 
 describe('serializeJsonLd', () => {
   it('escapes < so copy cannot break out of the script tag', () => {

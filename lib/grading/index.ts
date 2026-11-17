@@ -22,22 +22,22 @@ import {
   lookupCachedGrading,
   writeCachedGrading,
   type CachedGradingPayload,
-} from '@/lib/gradingCache';
+} from '@/lib/grading/cache';
 import {
   applyEvidenceChecks,
   classifyStudentAnswerSpecial,
   matchesDisagree,
-} from '@/lib/gradingEvidence';
+} from '@/lib/grading/evidence';
 import {
   buildSafeMaterialsContext,
   retrieveCourseChunks,
 } from '@/lib/knowledge';
-import { detectRequiredMatchCount } from '@/lib/gradingQuestionIntent';
+import { detectRequiredMatchCount } from '@/lib/grading/questionIntent';
 import {
   computeScoreFromRubric,
   ensureRubric,
   fallbackRubric,
-} from '@/lib/gradingRubric';
+} from '@/lib/grading/rubric';
 import {
   GRADING_CONFIDENCE_REVIEW_THRESHOLD,
   GRADING_MODEL_VERSION,
@@ -47,7 +47,7 @@ import {
   type RubricCriterion,
   type RubricMatch,
   type StoredFeedback,
-} from '@/lib/gradingTypes';
+} from '@/lib/grading/types';
 
 export {
   GRADING_MODEL_VERSION,
@@ -57,8 +57,8 @@ export {
   type RubricCriterion,
   type RubricMatch,
   type StoredFeedback,
-} from '@/lib/gradingTypes';
-export { computeScoreFromRubric } from '@/lib/gradingRubric';
+} from '@/lib/grading/types';
+export { computeScoreFromRubric } from '@/lib/grading/rubric';
 
 const MAX_FIELD_LENGTH = 8_000;
 
@@ -486,7 +486,7 @@ export async function gradeShortAnswer(
   if (!overrideExamples && request.questionId && tenantId) {
     try {
       const { formatOverrideExamplesForPrompt } = await import(
-        '@/lib/gradingOverrideExamples'
+        '@/lib/grading/overrideExamples'
       );
       overrideExamples = await formatOverrideExamplesForPrompt({
         tenantId,

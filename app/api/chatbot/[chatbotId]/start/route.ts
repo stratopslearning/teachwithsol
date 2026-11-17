@@ -13,7 +13,7 @@ import { isStudentEntitled } from '@/lib/featureFlags';
 import {
   isSectionConcluded,
   SECTION_CONCLUDED_MESSAGE,
-} from '@/lib/sectionAvailability';
+} from '@/lib/sections/availability';
 
 export const dynamic = 'force-dynamic';
 

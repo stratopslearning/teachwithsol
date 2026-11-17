@@ -1,7 +1,7 @@
 /**
  * Live rubric designer eval — callRubricModel on synthetic short-answer fixtures.
  */
-import { callRubricModelFull } from '@/lib/gradingRubric';
+import { callRubricModelFull } from '@/lib/grading/rubric';
 import type { RubricEvalCase } from '@/evals/datasets/rubric';
 
 export type RubricEvalOutput = {

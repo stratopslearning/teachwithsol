@@ -31,7 +31,7 @@ import { compareDates, compareStringsIgnoreCase } from '@/lib/listSort';
 import type {
   SectionDiscussionRow,
   SectionQuizRow,
-} from '@/lib/sectionDetailData';
+} from '@/lib/sections/detailData';
 import { PageControls } from '@/components/patterns/PageControls';
 
 type CourseworkKind = 'quiz' | 'discussion';

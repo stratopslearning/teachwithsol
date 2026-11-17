@@ -9,7 +9,7 @@ import { db } from '@/app/db';
 import { gradingBatches } from '@/app/db/schema';
 import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import { ApiError } from '@/lib/api/errors';
-import { GRADING_PROMPT_VERSION } from '@/lib/gradingTypes';
+import { GRADING_PROMPT_VERSION } from '@/lib/grading/types';
 import { enqueueGradeAttemptsBatch } from '@/lib/jobs/enqueue';
 
 export type GradingBatchMode = 'fast_queue' | 'openai_batch';
@@ -191,7 +191,7 @@ export async function pollAndApplyGradingBatch(
   const remote = await client.batches.retrieve(row.openaiBatchId);
 
   if (remote.status === 'completed') {
-    const { regradeAttempt } = await import('@/lib/regradeAttempt');
+    const { regradeAttempt } = await import('@/lib/grading/regradeAttempt');
     let applied = 0;
     for (const attemptId of row.attemptIds) {
       try {

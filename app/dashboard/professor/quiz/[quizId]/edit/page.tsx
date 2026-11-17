@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { withBasePath } from "@/lib/basePath";
 import { listTeachingSectionIds } from "@/lib/professor/graderSections";
-import { professorCanAccessQuiz, userCanWriteQuiz } from "@/lib/quizAccess";
-import { isSectionConcluded } from "@/lib/sectionAvailability";
+import { professorCanAccessQuiz, userCanWriteQuiz } from "@/lib/quiz/access";
+import { isSectionConcluded } from "@/lib/sections/availability";
 
 import { CreateEditableCopyButton } from "./CreateEditableCopyButton";
 import { ReleaseBadge } from "@/components/status/badges";

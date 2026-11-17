@@ -59,7 +59,7 @@ import {
   looksLikeApiToken,
   TOKEN_PREFIX,
   verifyProfessorApiToken,
-} from '@/lib/professorApiTokens';
+} from '@/lib/professor/apiTokens';
 
 const baseUser = {
   id: 'user-1',

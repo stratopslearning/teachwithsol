@@ -2,7 +2,7 @@
  * Runtime course modules (Canvas-like) — delivery surface.
  */
 import { ApiError } from '@/lib/api/errors';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quiz/schemas';
 import {
   assignModuleSectionsDefiner,
   completeModuleItemDefiner,

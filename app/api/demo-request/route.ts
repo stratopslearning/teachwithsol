@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { emailComplianceFooter } from "@/lib/legal";
+import { emailComplianceFooter } from "@/lib/marketing/legal";
 import { rateLimit } from "@/lib/rateLimit";
 
 const bodySchema = z.object({

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { fetchUserEnrollmentsDetail } from '@/lib/db/facultyStudentReads';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
+import { isSectionConcluded } from '@/lib/sections/availability';
 
 export type StudentSectionContext = {
   sectionId: string;

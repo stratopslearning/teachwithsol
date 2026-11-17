@@ -10,7 +10,7 @@ import { withTenant } from '@/lib/db/tenantContext';
 import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
-import { parseOptionalEndsAt } from '@/lib/sectionAvailability';
+import { parseOptionalEndsAt } from '@/lib/sections/availability';
 import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';

@@ -4,7 +4,7 @@ import { env } from '@/lib/env';
 import {
   emailComplianceFooter,
   emailComplianceFooterHtml,
-} from '@/lib/legal';
+} from '@/lib/marketing/legal';
 import { EMAIL_HTML_FOOTER_MARKER } from '@/lib/email/templates';
 import { getSesClient } from '@/lib/email/sesClient';
 

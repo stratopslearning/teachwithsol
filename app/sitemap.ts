@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
-import { getAllBlogPosts, getBlogMtime } from '@/lib/blog';
-import { getAllDocs, getDocMtime } from '@/lib/docs';
+import { getAllBlogPosts, getBlogMtime } from '@/lib/marketing/blog';
+import { getAllDocs, getDocMtime } from '@/lib/marketing/docs';
 import { absoluteUrl } from '@/lib/siteUrl';
 
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -1,4 +1,4 @@
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE } from '@/lib/quiz/schemas';
 
 /**
  * Percentage and pass/fail for an attempt. Used by submit, background

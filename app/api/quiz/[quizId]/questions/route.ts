@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
-import { professorCanAccessQuiz, userCanWriteQuiz } from '@/lib/quizAccess';
+import { professorCanAccessQuiz, userCanWriteQuiz } from '@/lib/quiz/access';
 import {
   fetchQuizQuestionsSafeDefiner,
   studentEnrolledInQuizDefiner,

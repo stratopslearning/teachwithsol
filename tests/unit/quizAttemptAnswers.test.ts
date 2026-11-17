@@ -5,7 +5,7 @@ import {
   remapAttemptPayloadKeys,
   resolveAttemptAnswer,
   resolveAttemptFeedback,
-} from '@/lib/quizAttemptAnswers';
+} from '@/lib/quiz/attemptAnswers';
 
 const currentQuestions = [
   {

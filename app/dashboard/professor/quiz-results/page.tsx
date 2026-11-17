@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/table";
 import { withBasePath } from "@/lib/basePath";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
-import { fetchSubmittedAttemptsForProfessorSections } from "@/lib/professorVisibleAttempts";
-import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
+import { fetchSubmittedAttemptsForProfessorSections } from "@/lib/professor/visibleAttempts";
+import { partitionEnrollmentsByConclusion } from "@/lib/sections/availability";
 import { listTeachingSectionIds } from '@/lib/professor/graderSections';
 import { fetchSectionsByIds } from '@/lib/db/entityScopedReads';
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";

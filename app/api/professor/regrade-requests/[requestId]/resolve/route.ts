@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
-import { resolveRegradeRequestForProfessor } from '@/lib/regradeRequests';
+import { resolveRegradeRequestForProfessor } from '@/lib/quiz/regradeRequests';
 import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';

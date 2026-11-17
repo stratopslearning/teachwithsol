@@ -8,11 +8,11 @@ import { fetchSectionsByIds } from '@/lib/db/entityScopedReads';
 import { fetchSectionLearnerCounts } from '@/lib/db/facultyStudentReads';
 import { listTeachingSectionIds } from '@/lib/professor/graderSections';
 import type { UserData } from '@/lib/getOrCreateUser';
-import { partitionEnrollmentsByConclusion } from '@/lib/sectionAvailability';
+import { partitionEnrollmentsByConclusion } from '@/lib/sections/availability';
 import {
   loadSectionDetailData,
   type SectionDetailData,
-} from '@/lib/sectionDetailData';
+} from '@/lib/sections/detailData';
 
 export type ProfessorSectionSummary = {
   id: string;

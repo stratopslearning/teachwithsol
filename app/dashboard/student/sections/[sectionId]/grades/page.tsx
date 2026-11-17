@@ -5,7 +5,7 @@ import { listAssignmentGroupsDefiner } from '@/lib/db/lmsDefiners';
 import { fetchStudentGradebookAttemptsDefiner } from '@/lib/db/studentWriteDefiners';
 import { loadCourseNav } from '@/lib/lms/loadCourseNav';
 import { computeWeightedGrade } from '@/lib/lms/weightedGrades';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
+import { isSectionConcluded } from '@/lib/sections/availability';
 import { requireStudentSectionAccess } from '@/lib/student/sectionAccess';
 
 import StudentCompletionsClient from '@/app/dashboard/student/grades/StudentCompletionsClient';

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
-import { isSectionConcluded } from "@/lib/sectionAvailability";
+import { isSectionConcluded } from "@/lib/sections/availability";
 
 function extractLocalDateAndTime(
   date: Date | string | null | undefined,

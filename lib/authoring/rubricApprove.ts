@@ -13,8 +13,8 @@ import {
   callRubricModelFull,
   computeScoreFromRubric,
   readRubricFromColumn,
-} from '@/lib/gradingRubric';
-import type { RubricCriterion } from '@/lib/gradingTypes';
+} from '@/lib/grading/rubric';
+import type { RubricCriterion } from '@/lib/grading/types';
 
 export type SampleAnswerBand = 'good' | 'partial' | 'bad';
 
@@ -273,7 +273,7 @@ export async function getApprovedOrFallbackRubric(question: {
     };
   }
 
-  const { getOrDeriveRubric } = await import('@/lib/gradingRubric');
+  const { getOrDeriveRubric } = await import('@/lib/grading/rubric');
   console.warn('[rubric] derive-at-grade fallback (prefer authoring approve)', {
     questionId: question.id,
   });

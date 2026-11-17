@@ -71,7 +71,7 @@ describe('email templates', () => {
 describe('emailComplianceFooter', () => {
   it('avoids SOL (SOL) duplication when entity defaults to brand', async () => {
     const { emailComplianceFooter, emailComplianceFooterHtml } = await import(
-      '@/lib/legal'
+      '@/lib/marketing/legal'
     );
     const text = emailComplianceFooter();
     expect(text).not.toMatch(/SOL \(SOL\)/);

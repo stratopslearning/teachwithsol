@@ -21,19 +21,19 @@ import {
   buildLegacyQuestionKeyMap,
   resolveAttemptAnswer,
   resolveAttemptFeedback,
-} from "@/lib/quizAttemptAnswers";
+} from "@/lib/quiz/attemptAnswers";
 import { deriveAttemptGradebookStatus } from "@/lib/professor/attemptGradeStatus";
 import { quizGradesAreReleased } from "@/lib/professor/gradesReleased";
-import { isFallbackGradingFeedback, isPendingFeedback } from "@/lib/regradeAttempt";
+import { isFallbackGradingFeedback, isPendingFeedback } from "@/lib/grading/regradeAttempt";
 import {
   isPendingStatus,
   type RubricCriterion,
   type StoredFeedback,
-} from "@/lib/gradingTypes";
+} from "@/lib/grading/types";
 import {
   attemptNeedsBackgroundRetry,
   scheduleAttemptRetry,
-} from "@/lib/backgroundRetry";
+} from "@/lib/quiz/backgroundRetry";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 
 export default async function AttemptDetailPage({

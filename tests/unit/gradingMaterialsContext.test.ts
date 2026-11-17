@@ -4,8 +4,8 @@ import {
   buildGradingPrompt,
   formatMaterialsGradingSection,
 } from '@/lib/grading';
-import { hashMaterialsContext } from '@/lib/gradingCache';
-import { ensureRubric } from '@/lib/gradingRubric';
+import { hashMaterialsContext } from '@/lib/grading/cache';
+import { ensureRubric } from '@/lib/grading/rubric';
 
 describe('formatMaterialsGradingSection', () => {
   it('returns empty for blank input', () => {

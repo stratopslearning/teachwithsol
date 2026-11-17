@@ -9,14 +9,14 @@ import {
   buildLegacyQuestionKeyMap,
   resolveAttemptAnswer,
   resolveAttemptFeedback,
-} from '@/lib/quizAttemptAnswers';
+} from '@/lib/quiz/attemptAnswers';
 import {
   gradeMultipleQuestions,
   outcomeToFeedback,
   type GradingRequest,
 } from '@/lib/grading';
-import { getOrDeriveRubric } from '@/lib/gradingRubric';
-import { isGradedStatus, type StoredFeedback } from '@/lib/gradingTypes';
+import { getOrDeriveRubric } from '@/lib/grading/rubric';
+import { isGradedStatus, type StoredFeedback } from '@/lib/grading/types';
 import { scoreOutcome } from '@/lib/quiz/score';
 
 /**

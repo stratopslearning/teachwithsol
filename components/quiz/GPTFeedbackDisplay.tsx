@@ -9,13 +9,13 @@ import {
   X,
 } from "@/components/icons";
 
-import { detectRequiredMatchCount } from "@/lib/gradingQuestionIntent";
+import { detectRequiredMatchCount } from "@/lib/grading/questionIntent";
 import type {
   GradingStatus,
   RubricCriterion,
   RubricMatch,
   StoredFeedback,
-} from "@/lib/gradingTypes";
+} from "@/lib/grading/types";
 
 interface GPTFeedbackData {
   score: number | null;

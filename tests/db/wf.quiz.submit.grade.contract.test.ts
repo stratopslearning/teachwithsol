@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { computeCacheKey } from '@/lib/gradingCache';
+import { computeCacheKey } from '@/lib/grading/cache';
 
 describe('wf.quiz.submit.grade.contract', () => {
   it('grading cache key differs across tenants for same answer payload', () => {

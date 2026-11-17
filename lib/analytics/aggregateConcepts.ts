@@ -1,5 +1,5 @@
 import { CONCEPT_GAP_THRESHOLD } from '@/lib/analytics/constants';
-import type { QuestionStatRow } from '@/lib/quizQuestionStats';
+import type { QuestionStatRow } from '@/lib/quiz/questionStats';
 
 export type ConceptMasteryRow = {
   tag: string;

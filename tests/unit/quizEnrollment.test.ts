@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertStudentCanOpenQuiz } from '@/lib/quizEnrollment';
+import { assertStudentCanOpenQuiz } from '@/lib/quiz/enrollment';
 
 describe('assertStudentCanOpenQuiz', () => {
   it('denies when no section was resolved (not enrolled / quiz has no sections)', () => {

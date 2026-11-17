@@ -16,7 +16,7 @@ import {
   computeScoreFromRubric,
   fallbackRubric,
   readRubricFromColumn,
-} from '@/lib/gradingRubric';
+} from '@/lib/grading/rubric';
 
 describe('computeScoreFromRubric', () => {
   const baseRubric = [

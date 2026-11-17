@@ -13,7 +13,7 @@ import {
   FALLBACK_FEEDBACK_SNIPPET,
   isFallbackGradingFeedback,
   isPendingFeedback,
-} from '@/lib/regradeAttempt';
+} from '@/lib/grading/regradeAttempt';
 
 describe('isFallbackGradingFeedback', () => {
   it('detects the legacy "Grading system temporarily unavailable" message', () => {

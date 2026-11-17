@@ -6,7 +6,7 @@ import {
   QuizAccessError,
   type QuizAccessContext,
 } from '@/lib/quiz/accessPolicy';
-import { SECTION_CONCLUDED_MESSAGE } from '@/lib/sectionAvailability';
+import { SECTION_CONCLUDED_MESSAGE } from '@/lib/sections/availability';
 
 const now = new Date('2026-03-10T12:00:00.000Z');
 const ctx = (over: Partial<QuizAccessContext> = {}): QuizAccessContext => ({

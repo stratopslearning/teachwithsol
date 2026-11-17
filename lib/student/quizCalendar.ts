@@ -5,8 +5,8 @@ import {
   fetchStudentAssignmentDuesDefiner,
   fetchStudentQuizDueForSectionsDefiner,
 } from '@/lib/db/studentReadDefiners';
-import { isQuizListedForStudents } from '@/lib/quizAvailability';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
+import { isQuizListedForStudents } from '@/lib/quiz/availability';
+import { isSectionConcluded } from '@/lib/sections/availability';
 import { normalizeDatabaseDate } from '@/lib/utils';
 
 export type StudentCalendarEvent = {

@@ -10,7 +10,7 @@ vi.mock('@clerk/nextjs/server', () => ({
 }));
 
 const verifyProfessorApiTokenMock = vi.fn();
-vi.mock('@/lib/professorApiTokens', () => ({
+vi.mock('@/lib/professor/apiTokens', () => ({
   TOKEN_PREFIX: 'sol_pat_',
   TOKEN_SCOPES: [
     'read',

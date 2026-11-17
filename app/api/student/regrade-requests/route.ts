@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { route } from '@/lib/api/route';
-import { createRegradeRequest } from '@/lib/regradeRequests';
+import { createRegradeRequest } from '@/lib/quiz/regradeRequests';
 
 export const dynamic = 'force-dynamic';
 

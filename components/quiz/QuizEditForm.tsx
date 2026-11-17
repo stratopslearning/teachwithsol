@@ -21,7 +21,7 @@ import {
   AlertCircle
 } from '@/components/icons';
 import { SectionMultiSelect } from '@/components/ui/SectionMultiSelect';
-import { DEFAULT_PASSING_SCORE, QUIZ_LIMITS } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE, QUIZ_LIMITS } from '@/lib/quiz/schemas';
 import { toast } from 'sonner';
 import { ReleaseBadge } from '@/components/status/badges';
 
