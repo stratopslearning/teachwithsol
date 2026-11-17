@@ -91,3 +91,35 @@ describe('evaluateQuizAccess', () => {
     expect(r.error).toBeInstanceOf(QuizAccessError);
   });
 });
+
+// The quiz page uses `view`, so it can't show a quiz that start / submit refuse.
+describe("evaluateQuizAccess 'view'", () => {
+  const view = (c: QuizAccessContext) => evaluateQuizAccess(c, 'view');
+
+  it('blocks archived, not-started and ended quizzes', () => {
+    expect(view(ctx({ quiz: { ...ctx().quiz, isActive: false } }))).toMatchObject({ ok: false, reason: 'archived' });
+    expect(view(ctx({ now: new Date('2026-02-01T00:00:00Z') }))).toMatchObject({ ok: false, reason: 'notStarted' });
+    expect(view(ctx({ now: new Date('2026-03-25T00:00:00Z') }))).toMatchObject({ ok: false, reason: 'ended' });
+  });
+
+  it('a passed due date blocks only when no attempt is in progress', () => {
+    // The assignment due date applies only when the quiz has no end date.
+    const due = {
+      quiz: { ...ctx().quiz, endDate: null },
+      assignment: { dueDate: '2026-03-05T00:00:00Z' },
+    };
+    expect(view(ctx(due))).toMatchObject({ ok: false, reason: 'dueDatePassed' });
+    expect(view(ctx({ ...due, inProgressAttempt: { startedAt: '2026-03-04T00:00:00Z' } })).ok).toBe(true);
+  });
+
+  it('section ended: same rule as start and submit', () => {
+    const ended = { section: { endsAt: '2026-03-08T00:00:00Z' } };
+    expect(view(ctx(ended))).toMatchObject({ ok: false, reason: 'sectionConcluded' });
+    expect(view(ctx({ ...ended, inProgressAttempt: { startedAt: '2026-03-07T00:00:00Z' } })).ok).toBe(true);
+    expect(view(ctx({ ...ended, inProgressAttempt: { startedAt: '2026-03-09T00:00:00Z' } }))).toMatchObject({ ok: false, reason: 'sectionConcluded' });
+  });
+
+  it('does not apply the attempt limit', () => {
+    expect(view(ctx({ submittedCount: 5 })).ok).toBe(true);
+  });
+});

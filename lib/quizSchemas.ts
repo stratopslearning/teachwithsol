@@ -48,15 +48,22 @@ export function quizWindowSuperRefine(
 /** One default for quizzes created without an explicit passing score (matches the DB column default). */
 export const DEFAULT_PASSING_SCORE = 60;
 
+/** Limits the server enforces; quiz forms use the same numbers. */
+export const QUIZ_LIMITS = {
+  titleMax: 200,
+  descriptionMax: 8_000,
+  timeLimitMaxMinutes: 24 * 60,
+} as const;
+
 /**
  * Fields shared by quiz create and update (professor, admin and MCP routes).
  * `null` from edit forms means "unset" for description and time limit.
  */
 const quizFields = z.object({
-  title: z.string().min(1).max(200),
+  title: z.string().min(1).max(QUIZ_LIMITS.titleMax),
   description: z
     .string()
-    .max(8_000)
+    .max(QUIZ_LIMITS.descriptionMax)
     .nullish()
     .transform((v) => v ?? undefined),
   sectionIds: z
@@ -69,7 +76,7 @@ const quizFields = z.object({
     .number()
     .int()
     .min(1)
-    .max(24 * 60)
+    .max(QUIZ_LIMITS.timeLimitMaxMinutes)
     .nullish()
     .transform((v) => v ?? undefined),
   passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
