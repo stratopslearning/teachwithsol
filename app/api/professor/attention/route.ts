@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { getAttentionItemsForProfessor } from '@/lib/professorAttention';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
 /** Attempts needing grading attention in sections the caller teaches. */
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route(
+  { auth: { professorApi: 'read' } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
 
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
@@ -25,7 +25,5 @@ export async function GET(req: NextRequest) {
       limit: limitParam ? Number(limitParam) : undefined,
     });
     return NextResponse.json({ items });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

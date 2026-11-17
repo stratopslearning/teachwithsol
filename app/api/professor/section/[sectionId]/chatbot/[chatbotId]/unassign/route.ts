@@ -1,18 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { unassignDiscussionFromSection } from '@/lib/professor/mutations';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(
-  _req: NextRequest,
-  context: { params: Promise<{ sectionId: string; chatbotId: string }> },
-) {
-  try {
-    const { user } = await requireProfessorApi(_req, { scope: 'sections:write' });
+export const POST = route<{ sectionId: string; chatbotId: string }>(
+  { auth: { professorApi: 'sections:write' } },
+  async ({ params, user }) => {
 
     const limited = await enforceRateLimit({
       key: `chatbot-unassign:${user.id}`,
@@ -23,11 +19,9 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { sectionId, chatbotId } = await context.params;
+    const { sectionId, chatbotId } = params;
     await unassignDiscussionFromSection(user, sectionId, chatbotId);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

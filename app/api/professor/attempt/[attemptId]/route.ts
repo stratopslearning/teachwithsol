@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 
-import { apiErrorResponse, ApiError } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
+import { ApiError } from '@/lib/api/errors';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { getAttemptDetail } from '@/lib/professor/grading';
 import { insertGradeOverride } from '@/lib/professor/overrides';
 import { assertTeachesSection } from '@/lib/professor/sections';
 import { loadAttemptForGrading } from '@/lib/quiz/gradingData';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,12 +21,10 @@ const patchBodySchema = z.object({
 });
 
 /** Full attempt detail (answers + AI feedback): audited disclosure. */
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ attemptId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route<{ attemptId: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ params, apiAuth }) => {
+    const auth = apiAuth!;
 
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
@@ -36,21 +34,17 @@ export async function GET(
     });
     if (limited) return limited;
 
-    const { attemptId } = await context.params;
+    const { attemptId } = params;
     const attempt = await getAttemptDetail(auth.user, attemptId);
     return NextResponse.json({ attempt });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
 /** Manual grade override (numeric and/or rubric criteria) with required note. */
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ attemptId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'grades:write' });
+export const PATCH = route<{ attemptId: string }>(
+  { auth: { professorApi: 'grades:write' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
 
     const limited = await enforceRateLimit({
       key: `professor-grade-write:${auth.user.id}`,
@@ -60,7 +54,7 @@ export async function PATCH(
     });
     if (limited) return limited;
 
-    const { attemptId } = await context.params;
+    const { attemptId } = params;
     // FORCE RLS: a plain db read finds no attempt; look it up via the definer.
     const attemptRow = await loadAttemptForGrading(attemptId);
     if (!attemptRow) throw ApiError.notFound('Attempt not found');
@@ -105,7 +99,5 @@ export async function PATCH(
 
     const attempt = await getAttemptDetail(auth.user, attemptId);
     return NextResponse.json({ attempt, override, effective });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

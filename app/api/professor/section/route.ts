@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { createSectionForCourse } from '@/lib/professor/createSection';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +14,10 @@ const bodySchema = z.object({
 });
 
 /** Create a section in a workspace course; auto-enrolls the teaching professor. */
-export async function POST(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'sections:write',
-      professorOnly: true,
-    });
+export const POST = route(
+  { auth: { professorApi: 'sections:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-sections-write:${auth.user.id}`,
       limit: 30,
@@ -36,7 +33,5 @@ export async function POST(req: NextRequest) {
       endsAt: body.endsAt,
     });
     return NextResponse.json({ success: true, section }, { status: 201 });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

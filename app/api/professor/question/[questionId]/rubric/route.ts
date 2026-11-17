@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { ApiError, apiErrorResponse } from '@/lib/api/errors';
+import { ApiError } from '@/lib/api/errors';
 import { userCanWriteQuiz } from '@/lib/quizAccess';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import {
   approveQuestionRubric,
@@ -11,6 +10,7 @@ import {
   proposeQuestionRubric,
   testRubricSampleSeparation,
 } from '@/lib/authoring/rubricApprove';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 90;
@@ -32,13 +32,11 @@ const postSchema = z.discriminatedUnion('action', [
   }),
 ]);
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ questionId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'grades:write' });
-    const { questionId } = await ctx.params;
+export const POST = route<{ questionId: string }>(
+  { auth: { professorApi: 'grades:write' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { questionId } = params;
     const body = postSchema.parse(await readJsonBody(req));
 
     // Only teachers who can edit the question's quiz may change its rubric
@@ -69,7 +67,5 @@ export async function POST(
       samples: body.samples,
     });
     return NextResponse.json(result);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

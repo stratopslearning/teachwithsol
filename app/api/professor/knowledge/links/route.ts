@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import {
   acceptLinkedDocumentUpdate,
@@ -11,6 +9,7 @@ import {
   setLinkedDocumentAuthoringCorpus,
   unlinkDocumentFromCourse,
 } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,12 +38,10 @@ const patchSchema = z.discriminatedUnion('action', [
   }),
 ]);
 
-export async function POST(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const POST = route(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-knowledge-write:${auth.user.id}`,
       limit: 60,
@@ -58,17 +55,13 @@ export async function POST(req: NextRequest) {
       authoringCorpus: body.authoringCorpus,
     });
     return NextResponse.json({ success: true }, { status: 201 });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function PATCH(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const PATCH = route(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-knowledge-write:${auth.user.id}`,
       limit: 60,
@@ -106,17 +99,13 @@ export async function PATCH(req: NextRequest) {
       );
     }
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function DELETE(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
+export const DELETE = route(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-knowledge-write:${auth.user.id}`,
       limit: 60,
@@ -128,7 +117,5 @@ export async function DELETE(req: NextRequest) {
     const body = bodySchema.parse(await req.json());
     await unlinkDocumentFromCourse(auth.user, body.courseId, body.documentId);
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

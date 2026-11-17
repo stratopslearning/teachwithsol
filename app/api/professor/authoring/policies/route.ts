@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import {
   getAuthoringPolicyForWorkspace,
   upsertAuthoringPolicy,
 } from '@/lib/authoring/policies';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,9 +18,10 @@ const upsertSchema = z.object({
   extraPrompt: z.string().max(4000).nullable().optional(),
 });
 
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route(
+  { auth: { professorApi: 'read' } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const workspaceId = req.nextUrl.searchParams.get('workspaceId');
     if (!workspaceId) {
       return NextResponse.json(
@@ -31,17 +31,13 @@ export async function GET(req: NextRequest) {
     }
     const policy = await getAuthoringPolicyForWorkspace(auth.user, workspaceId);
     return NextResponse.json({ policy });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function PUT(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'authoring:write',
-      professorOnly: true,
-    });
+export const PUT = route(
+  { auth: { professorApi: 'authoring:write', professorOnly: true } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-authoring-write:${auth.user.id}`,
       limit: 20,
@@ -58,7 +54,5 @@ export async function PUT(req: NextRequest) {
       extraPrompt: body.extraPrompt,
     });
     return NextResponse.json({ policy });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

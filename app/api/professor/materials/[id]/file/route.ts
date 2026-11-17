@@ -1,20 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { apiErrorResponse, ApiError } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
+import { ApiError } from '@/lib/api/errors';
 import { getLegacyMaterialPreviewBytes } from '@/lib/knowledge/preview';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 /** Stream a legacy course_materials upload for faculty preview. */
-export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
-    const { id } = await ctx.params;
+export const GET = route<{ id: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { id } = params;
     const disposition =
       req.nextUrl.searchParams.get('disposition') === 'attachment'
         ? 'attachment'
@@ -32,7 +30,5 @@ export async function GET(
         'Cache-Control': 'private, max-age=60',
       },
     });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

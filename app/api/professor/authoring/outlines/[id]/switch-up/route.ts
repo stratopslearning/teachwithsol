@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { extractRequestMeta } from '@/lib/audit';
 import { acceptSwitchUp, proposeSwitchUp } from '@/lib/authoring/switchUp';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -27,15 +26,10 @@ const acceptSchema = z.object({
 });
 
 /** Propose switch-up diffs (GET-like via POST body action). */
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'authoring:write',
-      professorOnly: true,
-    });
+export const POST = route<{ id: string }>(
+  { auth: { professorApi: 'authoring:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-authoring-write:${auth.user.id}`,
       limit: 10,
@@ -44,7 +38,7 @@ export async function POST(
     });
     if (limited) return limited;
 
-    const { id } = await ctx.params;
+    const { id } = params;
     const raw = await req.json();
     const action = raw?.action === 'accept' ? 'accept' : 'propose';
     const meta = extractRequestMeta(req);
@@ -73,7 +67,5 @@ export async function POST(
       meta,
     );
     return NextResponse.json(result);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

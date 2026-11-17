@@ -6,16 +6,15 @@ import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import { getProfessorSectionDetail } from '@/lib/professor/sections';
 import { setSectionEndsAt } from '@/lib/professor/mutations';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
 /** Section detail (roster, codes, quizzes, discussions) for teaching faculty. */
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ sectionId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route<{ sectionId: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ params, apiAuth }) => {
+    const auth = apiAuth!;
 
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
@@ -25,13 +24,11 @@ export async function GET(
     });
     if (limited) return limited;
 
-    const { sectionId } = await context.params;
+    const { sectionId } = params;
     const detail = await getProfessorSectionDetail(auth.user, sectionId);
     return NextResponse.json(detail);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
 const patchSchema = z.object({
   endsAt: z.union([z.string(), z.null()]).optional(),

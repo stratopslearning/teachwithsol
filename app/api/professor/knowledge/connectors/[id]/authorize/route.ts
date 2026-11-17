@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { fetchKnowledgeConnectorByIdDefiner } from '@/lib/db/knowledgeJobDefiners';
 import { withTenant } from '@/lib/db/tenantContext';
 import { knowledgeConnectors } from '@/app/db/schema';
-import { apiErrorResponse, ApiError } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
+import { ApiError } from '@/lib/api/errors';
 import { withBasePath } from '@/lib/basePath';
 import {
   buildConnectorAuthorizeUrl,
@@ -14,19 +13,15 @@ import {
 import type { KnowledgeProvider } from '@/lib/knowledge';
 import { assertWorkspaceFaculty } from '@/lib/knowledge/workspaceAccess';
 import { absoluteUrl } from '@/lib/siteUrl';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'materials:write',
-      professorOnly: true,
-    });
-    const { id } = await ctx.params;
+export const GET = route<{ id: string }>(
+  { auth: { professorApi: 'materials:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { id } = params;
     // FORCE RLS: a plain db read finds nothing. Find the workspace via the
     // definer, then re-read under it (the definer doesn't skip deleted rows).
     const meta = await fetchKnowledgeConnectorByIdDefiner(id);
@@ -71,7 +66,5 @@ export async function GET(
         `/dashboard/workspace/knowledge?tab=connections&workspaceId=${connector.workspaceId}`,
       ),
     });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

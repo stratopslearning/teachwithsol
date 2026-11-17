@@ -12,6 +12,7 @@ import {
 } from '@/lib/authoring/outlines';
 import { proposeOutlineSkeleton } from '@/lib/authoring/propose';
 import { listTeachableCourses } from '@/lib/knowledge';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 /** Skeleton + faithful build of every assignment can exceed 2 minutes. */
@@ -27,9 +28,10 @@ const generateSchema = z.object({
 });
 
 /** List outlines for a course, or teachable courses when courseId omitted. */
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
+export const GET = route(
+  { auth: { professorApi: 'read' } },
+  async ({ req, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-read:${auth.user.id}`,
       limit: 120,
@@ -56,10 +58,8 @@ export async function GET(req: NextRequest) {
       includeArchived,
     });
     return NextResponse.json({ outlines });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
 /** Propose outline + build assignment bodies, or legacy oneshot generate. */
 export async function POST(req: NextRequest) {

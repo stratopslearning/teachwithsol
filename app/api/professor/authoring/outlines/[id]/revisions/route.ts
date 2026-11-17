@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { enforceRateLimit } from '@/lib/api/rateLimitGuard';
 import {
   listAuthoringRevisions,
   restoreAuthoringRevision,
 } from '@/lib/authoring/revisions';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,29 +14,20 @@ const restoreSchema = z.object({
   revisionId: z.string().uuid(),
 });
 
-export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
-    const { id } = await ctx.params;
+export const GET = route<{ id: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { id } = params;
     const revisions = await listAuthoringRevisions(auth.user, id);
     return NextResponse.json({ revisions });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, {
-      scope: 'authoring:write',
-      professorOnly: true,
-    });
+export const POST = route<{ id: string }>(
+  { auth: { professorApi: 'authoring:write', professorOnly: true } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
     const limited = await enforceRateLimit({
       key: `professor-authoring-write:${auth.user.id}`,
       limit: 30,
@@ -46,14 +36,12 @@ export async function POST(
     });
     if (limited) return limited;
 
-    await ctx.params; // outline id validated via revision ownership
+    params; // outline id validated via revision ownership
     const body = restoreSchema.parse(await req.json());
     const outline = await restoreAuthoringRevision(
       auth.user,
       body.revisionId,
     );
     return NextResponse.json({ outline });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

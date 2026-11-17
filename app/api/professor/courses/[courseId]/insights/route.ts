@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireProfessorApi } from '@/lib/api/professorAuth';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 import {
   analyzeUnitInsights,
@@ -10,6 +8,7 @@ import {
 } from '@/lib/insights/analyzeUnit';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import { getCourseWorkspaceId } from '@/lib/workspace';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -20,13 +19,11 @@ const postSchema = z.object({
   quizIds: z.array(z.string().uuid()).optional(),
 });
 
-export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'read' });
-    const { courseId } = await ctx.params;
+export const GET = route<{ courseId: string }>(
+  { auth: { professorApi: 'read' } },
+  async ({ params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { courseId } = params;
     await assertCanManageCourse(auth.user, courseId);
     const tenantId = await getCourseWorkspaceId(courseId);
     if (!tenantId) {
@@ -34,18 +31,14 @@ export async function GET(
     }
     const insights = await listUnitInsights({ tenantId, courseId });
     return NextResponse.json({ insights });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ courseId: string }> },
-) {
-  try {
-    const auth = await requireProfessorApi(req, { scope: 'authoring:write' });
-    const { courseId } = await ctx.params;
+export const POST = route<{ courseId: string }>(
+  { auth: { professorApi: 'authoring:write' } },
+  async ({ req, params, apiAuth }) => {
+    const auth = apiAuth!;
+    const { courseId } = params;
     await assertCanManageCourse(auth.user, courseId);
     const tenantId = await getCourseWorkspaceId(courseId);
     if (!tenantId) {
@@ -63,7 +56,5 @@ export async function POST(
       quizIds: body.quizIds,
     });
     return NextResponse.json({ insight: row });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
