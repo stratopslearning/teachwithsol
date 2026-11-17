@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import type { OutlineItemBody } from '@/app/db/schema';
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import { temperatureForModel } from '@/lib/ai/modelRouter';
 import { loadCoursePromptContext } from '@/lib/ai/prompts/courseContext';
 import { ApiError } from '@/lib/api/errors';
@@ -765,7 +765,7 @@ async function planTools(opts: {
     if (fromIntent) return fromIntent;
   }
 
-  const openai = getAiClientForTask('refine', { timeout: 45_000 });
+  const openai = await aiClientFor('refine', { courseId: opts.courseId }, { timeout: 45_000 });
   const model = resolveModel('refine').model;
   const courseCtx = await loadCoursePromptContext(opts.courseId);
   const system = `${buildAuthoringAgentPlannerPrompt(courseCtx)}\nPROMPT_VERSION=${AUTHORING_PROMPT_VERSION}`;
@@ -1108,7 +1108,7 @@ async function runContentRefineTool(opts: {
 
   const { buildRefineSystemPrompt } = await import('@/lib/authoring/prompts');
   const courseCtx = await loadCoursePromptContext(opts.courseId);
-  const openai = getAiClientForTask('refine', { timeout: 60_000 });
+  const openai = await aiClientFor('refine', { courseId: opts.courseId }, { timeout: 60_000 });
   const model = resolveModel('refine').model;
   const system = `${buildRefineSystemPrompt(courseCtx)}\nPROMPT_VERSION=${AUTHORING_PROMPT_VERSION}\nOnly patch the provided target items. Do not claim publish/release.`;
 
@@ -1227,7 +1227,7 @@ async function enrichScheduleCall(
     Boolean(schedule.endDate);
   if (hasAny) return call;
 
-  const openai = getAiClientForTask('refine', { timeout: 20_000 });
+  const openai = await aiClientFor('refine', { courseId }, { timeout: 20_000 });
   const model = resolveModel('refine').model;
   try {
     const temp = temperatureForModel(model, 0.1);
@@ -1279,7 +1279,7 @@ async function runAnswerTool(opts: {
     return inventoryHumanSummary(opts.inventory);
   }
 
-  const openai = getAiClientForTask('refine', { timeout: 30_000 });
+  const openai = await aiClientFor('refine', { courseId: opts.courseId }, { timeout: 30_000 });
   const model = resolveModel('refine').model;
   const courseCtx = await loadCoursePromptContext(opts.courseId);
   const system =

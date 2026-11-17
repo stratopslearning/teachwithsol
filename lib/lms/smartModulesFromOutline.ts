@@ -16,6 +16,7 @@ import {
 import { fetchOutlineTreeById } from '@/lib/db/entityScopedReads';
 import { planQuizWindowFromToday } from '@/lib/authoring/schedule';
 import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { isOutlineItemType, ITEM_TYPES } from '@/lib/authoring/itemTypes';
 
 export type SmartModulesBuildResult = {
   modulesCreated: number;
@@ -49,23 +50,11 @@ function completionForItem(
 
 /** Prefer LESSON first, then QUIZ, INTERACTIVE, DISCUSSION, then others. */
 function outlineItemSortKey(type: string): number {
-  switch (type) {
-    case 'LESSON':
-      return 0;
-    case 'QUIZ':
-      return 1;
-    case 'INTERACTIVE':
-      return 2;
-    case 'DISCUSSION':
-      return 3;
-    default:
-      return 9;
-  }
+  return isOutlineItemType(type) ? ITEM_TYPES[type].moduleSortKey : 9;
 }
 
 function runtimeType(type: string): string {
-  if (type === 'DISCUSSION') return 'TUTOR';
-  return type;
+  return isOutlineItemType(type) ? ITEM_TYPES[type].moduleItemType : type;
 }
 
 function earliestUnlock(items: Array<{ type: string; body?: OutlineItemBody | null }>, moduleIndex: number): string | null {

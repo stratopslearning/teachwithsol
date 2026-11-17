@@ -2,10 +2,11 @@ import type { OutlineItemBody } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
 import { parseBuiltAssignmentItem } from '@/lib/authoring/generate';
 import { normalizeQuizScheduleToFuture } from '@/lib/authoring/schedule';
+import type { OutlineItemType } from '@/app/db/enums';
 
 export type FaithfulExpectedItem = {
   itemId: string;
-  type: 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE';
+  type: OutlineItemType;
   title: string;
   interactiveKind?: OutlineItemBody['interactiveKind'];
 };

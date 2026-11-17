@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { outlineItems, type OutlineItemBody } from '@/app/db/schema';
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import { temperatureForModel } from '@/lib/ai/modelRouter';
 import { hashId, logAiSpan } from '@/lib/ai/tracing';
 import { ApiError } from '@/lib/api/errors';
@@ -44,6 +44,7 @@ import {
 import { applyOutlineBuildDefiner } from '@/lib/db/entityScopedReads';
 import { assertCanManageCourse } from '@/lib/knowledge/access';
 import type { AuthUser } from '@/lib/getOrCreateUser';
+import type { OutlineItemType } from '@/app/db/enums';
 
 const skeletonItemSchema = z.object({
   type: z.enum(OUTLINE_ITEM_TYPES),
@@ -149,7 +150,7 @@ export async function proposeOutlineSkeleton(
     throw ApiError.badRequest('OpenAI is not configured');
   }
 
-  const openai = getAiClientForTask('skeleton', { timeout: 90_000 });
+  const openai = await aiClientFor('skeleton', { courseId: opts.courseId }, { timeout: 90_000 });
   const skeletonModel = resolveModel('skeleton').model;
   const policyBlock = formatAuthoringPolicyPrompt(policy);
   const courseCtx = await loadCoursePromptContext(opts.courseId);
@@ -221,7 +222,7 @@ Return a corrected FULL skeleton JSON. Every module needs >=1 QUIZ; the outline 
     title: mod.title,
     summary: mod.summary ?? null,
     items: mod.items.map((item) => ({
-      type: item.type as 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE',
+      type: item.type as OutlineItemType,
       title: item.title,
       body: {
         ...(item.type === 'INTERACTIVE' && item.interactiveKind
@@ -339,7 +340,7 @@ export async function approveAndBuildOutline(
     throw ApiError.badRequest('OpenAI is not configured');
   }
 
-  const openai = getAiClientForTask('build', { timeout: 90_000 });
+  const openai = await aiClientFor('build', { courseId: outlineRow.courseId }, { timeout: 90_000 });
   const buildModel = resolveModel('build').model;
   const policyBlock = formatAuthoringPolicyPrompt(policy);
   const courseCtx = await loadCoursePromptContext(outlineRow.courseId);
@@ -355,7 +356,7 @@ export async function approveAndBuildOutline(
       items: mod.items
         .filter(
           (item): item is typeof item & {
-            type: 'LESSON' | 'QUIZ' | 'DISCUSSION' | 'INTERACTIVE';
+            type: OutlineItemType;
           } =>
             item.type === 'LESSON' ||
             item.type === 'QUIZ' ||

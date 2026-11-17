@@ -7,7 +7,7 @@ import { createHash } from 'crypto';
 
 import { db } from '@/app/db';
 import { gradingBatches } from '@/app/db/schema';
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import { ApiError } from '@/lib/api/errors';
 import { GRADING_PROMPT_VERSION } from '@/lib/gradingTypes';
 import { enqueueGradeAttemptsBatch } from '@/lib/jobs/enqueue';
@@ -117,7 +117,7 @@ async function submitOpenAiGradingBatch(opts: {
     throw new Error('no_api_key');
   }
 
-  const client = getAiClientForTask('grade', { timeout: 120_000 });
+  const client = await aiClientFor('grade', { tenantId: opts.tenantId }, { timeout: 120_000 });
   const model = resolveModel('grade').model;
 
   // Build JSONL: one noop classification request per attempt as a batch
@@ -187,7 +187,7 @@ export async function pollAndApplyGradingBatch(
     return { status: row.status, applied: 0 };
   }
 
-  const client = getAiClientForTask('grade', { timeout: 60_000 });
+  const client = await aiClientFor('grade', {}, { timeout: 60_000 });
   const remote = await client.batches.retrieve(row.openaiBatchId);
 
   if (remote.status === 'completed') {

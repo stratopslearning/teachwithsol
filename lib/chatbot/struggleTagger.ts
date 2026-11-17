@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 import type { ChatbotMessage } from '@/app/db/schema';
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import {
   defaultCoursePromptContext,
   loadCoursePromptContext,
@@ -82,7 +82,7 @@ export async function tagSessionStruggles(opts: {
             defaultCoursePromptContext(),
           )
         : defaultCoursePromptContext();
-      const client = getAiClientForTask('insights', { timeout: 45_000 });
+      const client = await aiClientFor('insights', { courseId: opts.courseId }, { timeout: 45_000 });
       const resolved = resolveModel('insights');
       const result = await completeJsonSchema({
         client,

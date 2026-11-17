@@ -11,7 +11,7 @@ import {
   courseActivities,
   unitInsights,
 } from '@/app/db/schema';
-import { getAiClientForTask, resolveModel } from '@/lib/ai/gateway';
+import { aiClientFor, resolveModel } from '@/lib/ai/gateway';
 import {
   defaultCoursePromptContext,
   loadCoursePromptContext,
@@ -295,7 +295,7 @@ export async function analyzeUnitInsights(opts: {
     defaultCoursePromptContext(),
   );
 
-  const client = getAiClientForTask('insights', { timeout: 90_000 });
+  const client = await aiClientFor('insights', { tenantId: opts.tenantId }, { timeout: 90_000 });
   const resolved = resolveModel(
     aggregates.criterionMissRates.length > 20 ? 'review' : 'insights',
   );

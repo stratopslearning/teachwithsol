@@ -50,7 +50,34 @@ export function getAiClient(
   });
 }
 
-/** Client for a routed task (purpose inferred from task). */
+/**
+ * The entry point for model calls: reserves the workspace's AI budget (429
+ * when it's spent), then returns a client for the task. Pass the tenant, or
+ * a course id to resolve it from; with neither (system jobs) the budget is
+ * skipped. Budget defaults: AI_BUDGET_CAPACITY (500) units per
+ * AI_BUDGET_WINDOW_MS (60 s) per workspace.
+ */
+export async function aiClientFor(
+  task: AiTask,
+  scope: { tenantId?: string | null; courseId?: string | null },
+  options: AiClientOptions & { units?: number } = {},
+): Promise<OpenAI> {
+  let tenantId = scope.tenantId ?? null;
+  if (!tenantId && scope.courseId) {
+    const { fetchCourseById } = await import('@/lib/db/entityScopedReads');
+    const course = await fetchCourseById(scope.courseId);
+    tenantId = course?.tenantId ?? course?.workspaceId ?? null;
+  }
+  if (tenantId && process.env.AI_GATEWAY_ENFORCE_BUDGET !== '0') {
+    const decision = await reserveRedisBudget(tenantId, options.units ?? 1);
+    if (!decision.allowed) {
+      throw ApiError.tooMany('AI budget exceeded for this workspace. Try again shortly.');
+    }
+  }
+  return getAiClientForTask(task, options);
+}
+
+/** Client for a routed task (purpose inferred from task). Prefer aiClientFor. */
 export function getAiClientForTask(
   task: AiTask,
   options: AiClientOptions = {},
