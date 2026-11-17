@@ -10,7 +10,7 @@ import { evaluateQuizAccess, type QuizAccessReason } from '@/lib/quiz/accessPoli
 import { assertStudentCanOpenQuiz } from '@/lib/quizEnrollment';
 import { fetchQuizTakeBundleDefiner } from '@/lib/db/studentWriteDefiners';
 import { appRedirect } from '@/lib/serverRedirect';
-import { cleanQuizDescription, normalizeDatabaseDate } from '@/lib/utils';
+import { normalizeDatabaseDate } from '@/lib/utils';
 
 const BLOCK_CODE: Record<QuizAccessReason, QuizBlockCode> = {
   archived: 'quiz_unavailable',
@@ -106,11 +106,10 @@ export default async function QuizPage(props: QuizPageProps) {
         quiz={{
           id: quiz.id,
           title: quiz.title,
-          description: quiz.description
-            ? cleanQuizDescription(quiz.description)
-            : undefined,
+          description: quiz.description ?? undefined,
           timeLimit: quiz.timeLimit || undefined,
           endDate: quizEndDate ? quizEndDate.toISOString() : null,
+          hideFeedbackAfterDue: quiz.hideFeedbackAfterDue,
           totalQuestions: quizQuestions.length,
         }}
         questions={quizQuestions.map((q) => ({

@@ -9,10 +9,6 @@ import { apiErrorResponse } from '@/lib/api/errors';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
 import { updateQuizDefiner } from '@/lib/db/entityScopedReads';
 import { quizUpdateSchema } from '@/lib/quizSchemas';
-import {
-  buildQuizDescriptionWithMetadata,
-  extractQuizMetadata,
-} from '@/lib/utils';
 import { readJsonBody } from '@/lib/api/readJsonBody';
 
 export const dynamic = 'force-dynamic';
@@ -67,24 +63,18 @@ export async function PUT(
       );
     }
     const data = parsed.data;
-    const hideFeedbackAfterDue = extractQuizMetadata(
-      data.description,
-    ).hideFeedbackAfterDue;
-    const normalizedDescription = buildQuizDescriptionWithMetadata(
-      data.description,
-      hideFeedbackAfterDue,
-    );
 
     await updateQuizDefiner({
       quizId,
       title: data.title,
-      description: normalizedDescription || null,
+      description: data.description || null,
       maxAttempts: data.maxAttempts,
       timeLimit: data.timeLimit ?? null,
       passingScore: data.passingScore,
       startDate: new Date(data.startDate).toISOString(),
       endDate: new Date(data.endDate).toISOString(),
       isActive: data.isActive,
+      hideFeedbackAfterDue: data.hideFeedbackAfterDue,
       assignedBy: user.id,
       sectionIds: data.sectionIds,
       questions: data.questions.map((q, index) => ({

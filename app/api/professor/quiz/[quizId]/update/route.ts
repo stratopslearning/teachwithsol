@@ -42,6 +42,7 @@ export async function PUT(
       startDate: validatedData.startDate,
       endDate: validatedData.endDate,
       isActive: validatedData.isActive,
+      hideFeedbackAfterDue: validatedData.hideFeedbackAfterDue,
       questions: validatedData.questions.map((q) => ({
         id: q.id,
         type: q.type,

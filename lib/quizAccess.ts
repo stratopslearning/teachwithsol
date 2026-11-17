@@ -8,7 +8,7 @@ import {
   fetchCourseById,
 } from '@/lib/db/entityScopedReads';
 import type { UserData } from '@/lib/getOrCreateUser';
-import { shouldHideFeedbackForStudent } from '@/lib/utils';
+import { shouldHideFeedbackForStudent } from '@/lib/quiz/feedback';
 
 async function resolveQuizTenantId(quizId: string): Promise<string | null> {
   const quiz = await fetchQuizById(quizId);
@@ -136,7 +136,7 @@ export type AttemptFeedbackFields = {
 /** Strip scores/feedback for students while hide-until-due is active. */
 export function redactAttemptFeedbackForViewer<T extends AttemptFeedbackFields>(
   attempt: T,
-  quiz: { endDate: Date | null; description: string | null },
+  quiz: { endDate: Date | null; hideFeedbackAfterDue?: boolean | null },
   userRole: string,
 ): T {
   if (!shouldHideFeedbackForStudent(quiz, userRole)) return attempt;

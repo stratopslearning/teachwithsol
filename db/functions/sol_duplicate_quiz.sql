@@ -1,4 +1,4 @@
--- Live definition of sol_duplicate_quiz() (last changed in drizzle/0071_faculty_write_definers.sql).
+-- Live definition of sol_duplicate_quiz() (last changed in drizzle/0117_quiz_hide_feedback_column.sql).
 -- Edit here, then run `npm run db:functions:migrate` to write the migration.
 
 CREATE OR REPLACE FUNCTION sol_duplicate_quiz(p_payload jsonb)
@@ -29,7 +29,8 @@ BEGIN
 
   INSERT INTO quizzes (
     title, description, professor_id, tenant_id, offering_id,
-    max_attempts, time_limit, passing_score, start_date, end_date, is_active
+    max_attempts, time_limit, passing_score, start_date, end_date, is_active,
+    hide_feedback_after_due
   ) VALUES (
     COALESCE(v_title, v_src.title || ' (Copy)'),
     v_src.description,
@@ -41,7 +42,8 @@ BEGIN
     v_src.passing_score,
     v_src.start_date,
     v_src.end_date,
-    false
+    false,
+    v_src.hide_feedback_after_due
   )
   RETURNING id INTO v_new;
 

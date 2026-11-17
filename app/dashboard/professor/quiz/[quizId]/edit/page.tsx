@@ -16,7 +16,6 @@ import { activeOnly } from "@/lib/db/filters";
 import { withBasePath } from "@/lib/basePath";
 import { listTeachingSectionIds } from "@/lib/professor/graderSections";
 import { professorCanAccessQuiz, userCanWriteQuiz } from "@/lib/quizAccess";
-import { cleanQuizDescription } from "@/lib/utils";
 import { isSectionConcluded } from "@/lib/sectionAvailability";
 
 import { CreateEditableCopyButton } from "./CreateEditableCopyButton";
@@ -294,7 +293,7 @@ export default async function EditQuizPage({
         </dl>
         {quiz.description ? (
           <p className="mt-6 max-w-prose text-ink-muted">
-            {cleanQuizDescription(quiz.description)}
+            {quiz.description}
           </p>
         ) : null}
       </section>

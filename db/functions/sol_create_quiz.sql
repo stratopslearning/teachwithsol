@@ -1,4 +1,4 @@
--- Live definition of sol_create_quiz() (last changed in drizzle/0061_quiz_create_definer.sql).
+-- Live definition of sol_create_quiz() (last changed in drizzle/0117_quiz_hide_feedback_column.sql).
 -- Edit here, then run `npm run db:functions:migrate` to write the migration.
 
 CREATE OR REPLACE FUNCTION sol_create_quiz(p_payload jsonb)
@@ -36,7 +36,8 @@ BEGIN
     start_date,
     end_date,
     is_active,
-    source_outline_item_id
+    source_outline_item_id,
+    hide_feedback_after_due
   ) VALUES (
     COALESCE(NULLIF(trim(p_payload->>'title'), ''), 'Untitled quiz'),
     NULLIF(p_payload->>'description', ''),
@@ -49,7 +50,8 @@ BEGIN
     NULLIF(p_payload->>'startDate', '')::timestamptz,
     NULLIF(p_payload->>'endDate', '')::timestamptz,
     COALESCE((p_payload->>'isActive')::boolean, true),
-    NULLIF(p_payload->>'sourceOutlineItemId', '')::uuid
+    NULLIF(p_payload->>'sourceOutlineItemId', '')::uuid,
+    COALESCE((p_payload->>'hideFeedbackAfterDue')::boolean, false)
   )
   RETURNING id INTO v_quiz;
 

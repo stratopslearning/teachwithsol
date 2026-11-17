@@ -698,6 +698,8 @@ export const quizzes = pgTable(
     startDate: ts('start_date'), // Quiz start date
     endDate: ts('end_date'), // Quiz end date
     isActive: boolean('is_active').default(true).notNull(),
+    /** Students don't see per-question feedback until the quiz closes. */
+    hideFeedbackAfterDue: boolean('hide_feedback_after_due').default(false).notNull(),
     /** When set, students may see released scores and override history. */
     gradesReleasedAt: ts('grades_released_at'),
     /** Set when created from Authoring QUIZ publish. */

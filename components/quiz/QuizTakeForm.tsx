@@ -28,12 +28,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useEffect, useCallback } from "react";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 import { getRemainingSeconds } from "@/lib/quizTimeLimit";
-import { shouldHideFeedbackForStudent, cleanQuizDescription } from "@/lib/utils";
 import { appPath, withBasePath } from "@/lib/basePath";
 import {
   startApiErrorToBlockCode,
   type QuizBlockCode,
 } from "@/lib/quizBlockCopy";
+import { shouldHideFeedbackForStudent } from "@/lib/quiz/feedback";
 
 interface QuizTakeFormProps {
   quiz: {
@@ -42,6 +42,7 @@ interface QuizTakeFormProps {
     description?: string;
     timeLimit?: number;
     endDate?: string | null;
+    hideFeedbackAfterDue?: boolean;
     totalQuestions: number;
   };
   questions: Array<{
@@ -92,7 +93,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
   const shouldHideFeedback = shouldHideFeedbackForStudent(
     {
       endDate: quiz.endDate ? new Date(quiz.endDate) : null,
-      description: quiz.description || null,
+      hideFeedbackAfterDue: quiz.hideFeedbackAfterDue,
     },
     userRole,
   );
@@ -420,7 +421,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
             </h1>
             {quiz.description ? (
               <p className="text-sm text-ink-muted">
-                {cleanQuizDescription(quiz.description)}
+                {quiz.description}
               </p>
             ) : null}
           </header>
@@ -613,7 +614,7 @@ export function QuizTakeForm({ quiz, questions, assignmentId, userId: _userId, u
             </h1>
             {quiz.description ? (
               <p className="text-ink-muted">
-                {cleanQuizDescription(quiz.description)}
+                {quiz.description}
               </p>
             ) : null}
           </div>

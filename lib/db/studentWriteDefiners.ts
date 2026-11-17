@@ -69,6 +69,9 @@ function mapQuiz(
     startDate: asDate(pick(raw, 'start_date', 'startDate') as Date | string | null),
     endDate: asDate(pick(raw, 'end_date', 'endDate') as Date | string | null),
     isActive: Boolean(pick(raw, 'is_active', 'isActive') ?? true),
+    hideFeedbackAfterDue: Boolean(
+      pick(raw, 'hide_feedback_after_due', 'hideFeedbackAfterDue') ?? false,
+    ),
     gradesReleasedAt: asDate(
       pick(raw, 'grades_released_at', 'gradesReleasedAt') as Date | string | null,
     ),

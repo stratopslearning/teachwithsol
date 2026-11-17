@@ -820,6 +820,13 @@
       "when": 1794858502603,
       "tag": "0116_drop_unused_lms_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1794862476962,
+      "tag": "0117_quiz_hide_feedback_column",
+      "breakpoints": true
     }
   ]
 }

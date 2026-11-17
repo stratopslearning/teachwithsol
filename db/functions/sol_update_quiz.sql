@@ -1,4 +1,4 @@
--- Live definition of sol_update_quiz() (last changed in drizzle/0064_knowledge_quiz_update_definers.sql).
+-- Live definition of sol_update_quiz() (last changed in drizzle/0117_quiz_hide_feedback_column.sql).
 -- Edit here, then run `npm run db:functions:migrate` to write the migration.
 
 CREATE OR REPLACE FUNCTION sol_update_quiz(p_payload jsonb)
@@ -39,6 +39,10 @@ BEGIN
     start_date = NULLIF(p_payload->>'startDate', '')::timestamptz,
     end_date = NULLIF(p_payload->>'endDate', '')::timestamptz,
     is_active = COALESCE((p_payload->>'isActive')::boolean, is_active),
+    hide_feedback_after_due = COALESCE(
+      (p_payload->>'hideFeedbackAfterDue')::boolean,
+      hide_feedback_after_due
+    ),
     updated_at = now()
   WHERE id = v_quiz_id;
 

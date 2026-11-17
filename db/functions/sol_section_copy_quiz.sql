@@ -1,4 +1,4 @@
--- Live definition of sol_section_copy_quiz() (last changed in drizzle/0097_force_rls_remaining_pack.sql).
+-- Live definition of sol_section_copy_quiz() (last changed in drizzle/0117_quiz_hide_feedback_column.sql).
 -- Edit here, then run `npm run db:functions:migrate` to write the migration.
 
 CREATE OR REPLACE FUNCTION sol_section_copy_quiz(p_payload jsonb)
@@ -32,11 +32,12 @@ BEGIN
   v_title := v_src.title;
   INSERT INTO quizzes (
     title, description, professor_id, tenant_id, offering_id,
-    max_attempts, time_limit, passing_score, start_date, end_date, is_active
+    max_attempts, time_limit, passing_score, start_date, end_date, is_active,
+    hide_feedback_after_due
   ) VALUES (
     v_title, v_src.description, v_professor, v_src.tenant_id, v_src.offering_id,
     v_src.max_attempts, v_src.time_limit, v_src.passing_score,
-    v_src.start_date, v_src.end_date, v_src.is_active
+    v_src.start_date, v_src.end_date, v_src.is_active, v_src.hide_feedback_after_due
   )
   RETURNING id INTO v_new;
 

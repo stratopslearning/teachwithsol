@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
       startDate: new Date(validatedData.startDate).toISOString(),
       endDate: new Date(validatedData.endDate).toISOString(),
       isActive: true,
+      hideFeedbackAfterDue: validatedData.hideFeedbackAfterDue ?? false,
       sectionIds: validatedData.sectionIds,
       questions: validatedData.questions.map((q) => ({
         type: q.type,

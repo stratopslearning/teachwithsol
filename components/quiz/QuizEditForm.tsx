@@ -22,11 +22,6 @@ import {
 } from '@/components/icons';
 import { SectionMultiSelect } from '@/components/ui/SectionMultiSelect';
 import { DEFAULT_PASSING_SCORE, QUIZ_LIMITS } from '@/lib/quizSchemas';
-import {
-  buildQuizDescriptionWithMetadata,
-  cleanQuizDescription,
-  extractQuizMetadata,
-} from '@/lib/utils';
 import { toast } from 'sonner';
 import { ReleaseBadge } from '@/components/status/badges';
 
@@ -65,6 +60,7 @@ interface Quiz {
   startDate?: Date | null;
   endDate?: Date | null;
   isActive: boolean;
+  hideFeedbackAfterDue?: boolean;
   questions: Question[];
   course?: {
     id: string;
@@ -90,8 +86,6 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   
-  // Extract metadata from description
-  const quizMetadata = extractQuizMetadata(quiz.description);
   
   // Helper function to extract date and time from a Date object
   // Use local timezone methods - display what the user sees in their local time
@@ -120,7 +114,7 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
   // Form state
   const [formData, setFormData] = useState({
     title: quiz.title,
-    description: cleanQuizDescription(quiz.description),
+    description: quiz.description ?? '',
     courseId: quiz.courseId || 'global',
     maxAttempts: quiz.maxAttempts,
     // null = untimed; editing must not invent a limit.
@@ -134,7 +128,7 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
     endDate: endDateTime.date,
     endTime: endDateTime.time,
     isActive: quiz.isActive,
-    hideFeedbackAfterDue: quizMetadata.hideFeedbackAfterDue,
+    hideFeedbackAfterDue: quiz.hideFeedbackAfterDue ?? false,
   });
   const [passingScoreError, setPassingScoreError] = useState<string | null>(null);
   const [windowError, setWindowError] = useState<string | null>(null);
@@ -271,10 +265,8 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
         },
         body: JSON.stringify({
           title: formData.title,
-          description: buildQuizDescriptionWithMetadata(
-            formData.description,
-            formData.hideFeedbackAfterDue,
-          ),
+          description: formData.description,
+          hideFeedbackAfterDue: formData.hideFeedbackAfterDue,
           maxAttempts: formData.maxAttempts,
           timeLimit: formData.timeLimit ?? undefined,
           passingScore: formData.passingScore,
