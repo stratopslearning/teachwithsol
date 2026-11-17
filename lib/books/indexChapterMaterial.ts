@@ -1,5 +1,4 @@
-import { chunkText } from '@/lib/knowledge/chunk';
-import { embedTexts } from '@/lib/knowledge/embed';
+import { indexText } from '@/lib/knowledge/indexText';
 import {
   createCourseMaterialDefiner,
   insertCourseMaterialChunksDefiner,
@@ -30,41 +29,24 @@ export async function indexBookAsMaterial(opts: {
   });
 
   try {
-    const text = opts.markdown.trim();
-    // Title-only markdown is ~50 chars; require real chapter body.
-    if (text.length < 200) {
-      throw new Error('Book content too short to index');
-    }
-    const chunks = chunkText(text);
-    if (chunks.length === 0) throw new Error('Chunking produced no content');
-
-    const embeddings = await embedTexts(chunks.map((c) => c.content));
-    await insertCourseMaterialChunksDefiner({
-      materialId: material.id,
-      courseId: opts.courseId,
-      chunks: chunks.map((chunk, i) => ({
-        chunkIndex: chunk.index,
-        content: chunk.content,
-        tokenCount: chunk.tokenCount,
-        embedding: embeddings[i]!,
-      })),
+    // Title-only markdown is ~50 chars; require real chapter body. The AI cap
+    // is checked here too (this path used to skip it).
+    const { getCourseWorkspaceId } = await import('@/lib/workspace');
+    await indexText({
+      text: opts.markdown,
+      workspaceId: await getCourseWorkspaceId(opts.courseId),
+      minChars: 200,
+      emptyMessage: 'Book content too short to index',
+      write: async (chunks) => {
+        await insertCourseMaterialChunksDefiner({
+          materialId: material.id,
+          courseId: opts.courseId,
+          chunks,
+        });
+      },
     });
 
     await setCourseMaterialStatusDefiner(material.id, 'READY', null);
-
-    void (async () => {
-      try {
-        const { getCourseWorkspaceId, recordAiUsage } = await import(
-          '@/lib/workspace'
-        );
-        const workspaceId = await getCourseWorkspaceId(opts.courseId);
-        if (workspaceId) {
-          await recordAiUsage(workspaceId, 'embed', chunks.length);
-        }
-      } catch (err) {
-        console.warn('[indexBookAsMaterial] usage meter failed', err);
-      }
-    })();
 
     return material.id;
   } catch (err) {
