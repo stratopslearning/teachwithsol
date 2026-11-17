@@ -24,7 +24,6 @@ import { fetchSubmittedAttemptsForProfessorSections } from "@/lib/professorVisib
 import { partitionEnrollmentsByConclusion } from "@/lib/sectionAvailability";
 import { listTeachingSectionIds } from '@/lib/professor/graderSections';
 import { fetchSectionsByIds } from '@/lib/db/entityScopedReads';
-import { cleanQuizDescription } from "@/lib/utils";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 
 export default async function QuizResultsPage() {
@@ -263,9 +262,9 @@ export default async function QuizResultsPage() {
                         <span className="font-medium text-ink">
                           {stat.quiz.title}
                         </span>
-                        {cleanQuizDescription(stat.quiz.description) ? (
+                        {stat.quiz.description ? (
                           <span className="text-xs text-ink-faint line-clamp-1">
-                            {cleanQuizDescription(stat.quiz.description)}
+                            {stat.quiz.description}
                           </span>
                         ) : null}
                       </div>

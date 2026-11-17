@@ -80,6 +80,8 @@ const quizFields = z.object({
     .nullish()
     .transform((v) => v ?? undefined),
   passingScore: z.number().int().min(0).max(100).default(DEFAULT_PASSING_SCORE),
+  /** Students don't see per-question feedback until the quiz closes. */
+  hideFeedbackAfterDue: z.boolean().optional(),
   startDate: isoDateTimeRequired,
   endDate: isoDateTimeRequired,
   questions: z.array(quizQuestionInputSchema).max(200),

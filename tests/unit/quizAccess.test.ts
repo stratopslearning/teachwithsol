@@ -16,7 +16,7 @@ describe('redactAttemptFeedbackForViewer', () => {
   it('redacts for students before due when hideFeedbackAfterDue is set', () => {
     const quiz = {
       endDate: new Date('2099-01-01T00:00:00.000Z'),
-      description: '<!-- QUIZ_METADATA: {"hideFeedbackAfterDue":true} -->',
+      hideFeedbackAfterDue: true,
     };
     const redacted = redactAttemptFeedbackForViewer(attempt, quiz, 'STUDENT');
     expect(redacted.score).toBeNull();
@@ -28,7 +28,7 @@ describe('redactAttemptFeedbackForViewer', () => {
   it('does not redact for professors', () => {
     const quiz = {
       endDate: new Date('2099-01-01T00:00:00.000Z'),
-      description: '<!-- QUIZ_METADATA: {"hideFeedbackAfterDue":true} -->',
+      hideFeedbackAfterDue: true,
     };
     expect(redactAttemptFeedbackForViewer(attempt, quiz, 'PROFESSOR')).toEqual(
       attempt,

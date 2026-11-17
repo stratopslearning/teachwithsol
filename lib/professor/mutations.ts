@@ -277,6 +277,7 @@ export async function createQuiz(
     questions: QuizQuestionInput[];
     /** Defaults true for dashboard/MCP; Authoring passes false for draft publish. */
     isActive?: boolean;
+    hideFeedbackAfterDue?: boolean;
     /** Set when created from Authoring QUIZ publish. */
     sourceOutlineItemId?: string | null;
   },
@@ -343,6 +344,7 @@ export async function createQuiz(
     startDate: start.toISOString(),
     endDate: end.toISOString(),
     isActive,
+    hideFeedbackAfterDue: input.hideFeedbackAfterDue ?? false,
     sourceOutlineItemId: input.sourceOutlineItemId ?? null,
     sectionIds: input.sectionIds,
     questions: input.questions.map((q) => ({
@@ -376,6 +378,7 @@ export async function updateQuiz(
     startDate: string;
     endDate: string;
     isActive: boolean;
+    hideFeedbackAfterDue?: boolean;
     questions: QuizQuestionInput[];
   },
 ): Promise<{ id: string; title: string; sectionIds: string[] }> {
@@ -435,6 +438,7 @@ export async function updateQuiz(
     startDate: start.toISOString(),
     endDate: end.toISOString(),
     isActive: input.isActive,
+    hideFeedbackAfterDue: input.hideFeedbackAfterDue,
     assignedBy: user.id,
     sectionIds: input.sectionIds,
     questions: input.questions.map((q) => ({

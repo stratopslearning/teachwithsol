@@ -8,9 +8,9 @@ import {
 } from '@/lib/quizAccess';
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { getOrCreateUser } from '@/lib/getOrCreateUser';
-import { shouldHideFeedbackForStudent } from '@/lib/utils';
 import { fetchQuizById } from '@/lib/db/entityScopedReads';
 import { withTenant } from '@/lib/db/tenantContext';
+import { shouldHideFeedbackForStudent } from '@/lib/quiz/feedback';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,8 +96,8 @@ export async function GET(
     }
 
     const quizForHide = quiz
-      ? { endDate: quiz.endDate, description: quiz.description }
-      : { endDate: null, description: null };
+      ? { endDate: quiz.endDate, hideFeedbackAfterDue: quiz.hideFeedbackAfterDue }
+      : { endDate: null, hideFeedbackAfterDue: false };
     const hideFeedback =
       isOwner && shouldHideFeedbackForStudent(quizForHide, 'STUDENT');
 

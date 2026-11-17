@@ -32,7 +32,6 @@ import type {
   SectionDiscussionRow,
   SectionQuizRow,
 } from '@/lib/sectionDetailData';
-import { cleanQuizDescription } from '@/lib/utils';
 import { PageControls } from '@/components/patterns/PageControls';
 
 type CourseworkKind = 'quiz' | 'discussion';
@@ -63,7 +62,7 @@ function buildRows(
     title: quiz.title,
     searchBlob: [
       quiz.title,
-      cleanQuizDescription(quiz.description) ?? '',
+      quiz.description ?? '',
       String(quiz.submissionCount),
     ]
       .join(' ')
@@ -252,9 +251,9 @@ export function SectionCourseworkTable({
                           <span className="font-medium text-ink">
                             {quiz.title}
                           </span>
-                          {cleanQuizDescription(quiz.description) ? (
+                          {quiz.description ? (
                             <span className="text-xs text-ink-faint line-clamp-1">
-                              {cleanQuizDescription(quiz.description)}
+                              {quiz.description}
                             </span>
                           ) : null}
                         </div>

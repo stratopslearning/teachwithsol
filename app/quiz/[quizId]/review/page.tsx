@@ -6,10 +6,7 @@ import { Button } from "@/components/ui/button";
 import { withBasePath } from "@/lib/basePath";
 import { appRedirect } from "@/lib/serverRedirect";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
-import {
-  normalizeDatabaseDate,
-  shouldHideFeedbackForStudent,
-} from "@/lib/utils";
+import { normalizeDatabaseDate } from "@/lib/utils";
 import {
   buildLegacyQuestionKeyMap,
   resolveAttemptAnswer,
@@ -26,6 +23,7 @@ import {
 } from "@/lib/professor/overrides";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 import { loadOwnAttempt, loadQuizQuestions } from "@/lib/quiz/gradingData";
+import { shouldHideFeedbackForStudent } from "@/lib/quiz/feedback";
 
 interface ReviewPageProps {
   params: Promise<{ quizId: string }>;
@@ -67,7 +65,7 @@ export default async function ReviewPage({
   );
 
   const shouldHideFeedback = shouldHideFeedbackForStudent(
-    { endDate: quiz.endDate, description: quiz.description },
+    quiz,
     'STUDENT',
   );
 

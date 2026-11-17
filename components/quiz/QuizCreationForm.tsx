@@ -51,7 +51,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { cn, buildQuizDescriptionWithMetadata } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -324,10 +324,7 @@ export function QuizCreationForm({
           ...data,
           startDate: data.startDate.toISOString(),
           endDate: data.endDate.toISOString(),
-          description: buildQuizDescriptionWithMetadata(
-            data.description,
-            data.hideFeedbackAfterDue,
-          ),
+          description: data.description,
           sectionIds: sectionIds,
           questions: questionsWithOrder,
         }),

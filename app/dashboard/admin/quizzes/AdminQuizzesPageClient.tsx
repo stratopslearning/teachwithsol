@@ -37,7 +37,6 @@ import {
   TIMESTAMP_CELL_CLASS,
 } from "@/components/timezone/LocalDateTime";
 import { withBasePath } from "@/lib/basePath";
-import { cleanQuizDescription } from "@/lib/utils";
 import { confirmAction } from "@/components/feedback/ConfirmDialog";
 import { useRouter } from "next/navigation";
 import { PageControls } from "@/components/patterns/PageControls";
@@ -309,12 +308,12 @@ export default function AdminQuizzesPageClient({
                               <span className="truncate" title={quiz.title}>
                                 {quiz.title}
                               </span>
-                              {cleanQuizDescription(quiz.description) ? (
+                              {quiz.description ? (
                                 <span
                                   className="text-xs text-ink-muted truncate mt-0.5"
-                                  title={cleanQuizDescription(quiz.description)}
+                                  title={quiz.description ?? ''}
                                 >
-                                  {cleanQuizDescription(quiz.description)}
+                                  {quiz.description}
                                 </span>
                               ) : null}
                             </div>

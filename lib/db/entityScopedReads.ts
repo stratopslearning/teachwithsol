@@ -988,6 +988,8 @@ export async function updateQuizDefiner(payload: {
   startDate: string;
   endDate: string;
   isActive: boolean;
+  /** Omitted = keep the current setting. */
+  hideFeedbackAfterDue?: boolean;
   assignedBy: string;
   sectionIds: string[];
   questions: Array<{
@@ -1026,6 +1028,7 @@ export async function createQuizDefiner(payload: {
   startDate: string | null;
   endDate: string | null;
   isActive: boolean;
+  hideFeedbackAfterDue?: boolean;
   sourceOutlineItemId?: string | null;
   sectionIds: string[];
   questions: Array<{
