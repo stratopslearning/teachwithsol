@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { isCronAuthorized } from '@/lib/api/cronAuth';
-import { jobsBackend } from '@/lib/jobs/backend';
-import { enqueueLtiPassbackDrain } from '@/lib/jobs/enqueue';
 import { getLtiConfig } from '@/lib/lti/config';
 import { processPendingPassbackJobs } from '@/lib/lti/passback';
 
@@ -19,10 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ skipped: true, reason: 'lti_disabled' });
   }
 
-  // Prefer kicking Inngest; always drain inline as the durable cron safety net.
-  if (jobsBackend() === 'inngest') {
-    void enqueueLtiPassbackDrain(40);
-  }
+  // Daily safety net; normal sends go through the job queue as scores land.
   const result = await processPendingPassbackJobs(40);
-  return NextResponse.json({ ...result, backend: jobsBackend() });
+  return NextResponse.json(result);
 }
