@@ -1,28 +1,25 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import { apiErrorResponse } from '@/lib/api/errors';
-import { requireApiUser } from '@/lib/api/sessionAuth';
+import { route } from '@/lib/api/route';
 import { assertStudentCanAccessInteractive } from '@/lib/interactives/access';
 import { upsertInteractiveProgress } from '@/lib/interactives/mutations';
 
-export async function POST(
-  req: Request,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const user = await requireApiUser();
-    const { id } = await ctx.params;
-    await assertStudentCanAccessInteractive(user, id);
-    const body = await req.json();
-    const status = body.status === 'COMPLETED' ? 'COMPLETED' : 'STARTED';
+const bodySchema = z.object({
+  status: z.string().optional(),
+  xapiSummary: z.record(z.unknown()).nullish(),
+});
+
+export const POST = route<{ id: string }, typeof bodySchema>(
+  { auth: 'user', body: bodySchema },
+  async ({ params, user, body }) => {
+    await assertStudentCanAccessInteractive(user, params.id);
     const row = await upsertInteractiveProgress({
-      interactiveId: id,
+      interactiveId: params.id,
       studentId: user.id,
-      status,
+      status: body.status === 'COMPLETED' ? 'COMPLETED' : 'STARTED',
       xapiSummary: body.xapiSummary ?? null,
     });
     return NextResponse.json({ progress: row });
-  } catch (err) {
-    return apiErrorResponse(err);
-  }
-}
+  },
+);
