@@ -80,7 +80,17 @@ export default async function AdminSectionDetailPage({
         }
       />
 
-      <SectionDetailView data={data} role="admin" sectionId={sectionId} />
+      <SectionDetailView
+        data={data}
+        sectionId={sectionId}
+        gradebookHref={`/dashboard/admin/sections/${sectionId}/gradebook`}
+        capabilities={{
+          canInvite: false,
+          canRemoveStudents: false,
+          showDiscussionSessions: false,
+          endsAtSaveVia: 'admin',
+        }}
+      />
     </AppShell>
   );
 }

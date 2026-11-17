@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { FlatCompat } from "@eslint/eslintrc";
 
 import noLegacyAuthz from "./eslint-rules/no-legacy-authz.js";
+import { LEGACY_ROUTE_FILES } from "./eslint-rules/legacy-route-files.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const compat = new FlatCompat({ baseDirectory: __dirname });
@@ -117,6 +118,23 @@ export default [
         },
       ],
       "no-restricted-imports": ["error", { paths: openAiRestrictedPaths }],
+    },
+  },
+  {
+    // Every API handler is built with route() (auth, body parsing, error
+    // shape in one place). Older files are listed in legacy-route-files.mjs.
+    files: ["app/api/**/route.ts"],
+    // Escape [dynamic] segments: in globs, brackets are a character class.
+    ignores: LEGACY_ROUTE_FILES.map((f) => f.replace(/[[\]]/g, '\\$&')),
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "ExportNamedDeclaration > FunctionDeclaration[id.name=/^(GET|POST|PUT|PATCH|DELETE)$/]",
+          message: "Build API handlers with route() from '@/lib/api/route'.",
+        },
+      ],
     },
   },
   {

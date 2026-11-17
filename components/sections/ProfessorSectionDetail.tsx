@@ -59,9 +59,14 @@ export async function ProfessorSectionDetail({
     <>
       <SectionDetailView
         data={data}
-        role="professor"
         sectionId={sectionId}
-        gradebookHref={gradebookHref}
+        gradebookHref={gradebookHref ?? `/dashboard/professor/sections/${sectionId}/gradebook`}
+        capabilities={{
+          canInvite: true,
+          canRemoveStudents: true,
+          showDiscussionSessions: true,
+          endsAtSaveVia: 'professor',
+        }}
         enrollmentActions={<LeaveSectionButton sectionId={data.section.id} />}
         courseworkActions={
           courseId ? (

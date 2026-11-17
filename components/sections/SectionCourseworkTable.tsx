@@ -109,13 +109,13 @@ function courseworkCompare(a: CourseworkRow, b: CourseworkRow, mode: SortMode) {
 }
 
 export function SectionCourseworkTable({
-  role,
+  showDiscussionSessions,
   quizzes,
   discussions,
   quizRowActions,
   discussionRowActions,
 }: {
-  role: 'admin' | 'professor';
+  showDiscussionSessions: boolean;
   quizzes: SectionQuizRow[];
   discussions: SectionDiscussionRow[];
   /** Pre-rendered per-id nodes (must not be functions — this is a Client Component). */
@@ -316,7 +316,7 @@ export function SectionCourseworkTable({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-2">
-                        {role === 'professor' ? (
+                        {showDiscussionSessions ? (
                           <Button asChild variant="ghost" size="sm">
                             <Link
                               href={`/dashboard/professor/discussions/${d.id}`}

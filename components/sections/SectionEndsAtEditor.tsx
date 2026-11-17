@@ -43,15 +43,15 @@ function combineLocalDateTime(
 type SectionEndsAtEditorProps = {
   sectionId: string;
   endsAt: Date | string | null;
-  /** admin uses PUT with name; professor uses PATCH endsAt-only */
-  mode: "admin" | "professor";
+  /** Which API saves it: admin PUT (with name) or professor PATCH (endsAt only). */
+  saveVia: "admin" | "professor";
   sectionName?: string;
 };
 
 export function SectionEndsAtEditor({
   sectionId,
   endsAt,
-  mode,
+  saveVia,
   sectionName,
 }: SectionEndsAtEditorProps) {
   const router = useRouter();
@@ -70,7 +70,7 @@ export function SectionEndsAtEditor({
         return;
       }
 
-      if (mode === "professor") {
+      if (saveVia === "professor") {
         const res = await apiFetch(`/api/professor/section/${sectionId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
