@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server';
 
-import { apiErrorResponse } from '@/lib/api/errors';
 import { readJsonBody } from '@/lib/api/readJsonBody';
-import { requireTeachingApi } from '@/lib/api/sessionAuth';
 import { setLessonVisibility } from '@/lib/learning/lessons';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(
-  req: Request,
-  ctx: { params: Promise<{ lessonId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { lessonId } = await ctx.params;
+export const POST = route<{ lessonId: string }>(
+  { auth: 'teaching' },
+  async ({ req, params, user }) => {
+    const { lessonId } = params;
     const body = (await readJsonBody(req)) as { isActive?: boolean };
     if (typeof body.isActive !== 'boolean') {
       return NextResponse.json(
@@ -23,7 +19,5 @@ export async function POST(
     }
     const updated = await setLessonVisibility(user, lessonId, body.isActive);
     return NextResponse.json({ lesson: updated });
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

@@ -1,18 +1,15 @@
 import { NextResponse } from 'next/server';
 
-import { ApiError, apiErrorResponse } from '@/lib/api/errors';
-import { requireTeachingApi } from '@/lib/api/sessionAuth';
+import { ApiError } from '@/lib/api/errors';
 import { assertCanManageBook } from '@/lib/books/access';
 import { getMaterialObjectBytes } from '@/lib/knowledge/storage';
+import { route } from '@/lib/api/route';
 
 /** Streams the PDF book original for faculty reader preview. */
-export async function GET(
-  _req: Request,
-  ctx: { params: Promise<{ bookId: string }> },
-) {
-  try {
-    const user = await requireTeachingApi();
-    const { bookId } = await ctx.params;
+export const GET = route<{ bookId: string }>(
+  { auth: 'teaching' },
+  async ({ params, user }) => {
+    const { bookId } = params;
     const book = await assertCanManageBook(user, bookId);
     if (book.sourceKind !== 'PDF') {
       throw ApiError.badRequest('This book is not a PDF');
@@ -28,7 +25,5 @@ export async function GET(
         'Cache-Control': 'private, max-age=60',
       },
     });
-  } catch (err) {
-    return apiErrorResponse(err);
-  }
-}
+  },
+);
