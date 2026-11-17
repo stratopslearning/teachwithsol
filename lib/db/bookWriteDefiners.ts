@@ -4,8 +4,9 @@
 import { sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-import type { hostedBooks } from '@/app/db/schema';
-import { asDateOr, parseJsonb, rowsFromExecute } from '@/lib/db/rows';
+import { hostedBooks } from '@/app/db/schema';
+import { rowFromTable } from '@/lib/db/rowFromTable';
+import { parseJsonb, rowsFromExecute } from '@/lib/db/rows';
 
 type HostedBookRow = typeof hostedBooks.$inferSelect;
 
@@ -27,22 +28,7 @@ type RawBook = {
 };
 
 function mapBook(raw: RawBook): HostedBookRow {
-  return {
-    id: raw.id,
-    courseId: raw.course_id,
-    tenantId: raw.tenant_id ?? null,
-    createdByUserId: raw.created_by_user_id,
-    title: raw.title,
-    sourceKind: raw.source_kind,
-    sourceUrl: raw.source_url ?? null,
-    s3Key: raw.s3_key ?? null,
-    status: raw.status,
-    errorMessage: raw.error_message ?? null,
-    isReleased: Boolean(raw.is_released),
-    deletedAt: raw.deleted_at ? asDateOr(raw.deleted_at, new Date(0)) : null,
-    createdAt: asDateOr(raw.created_at, new Date(0)),
-    updatedAt: asDateOr(raw.updated_at, new Date(0)),
-  };
+  return rowFromTable(hostedBooks, raw as unknown as Record<string, unknown>);
 }
 
 export async function createHostedBookDefiner(payload: {

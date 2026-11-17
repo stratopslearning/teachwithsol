@@ -11,6 +11,7 @@ import {
   quizSections,
   quizzes,
   sections,
+  hostedBooks,
 } from '@/app/db/schema';
 import * as old from './fixtures/legacyStudentMappers';
 import { rowFromTable } from '@/lib/db/rowFromTable';
@@ -74,5 +75,18 @@ describe.each(cases)('rowFromTable matches the hand mapper for %s', (_n, table, 
         expect(next[key], key).toEqual(cols[key]?.default);
       }
     }
+  });
+});
+
+// mapBook only ever received snake_case rows (to_jsonb of hosted_books).
+describe('rowFromTable matches the hand mapper for hosted_books', () => {
+  it('full snake_case row', () => {
+    const raw = fullSnakeRow(hostedBooks);
+    expect(rowFromTable(hostedBooks, raw)).toEqual(old.mapBook(raw));
+  });
+  it('nullable columns null, is_released missing', () => {
+    const raw = { ...fullSnakeRow(hostedBooks), tenant_id: null, source_url: null, s3_key: null, error_message: null, deleted_at: null };
+    delete (raw as Record<string, unknown>).is_released;
+    expect(rowFromTable(hostedBooks, raw)).toEqual(old.mapBook(raw));
   });
 });

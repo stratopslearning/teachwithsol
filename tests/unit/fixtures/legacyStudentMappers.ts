@@ -15,8 +15,9 @@ import type {
   quizzes,
   quizSections,
   sections,
+  hostedBooks,
 } from '@/app/db/schema';
-import { asDate } from '@/lib/db/rows';
+import { asDate, asDateOr } from '@/lib/db/rows';
 import { DEFAULT_PASSING_SCORE } from '@/lib/quiz/schemas';
 
 function pick<T = unknown>(
@@ -274,5 +275,27 @@ export function mapChatbotSession(
     completedAt: asDate(
       pick(raw, 'completed_at', 'completedAt') as Date | string | null,
     ),
+  };
+}
+
+// ---- hosted_books (lib/db/bookWriteDefiners.ts) ----
+type HostedBookRow = typeof hostedBooks.$inferSelect;
+type RawBook = Record<string, any>;
+export function mapBook(raw: RawBook): HostedBookRow {
+  return {
+    id: raw.id,
+    courseId: raw.course_id,
+    tenantId: raw.tenant_id ?? null,
+    createdByUserId: raw.created_by_user_id,
+    title: raw.title,
+    sourceKind: raw.source_kind,
+    sourceUrl: raw.source_url ?? null,
+    s3Key: raw.s3_key ?? null,
+    status: raw.status,
+    errorMessage: raw.error_message ?? null,
+    isReleased: Boolean(raw.is_released),
+    deletedAt: raw.deleted_at ? asDateOr(raw.deleted_at, new Date(0)) : null,
+    createdAt: asDateOr(raw.created_at, new Date(0)),
+    updatedAt: asDateOr(raw.updated_at, new Date(0)),
   };
 }
