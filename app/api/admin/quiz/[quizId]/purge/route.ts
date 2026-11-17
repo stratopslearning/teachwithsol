@@ -1,42 +1,19 @@
 /**
  * Hard delete (purge) of a quiz under FORCE RLS via SECURITY DEFINER.
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 
-import { db } from '@/app/db';
-import { users } from '@/app/db/schema';
-import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
-import {
-  adminFetchQuizDefiner,
-  adminPurgeQuizDefiner,
-} from '@/lib/db/tenantWriteDefiners';
+import { adminFetchQuizDefiner, adminPurgeQuizDefiner } from '@/lib/db/tenantWriteDefiners';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ quizId: string }> },
-) {
-  try {
-    const { quizId } = await params;
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
-    });
-    if (!user || !user.platformStaff) {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 },
-      );
-    }
+export const DELETE = route<{ quizId: string }>(
+  { auth: 'staff' },
+  async ({ req: request, params, user }) => {
+    const { quizId } = params;
 
     const targetQuiz = await adminFetchQuizDefiner(quizId);
     if (!targetQuiz) {
@@ -71,8 +48,5 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error purging quiz:', error);
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

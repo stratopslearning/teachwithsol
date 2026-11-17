@@ -1,14 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
 
-import { db } from '@/app/db';
-import { quizzes, users } from '@/app/db/schema';
+import { quizzes } from '@/app/db/schema';
 import { loadAdminRecord } from '@/lib/admin/records';
 import { withTenant } from '@/lib/db/tenantContext';
-import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,26 +19,10 @@ export const dynamic = 'force-dynamic';
  * separately at /api/admin/quiz/[quizId]/purge for FERPA-grade right-to-be-
  * forgotten requests.
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ quizId: string }> },
-) {
-  try {
-    const { quizId } = await params;
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
-    });
-    if (!user || !user.platformStaff) {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 },
-      );
-    }
+export const DELETE = route<{ quizId: string }>(
+  { auth: 'staff' },
+  async ({ req: request, params, user }) => {
+    const { quizId } = params;
 
     // FORCE RLS: a plain db read finds no quiz; load it via the definer.
     const targetQuiz = await loadAdminRecord('quiz', quizId);
@@ -84,8 +66,5 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting quiz:', error);
-    return apiErrorResponse(error);
-  }
-}
+  },
+);

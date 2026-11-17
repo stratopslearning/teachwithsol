@@ -11,6 +11,7 @@ import { apiErrorResponse } from '@/lib/api/errors';
 import { extractRequestMeta, logAudit } from '@/lib/audit';
 import { requireSupportGrant } from '@/lib/authz/requireSupportGrant';
 import { parseOptionalEndsAt } from '@/lib/sectionAvailability';
+import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,25 +87,10 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ sectionId: string }> },
-) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
-    });
-    if (!user || !user.platformStaff) {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 },
-      );
-    }
-    const { sectionId } = await params;
+export const DELETE = route<{ sectionId: string }>(
+  { auth: 'staff' },
+  async ({ req, params, user }) => {
+    const { sectionId } = params;
 
     // FORCE RLS: a plain db read finds no section; load it via the definer.
     const targetSection = await loadAdminRecord('section', sectionId);
@@ -150,8 +136,5 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting section:', error);
-    return apiErrorResponse(error);
-  }
-}
+  },
+);
