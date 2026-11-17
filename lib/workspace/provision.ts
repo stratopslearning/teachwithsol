@@ -17,7 +17,7 @@ import {
   DEFAULT_ONBOARDING_CHECKLIST,
   parseWorkspaceSettings,
 } from '@/lib/onboarding/workspaceSettings';
-import { withTenant } from '@/lib/db/tenantContext';
+import { withDbSession, withTenant } from '@/lib/db/tenantContext';
 import {
   buildClaimUrl,
   hashInviteToken,
@@ -64,7 +64,7 @@ async function findWorkspaceBySlugVisibleToUser(
     })
   | undefined
 > {
-  return db.transaction(async (tx) => {
+  return withDbSession(async (_client, tx) => {
     if (userId) {
       await tx.execute(
         sql`select set_config('app.user_id', ${userId}, true)`,
