@@ -12,7 +12,7 @@ import {
   userCanAccessLearningArea,
   userCanAccessTeachingArea,
 } from '@/lib/authz/gates';
-import { paymentsEnabled } from '@/lib/featureFlags';
+import { isStudentEntitled, paymentsEnabled } from '@/lib/featureFlags';
 import {
   getOrCreateUser,
   refreshUserEntitlements,
@@ -60,4 +60,18 @@ export async function requireLearnerApi(): Promise<UserData> {
     throw ApiError.paymentRequired();
   }
   return refreshed;
+}
+
+/** Signed in and allowed into the learning area (no payment check). */
+export async function requireLearningAreaApi(): Promise<UserData> {
+  const user = await requireApiUser();
+  if (!(await userCanAccessLearningArea(user.id))) throw ApiError.forbidden();
+  return user;
+}
+
+/** Learning area + student entitlement (402 when payment is required). */
+export async function requireEntitledLearnerApi(): Promise<UserData> {
+  const user = await requireLearningAreaApi();
+  if (!isStudentEntitled(user)) throw ApiError.paymentRequired();
+  return user;
 }

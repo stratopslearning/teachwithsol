@@ -1,41 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import { apiErrorResponse, ApiError } from '@/lib/api/errors';
-import { requireLearnerApi } from '@/lib/api/sessionAuth';
+import { route } from '@/lib/api/route';
 import { submitChapterSectionCheck } from '@/lib/lms/chapterProgress';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> },
-) {
-  try {
-    const user = await requireLearnerApi();
-    const { id: lessonId } = await ctx.params;
-    const body = (await req.json().catch(() => ({}))) as {
-      sectionId?: string;
-      answers?: Record<string, string>;
-      moduleItemId?: string | null;
-    };
+const bodySchema = z.object({
+  sectionId: z.string().trim().min(1, 'sectionId is required'),
+  answers: z.record(z.string()),
+  moduleItemId: z.string().nullish(),
+});
 
-    if (!body.sectionId?.trim()) {
-      throw ApiError.badRequest('sectionId is required');
-    }
-    if (!body.answers || typeof body.answers !== 'object') {
-      throw ApiError.badRequest('answers are required');
-    }
-
-    const result = await submitChapterSectionCheck({
-      studentId: user.id,
-      lessonId,
-      sectionId: body.sectionId.trim(),
-      answers: body.answers,
-      moduleItemId: body.moduleItemId ?? null,
-    });
-
-    return NextResponse.json(result);
-  } catch (error) {
-    return apiErrorResponse(error);
-  }
-}
+export const POST = route<{ id: string }, typeof bodySchema>(
+  { auth: 'learner', body: bodySchema },
+  async ({ params, user, body }) =>
+    NextResponse.json(
+      await submitChapterSectionCheck({
+        studentId: user.id,
+        lessonId: params.id,
+        sectionId: body.sectionId,
+        answers: body.answers,
+        moduleItemId: body.moduleItemId ?? null,
+      }),
+    ),
+);
