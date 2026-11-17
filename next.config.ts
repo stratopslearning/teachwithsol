@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 import { BASE_PATH } from "./lib/basePath";
 
 const nextConfig: NextConfig = {
+  // CI (Typecheck + Lint jobs) gates every merge, so `next build` skips its
+  // own lint and type-check pass. Running them again inside the Vercel build
+  // pushed it over the build container's memory and got it OOM-killed.
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   // Empty string = Sol (no prefix). Unset env defaults to `/learning` in lib/basePath.
   ...(BASE_PATH ? { basePath: BASE_PATH } : {}),
   env: {

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
+import { useRouter } from 'next/navigation';
 
 type StudentRegradeRequestFormProps = {
   attemptId: string;
@@ -18,6 +19,7 @@ export function StudentRegradeRequestForm({
   attemptId,
   existingOpenRequest,
 }: StudentRegradeRequestFormProps) {
+  const router = useRouter();
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,7 +60,7 @@ export function StudentRegradeRequestForm({
         return;
       }
       toast.success('Regrade request sent to your instructor.');
-      window.location.reload();
+      router.refresh();
     } catch (err) {
       console.error(err);
       toast.error('Could not send regrade request');

@@ -14,6 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { confirmAction } from "@/components/feedback/ConfirmDialog";
+import { useRouter } from "next/navigation";
 
 export function UserActions({
   user,
@@ -28,13 +30,14 @@ export function UserActions({
   };
   canGrantPlatformStaff?: boolean;
 }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const isStaff = Boolean(user.platformStaff);
 
   const handlePlatformStaffToggle = async () => {
     const next = !isStaff;
     const label = next ? "grant" : "revoke";
-    if (!confirm(`${label} platform staff for ${user.email ?? user.id}?`)) return;
+    if (!await confirmAction(`${label} platform staff for ${user.email ?? user.id}?`)) return;
     setLoading(true);
     try {
       const res = await apiFetch(`/api/admin/user/${user.id}`, {
@@ -46,7 +49,7 @@ export function UserActions({
         toast.success(
           next ? "Platform staff granted" : "Platform staff revoked",
         );
-        setTimeout(() => window.location.reload(), 600);
+        router.refresh();
       } else {
         toast.error("Failed to update platform staff");
       }
@@ -59,7 +62,7 @@ export function UserActions({
 
   const handleDelete = async () => {
     const label = user.email || user.id;
-    const ok = confirm(
+    const ok = await confirmAction(
       `Permanently delete ${label}?\n\nThis removes their Clerk account first, then the SOL profile. Quizzes they authored are reassigned to you. This cannot be undone.`,
     );
     if (!ok) return;
@@ -87,7 +90,7 @@ export function UserActions({
       };
 
       if (res.status === 409 && data.allowMissingClerk) {
-        const orphanOk = confirm(
+        const orphanOk = await confirmAction(
           `${data.error}\n\nDelete the SOL row only (Clerk user not found with this API key)?`,
         );
         if (!orphanOk) {
@@ -104,7 +107,7 @@ export function UserActions({
             ? "SOL profile deleted (Clerk was already missing)"
             : "User deleted from Clerk and SOL",
         );
-        setTimeout(() => window.location.reload(), 600);
+        router.refresh();
       } else {
         toast.error(data.error || "Failed to delete user");
       }

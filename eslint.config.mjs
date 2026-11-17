@@ -83,6 +83,21 @@ export default [
             "CallExpression[callee.name='fetch'] > CallExpression.arguments:first-child[callee.name='apiUrl']",
           message: "Use apiFetch(path) from '@/lib/api/client' instead of fetch(apiUrl(path)).",
         },
+        // One dialog / toast / refresh pattern (components/feedback/ConfirmDialog,
+        // sonner, router.refresh()) instead of browser popups and full reloads.
+        {
+          selector: "CallExpression[callee.name=/^(confirm|alert)$/]",
+          message: "Use confirmAction() from '@/components/feedback/ConfirmDialog' or toast from 'sonner'.",
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='window'][callee.property.name=/^(confirm|alert)$/]",
+          message: "Use confirmAction() from '@/components/feedback/ConfirmDialog' or toast from 'sonner'.",
+        },
+        {
+          selector: "CallExpression[callee.property.name='reload'][callee.object.property.name='location']",
+          message: "Use router.refresh() to reload server data.",
+        },
         // Next adds basePath to redirect() and next/link itself, so these
         // produce /learning/learning/... on the /learning deploy.
         {

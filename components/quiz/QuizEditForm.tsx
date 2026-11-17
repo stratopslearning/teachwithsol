@@ -595,7 +595,7 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
                   const newEndTime = e.target.value;
                   if (formData.startDate && formData.endDate === formData.startDate && formData.startTime) {
                     if (newEndTime <= formData.startTime) {
-                      alert('End time must be after start time on the same day');
+                      toast.error('End time must be after start time on the same day');
                       return;
                     }
                   }

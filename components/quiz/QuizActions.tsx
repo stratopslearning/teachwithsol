@@ -25,6 +25,7 @@ import {
   quizLibraryActionLabels,
   quizVisibilityApiPath,
 } from "@/lib/professor/quizLibrary";
+import { confirmAction } from "@/components/feedback/ConfirmDialog";
 
 function ActionTip({
   label,
@@ -90,23 +91,23 @@ export function QuizActions({
   };
 
   const handleDuplicate = async () => {
-    if (!confirm("Duplicate this quiz?")) return;
+    if (!await confirmAction("Duplicate this quiz?")) return;
     try {
       const response = await apiFetch(`/api/professor/quiz/${quizId}/duplicate`,
         { method: "POST" },
       );
-      if (response.ok) window.location.reload();
-      else alert("Failed to duplicate quiz");
+      if (response.ok) router.refresh();
+      else toast.error("Failed to duplicate quiz");
     } catch (error) {
       console.error("Error duplicating quiz:", error);
-      alert("Failed to duplicate quiz");
+      toast.error("Failed to duplicate quiz");
     }
   };
 
   const handleVisibility = async () => {
     const nextActive = !isActive;
     if (
-      !confirm(
+      !await confirmAction(
         nextActive
           ? "Publish this quiz so students can take it?"
           : "Hide this quiz from students? It will stay in your library as a draft.",
@@ -121,16 +122,16 @@ export function QuizActions({
           body: JSON.stringify({ isActive: nextActive }),
         },
       );
-      if (response.ok) window.location.reload();
+      if (response.ok) router.refresh();
       else {
         const data = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;
-        alert(data?.error || "Failed to update quiz");
+        toast.error(data?.error || "Failed to update quiz");
       }
     } catch (error) {
       console.error("Error updating quiz visibility:", error);
-      alert("Failed to update quiz");
+      toast.error("Failed to update quiz");
     }
   };
 

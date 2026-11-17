@@ -54,6 +54,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { LocalDateTime } from "@/components/timezone/LocalDateTime";
 import { formatBytes } from "@/lib/format";
+import { confirmAction } from "@/components/feedback/ConfirmDialog";
 
 const UNFILED = "Unfiled";
 
@@ -530,7 +531,7 @@ export default function KnowledgeClient({
   }
 
   async function onDelete(id: string) {
-    if (!confirm("Remove this document from the workspace library?")) return;
+    if (!await confirmAction("Remove this document from the workspace library?")) return;
     setBusyId(id);
     try {
       const res = await apiFetch(`/api/professor/knowledge/documents/${id}`,
@@ -794,7 +795,7 @@ export default function KnowledgeClient({
   }
 
   async function onDisconnect(id: string) {
-    if (!confirm("Disconnect this source?")) return;
+    if (!await confirmAction("Disconnect this source?")) return;
     setBusyId(id);
     try {
       const res = await apiFetch(`/api/professor/knowledge/connectors/${id}`,

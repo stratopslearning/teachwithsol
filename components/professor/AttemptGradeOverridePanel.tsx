@@ -18,6 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { RubricCriterion } from '@/lib/gradingTypes';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
+import { useRouter } from 'next/navigation';
 
 export type OverrideHistoryEntry = {
   id: string;
@@ -54,6 +55,7 @@ export function AttemptGradeOverridePanel({
   history,
   canOverride,
 }: AttemptGradeOverridePanelProps) {
+  const router = useRouter();
   const [scope, setScope] = useState<'whole' | 'question'>('question');
   const [questionId, setQuestionId] = useState<string>(
     questions[0]?.id ?? '',
@@ -136,7 +138,7 @@ export function AttemptGradeOverridePanel({
       }
 
       toast.success('Grade override saved.');
-      window.location.reload();
+      router.refresh();
     } catch (err) {
       console.error(err);
       toast.error('Failed to save override');

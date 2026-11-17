@@ -26,6 +26,7 @@ import {
 import { withBasePath } from '@/lib/basePath';
 import { cn } from '@/lib/utils';
 import { LocalDateTime } from '@/components/timezone/LocalDateTime';
+import { confirmAction } from '@/components/feedback/ConfirmDialog';
 
 type Item = {
   id: string;
@@ -164,7 +165,7 @@ export function ModulesEditorClient({
   async function togglePublish(moduleId: string, published: boolean) {
     const next = !published;
     if (next) {
-      const ok = confirm(
+      const ok = await confirmAction(
         'Publish this module and release its assignments to students?',
       );
       if (!ok) return;
@@ -188,7 +189,7 @@ export function ModulesEditorClient({
   async function publishAll() {
     const unpublished = initialModules.filter((m) => !m.published);
     if (unpublished.length === 0) return;
-    const ok = confirm(
+    const ok = await confirmAction(
       `Publish ${unpublished.length} module${unpublished.length === 1 ? '' : 's'} and release their assignments to students?`,
     );
     if (!ok) return;
@@ -254,7 +255,7 @@ export function ModulesEditorClient({
 
   async function removeModule(moduleId: string, moduleTitle: string) {
     if (
-      !confirm(
+      !await confirmAction(
         `Delete module “${moduleTitle}”? Its items will be removed from the course modules list.`,
       )
     ) {
@@ -278,7 +279,7 @@ export function ModulesEditorClient({
     itemTitle: string,
   ) {
     if (
-      !confirm(
+      !await confirmAction(
         `Remove “${itemTitle}” from this module? The linked assignment is not deleted.`,
       )
     ) {

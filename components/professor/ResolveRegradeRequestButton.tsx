@@ -6,17 +6,20 @@ import { Check } from '@/components/icons';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { confirmAction } from '@/components/feedback/ConfirmDialog';
+import { useRouter } from 'next/navigation';
 
 export function ResolveRegradeRequestButton({
   requestId,
 }: {
   requestId: string;
 }) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleResolve() {
     if (
-      !confirm(
+      !await confirmAction(
         'Mark this regrade request resolved? The student will no longer see it as open.',
       )
     ) {
@@ -34,7 +37,7 @@ export function ResolveRegradeRequestButton({
         return;
       }
       toast.success('Regrade request closed.');
-      window.location.reload();
+      router.refresh();
     } catch (err) {
       console.error(err);
       toast.error('Failed to resolve request');

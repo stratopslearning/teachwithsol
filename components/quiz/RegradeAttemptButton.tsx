@@ -6,6 +6,8 @@ import { RefreshCw } from '@/components/icons';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { confirmAction } from '@/components/feedback/ConfirmDialog';
+import { useRouter } from 'next/navigation';
 
 type RegradeAttemptButtonProps = {
   attemptId: string;
@@ -22,6 +24,7 @@ export function RegradeAttemptButton({
   pendingQuestionCount = 0,
   gradingStatus = null,
 }: RegradeAttemptButtonProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const totalNeedsAttention = fallbackQuestionCount + pendingQuestionCount;
@@ -32,7 +35,7 @@ export function RegradeAttemptButton({
         ? `Re-grade ${totalNeedsAttention} response${totalNeedsAttention === 1 ? '' : 's'} with AI? This may take up to a minute.`
         : 'Re-grade all short-answer responses with AI? This may take up to a minute.';
 
-    if (!confirm(target)) {
+    if (!await confirmAction(target)) {
       return;
     }
 
@@ -74,7 +77,7 @@ export function RegradeAttemptButton({
       }
 
       if (data.regradedQuestionCount > 0 || stillPending > 0) {
-        window.location.reload();
+        router.refresh();
       }
     } catch (error) {
       console.error('Re-grade error:', error);
