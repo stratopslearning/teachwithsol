@@ -1,46 +1,76 @@
-import { sql } from 'drizzle-orm';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
-import { db } from '@/app/db';
+import { db, drizzleOnClient, pool } from '@/app/db';
 
 type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+type ActiveTenant = { tenantId: string; userId: string | null; tx: TransactionClient };
+const active = new AsyncLocalStorage<ActiveTenant>();
+
+type SessionClient = {
+  query: (text: string, values?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
+  release: () => void;
+};
+
 /**
- * Run work inside a transaction with transaction-local tenant (and optional user)
- * GUCs for RLS FORCE policies (`app.tenant_id`, `app.user_id`).
+ * Run work in one transaction with transaction-local tenant (and optional
+ * user) settings, so FORCE RLS policies see `app.tenant_id` / `app.user_id`.
  *
- * Prefer SECURITY DEFINER helpers for long/critical authoring writes — Neon
- * WebSocket sessions are flaky under Next (`bufferUtil.mask`, connection drops),
- * and HTTP fetch pooling does not keep GUCs across statements reliably.
+ * The connection is checked out explicitly and BEGIN / set_config / the work /
+ * COMMIT all run on it. Relying on `db.transaction` was not safe: Drizzle only
+ * pins a connection when `client instanceof Pool`, and when the Neon Pool
+ * class is bundled twice that check fails, so each statement went over HTTP
+ * on its own (the settings were lost and RLS returned no rows, silently).
+ *
+ * A nested call for the same tenant and user reuses the open transaction (the
+ * serverless pool has one connection, so a second checkout would wait).
  */
 export async function withTenant<T>(
   tenantId: string,
   userId: string | null,
   fn: (tx: TransactionClient) => Promise<T>,
 ): Promise<T> {
-  return db.transaction(async (tx) => {
-    const check = await tx.execute(
+  const current = active.getStore();
+  if (current && current.tenantId === tenantId && current.userId === userId) {
+    return fn(current.tx);
+  }
+
+  return withDbSession(async (client, tx) => {
+    const check = await client.query(
       userId
-        ? sql`
-            select
-              set_config('app.tenant_id', ${tenantId}, true) as tenant_set,
-              set_config('app.user_id', ${userId}, true) as user_set,
-              nullif(current_setting('app.tenant_id', true), '') as guc
-          `
-        : sql`
-            select
-              set_config('app.tenant_id', ${tenantId}, true) as tenant_set,
-              nullif(current_setting('app.tenant_id', true), '') as guc
-          `,
+        ? `select set_config('app.tenant_id', $1, true), set_config('app.user_id', $2, true),
+                  nullif(current_setting('app.tenant_id', true), '') as guc`
+        : `select set_config('app.tenant_id', $1, true),
+                  nullif(current_setting('app.tenant_id', true), '') as guc`,
+      userId ? [tenantId, userId] : [tenantId],
     );
-    const rows =
-      (check as unknown as { rows?: { guc: string | null }[] }).rows ??
-      (Array.isArray(check) ? (check as { guc: string | null }[]) : []);
-    const guc = rows[0]?.guc ?? null;
+    const guc = (check.rows[0]?.guc as string | null | undefined) ?? null;
     if (guc !== tenantId) {
-      throw new Error(
-        `withTenant failed to pin app.tenant_id (want=${tenantId}, got=${guc ?? 'null'}). Check Neon WebSocket / pool transaction support.`,
-      );
+      throw new Error(`withTenant failed to pin app.tenant_id (want=${tenantId}, got=${guc ?? 'null'})`);
     }
-    return fn(tx);
+    return active.run({ tenantId, userId, tx }, () => fn(tx));
   });
+}
+
+/**
+ * One transaction on one checked-out connection (BEGIN ... COMMIT), for code
+ * that sets its own transaction-local settings. See withTenant for why
+ * `db.transaction` isn't used.
+ */
+export async function withDbSession<T>(
+  fn: (client: SessionClient, tx: TransactionClient) => Promise<T>,
+): Promise<T> {
+  const client = await (pool as unknown as { connect: () => Promise<SessionClient> }).connect();
+  try {
+    await client.query('BEGIN');
+    const tx = drizzleOnClient(client) as unknown as TransactionClient;
+    const result = await fn(client, tx);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }

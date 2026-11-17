@@ -97,6 +97,16 @@ if (process.env.NODE_ENV !== 'production' || isServerless) {
   globalThis.__neonPool__ = pool;
 }
 
+/**
+ * Drizzle bound to one checked-out connection, so every statement shares one
+ * database session (used by withTenant for transaction-local RLS settings).
+ */
+export function drizzleOnClient(client: unknown) {
+  return useTcpPg
+    ? drizzlePg(client as import('pg').PoolClient, { schema })
+    : drizzleNeon(client as import('@neondatabase/serverless').PoolClient, { schema });
+}
+
 // Both drivers expose a compatible Drizzle surface for our query patterns.
 export const db = useTcpPg
   ? drizzlePg(pool as PgPool, { schema })
