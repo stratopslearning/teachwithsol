@@ -125,6 +125,29 @@ export default [
     rules: { "no-restricted-imports": "off" },
   },
   {
+    // Pages and layouts get data through lib/ loaders (tenant-aware reads),
+    // never straight from the database client.
+    files: ["app/**/page.tsx", "app/**/layout.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            ...openAiRestrictedPaths,
+            {
+              name: "@/app/db",
+              message: "Load page data through a loader in lib/data/pages (or another lib/ function).",
+            },
+            ...["@/lib/db/tenantContext", "@/lib/db/sectionTenants", "@/lib/db/filters"].map((name) => ({
+              name,
+              message: "Run queries in a loader in lib/data/pages, not in the page.",
+            })),
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Page gates redirect; inside an API route the redirect is caught and
     // becomes a 500. API routes use '@/lib/api/sessionAuth' (or
     // requireProfessorApi), which throw ApiError → 401/402/403.

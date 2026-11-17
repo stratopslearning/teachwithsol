@@ -1,9 +1,7 @@
-import { eq, inArray } from "drizzle-orm";
 import { requireTeachingAccess } from '@/lib/authz/gates';
 import { Eye, FileText, TrendingUp, Users } from "@/components/icons";
 
-import { readBySectionTenants } from "@/lib/db/sectionTenants";
-import { professorSections, quizSections } from "@/app/db/schema";
+import { loadQuizAssignmentsForSections } from "@/lib/data/pages/professorQuizzes";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeading } from "@/components/layout/SectionHeading";
@@ -82,43 +80,7 @@ export default async function QuizResultsPage() {
     );
   }
 
-  // FORCE RLS: a plain db read returns no assignments (this page was always
-  // empty). Read each tenant's sections under that tenant, newest first.
-  const quizAssignmentRows = await readBySectionTenants(
-    enrolledSectionIds,
-    user.id,
-    (tx, ids) =>
-      tx.query.quizSections.findMany({
-        where: inArray(quizSections.sectionId, ids),
-        with: {
-          quiz: {
-            columns: {
-              id: true,
-              title: true,
-              description: true,
-              isActive: true,
-              professorId: true,
-              deletedAt: true,
-            },
-            with: {
-              professor: {
-                columns: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  email: true,
-                },
-              },
-            },
-          },
-          section: { with: { course: { columns: { id: true, title: true } } } },
-        },
-        orderBy: (quizSections, { desc }) => desc(quizSections.assignedAt),
-      }),
-  );
-  const quizAssignments = quizAssignmentRows.sort(
-    (a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime(),
-  );
+  const quizAssignments = await loadQuizAssignmentsForSections(enrolledSectionIds, user.id);
 
   const quizStats = await Promise.all(
     quizAssignments.map(async (qa) => {

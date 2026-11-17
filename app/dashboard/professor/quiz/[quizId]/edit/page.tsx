@@ -1,18 +1,15 @@
-import { and, eq, inArray } from "drizzle-orm";
 import { requireTeachingAccess } from '@/lib/authz/gates';
 import { authorizeOnSection } from '@/lib/authz/courseAccess';
 import { Copy, Eye, ShieldCheck } from "@/components/icons";
 import { notFound } from "next/navigation";
 
-import { readBySectionTenants, withQuizTenant } from "@/lib/db/sectionTenants";
-import { questions, quizzes, sections } from "@/app/db/schema";
+import { loadQuizEditPage } from "@/lib/data/pages/professorQuizzes";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { QuizEditForm } from "@/components/quiz/QuizEditForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { activeOnly } from "@/lib/db/filters";
 import { withBasePath } from "@/lib/basePath";
 import { listTeachingSectionIds } from "@/lib/professor/graderSections";
 import { professorCanAccessQuiz, userCanWriteQuiz } from "@/lib/quizAccess";
@@ -40,30 +37,7 @@ export default async function EditQuizPage({
     }
   }
 
-  // FORCE RLS: plain db reads return nothing (the page was always a 404).
-  // Read sections under their tenants and the quiz under its own.
-  const teachingSections = await readBySectionTenants(teachingIds, user.id, (tx, ids) =>
-    tx.query.sections.findMany({
-      where: inArray(sections.id, ids),
-      with: { course: true },
-    }),
-  );
-
-  const quiz = await withQuizTenant(quizId, user.id, (tx) =>
-    tx.query.quizzes.findFirst({
-      where: and(
-        eq(quizzes.id, quizId),
-        activeOnly(quizzes.deletedAt),
-      ),
-      with: {
-        professor: true,
-        questions: { orderBy: questions.order },
-        sectionAssignments: {
-          with: { section: { with: { course: true } } },
-        },
-      },
-    }),
-  );
+  const { teachingSections, quiz } = await loadQuizEditPage(quizId, teachingIds, user.id);
 
   if (!quiz) notFound();
 

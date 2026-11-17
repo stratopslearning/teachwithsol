@@ -1,4 +1,3 @@
-import { db } from "@/app/db";
 import UserTableWithFilters from "@/components/admin/UserTableWithFilters";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -10,12 +9,13 @@ import { requireAdmin } from "@/lib/auth";
 import { withBasePath } from "@/lib/basePath";
 import { canGrantPlatformStaff } from "@/lib/env";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
+import { listAllUsers } from "@/lib/admin/platformReads";
 
 export default async function AdminUsersPage() {
   await requireAdmin();
   const actor = await getOrCreateUser();
   const [allUsers, accessByUser] = await Promise.all([
-    db.query.users.findMany(),
+    listAllUsers(),
     loadPeopleAccessByUserId(),
   ]);
   const actorCanGrant = canGrantPlatformStaff(actor?.email);

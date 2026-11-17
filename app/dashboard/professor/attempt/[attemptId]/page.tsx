@@ -1,15 +1,7 @@
-import { asc, eq } from "drizzle-orm";
 import { requireTeachingAccess } from '@/lib/authz/gates';
-import { authorizeOnSection } from '@/lib/authz/courseAccess';
 import { notFound } from "next/navigation";
 
-import { withTenant } from "@/lib/db/tenantContext";
-import { loadAttemptForGrading } from "@/lib/quiz/gradingData";
-import {
-  attempts,
-  gradeOverrides,
-  questions,
-} from "@/app/db/schema";
+import { loadProfessorAttemptPage } from "@/lib/data/pages/professorAttempt";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeading } from "@/components/layout/SectionHeading";
@@ -52,41 +44,9 @@ export default async function AttemptDetailPage({
   const { attemptId } = await params;
   const user = await requireTeachingAccess();
 
-  // FORCE RLS: plain db reads find no attempt (the page was always a 404).
-  // Find the attempt's section and tenant via the definer, check access,
-  // then read the rest under the tenant.
-  const found = await loadAttemptForGrading(attemptId);
-  if (!found?.tenantId) notFound();
-  const tenantId = found.tenantId;
-
-  // Binding-based: grade.write or content.read on the attempt's section.
-  if (
-    !(await authorizeOnSection(user, 'grade.write', found.sectionId)) &&
-    !(await authorizeOnSection(user, 'content.read', found.sectionId))
-  ) {
-    notFound();
-  }
-
-  const { attempt, overrideRows } = await withTenant(tenantId, user.id, async (tx) => ({
-    attempt: await tx.query.attempts.findFirst({
-      where: eq(attempts.id, attemptId),
-      with: {
-        student: true,
-        quiz: { with: { questions: { orderBy: questions.order } } },
-        section: { with: { course: true } },
-      },
-    }),
-    overrideRows: await tx.query.gradeOverrides.findMany({
-      where: eq(gradeOverrides.attemptId, attemptId),
-      orderBy: asc(gradeOverrides.createdAt),
-      with: {
-        actor: {
-          columns: { firstName: true, lastName: true, email: true },
-        },
-      },
-    }),
-  }));
-  if (!attempt) notFound();
+  const data = await loadProfessorAttemptPage(attemptId, user);
+  if (!data) notFound();
+  const { attempt, overrideRows } = data;
 
   const studentAnswers =
     attempt.answers && typeof attempt.answers === "string"

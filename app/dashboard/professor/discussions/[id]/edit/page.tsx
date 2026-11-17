@@ -1,9 +1,6 @@
-import { and, eq, isNull } from 'drizzle-orm';
 import { requireTeachingAccess } from '@/lib/authz/gates';
 
-import { chatbots } from '@/app/db/schema';
-import { fetchChatbotByIdDefiner } from '@/lib/db/studentReadDefiners';
-import { withTenant } from '@/lib/db/tenantContext';
+import { loadOwnedDiscussionForEdit } from '@/lib/data/pages/professorDiscussions';
 import { listDiscussionQuizOptions } from '@/lib/professor/discussionQuizOptions';
 import { ChatbotCreationForm } from '@/components/chatbot/ChatbotCreationForm';
 import { AppShell } from '@/components/layout/AppShell';
@@ -24,21 +21,7 @@ export default async function EditDiscussionPage(props: PageProps) {
   const user = await requireTeachingAccess();
 
   const { id } = await props.params;
-  // FORCE RLS: plain db reads return nothing (this page always redirected
-  // away). Find the bot's tenant via the definer and read under it.
-  const meta = await fetchChatbotByIdDefiner(id);
-  const bot = meta?.tenantId
-    ? await withTenant(meta.tenantId, user.id, (tx) =>
-        tx.query.chatbots.findFirst({
-          where: and(
-            eq(chatbots.id, id),
-            isNull(chatbots.deletedAt),
-            eq(chatbots.professorId, user.id),
-          ),
-          with: { sectionAssignments: true },
-        }),
-      )
-    : undefined;
+  const bot = await loadOwnedDiscussionForEdit(id, user.id);
   if (!bot || bot.isTemplate) {
     appRedirect('/dashboard/professor/discussions');
   }

@@ -1,17 +1,7 @@
 import Link from 'next/link';
 import { requireTeachingAccess } from '@/lib/authz/gates';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 
-import {
-  fetchChatbotByIdDefiner,
-  fetchChatbotSectionIdsDefiner,
-} from '@/lib/db/studentReadDefiners';
-import { withTenant } from '@/lib/db/tenantContext';
-import {
-  chatbotSessions,
-  chatbots,
-  professorSections,
-} from '@/app/db/schema';
+import { loadDiscussionSessionsPage } from '@/lib/data/pages/professorDiscussions';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
@@ -40,45 +30,9 @@ export default async function DiscussionSessionsPage(props: PageProps) {
   const user = await requireTeachingAccess();
 
   const { id } = await props.params;
-  // FORCE RLS: plain db reads return nothing (this page always redirected
-  // away). Find the bot's tenant via the definer and read under it.
-  const meta = await fetchChatbotByIdDefiner(id);
-  if (!meta?.tenantId) appRedirect('/dashboard/professor/discussions');
-  const tenantId = meta.tenantId;
-  const bot = await withTenant(tenantId, user.id, (tx) =>
-    tx.query.chatbots.findFirst({
-      where: and(
-        eq(chatbots.id, id),
-        isNull(chatbots.deletedAt),
-        eq(chatbots.professorId, user.id),
-      ),
-      with: { relatedQuiz: true },
-    }),
-  );
-  if (!bot) appRedirect('/dashboard/professor/discussions');
-
-  const { listTeachingSectionIds } = await import(
-    '@/lib/professor/graderSections'
-  );
-  const taughtIds = await listTeachingSectionIds(user);
-
-  const assigned = await fetchChatbotSectionIdsDefiner(id);
-  const allowed = assigned.filter((sid) => taughtIds.includes(sid));
-
-  const sessions =
-    allowed.length > 0
-      ? await withTenant(tenantId, user.id, (tx) =>
-          tx.query.chatbotSessions.findMany({
-            where: and(
-              eq(chatbotSessions.chatbotId, id),
-              eq(chatbotSessions.status, 'completed'),
-              inArray(chatbotSessions.sectionId, allowed),
-            ),
-            with: { student: true, section: true },
-            orderBy: [desc(chatbotSessions.completedAt)],
-          }),
-        )
-      : [];
+  const data = await loadDiscussionSessionsPage(id, user);
+  if (!data) appRedirect('/dashboard/professor/discussions');
+  const { bot, sessions } = data;
 
   return (
     <AppShell

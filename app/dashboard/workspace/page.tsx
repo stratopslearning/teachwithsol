@@ -16,11 +16,6 @@ import {
   RemoveMemberButton,
   RevokeInviteButton,
 } from '@/app/dashboard/workspace/WorkspaceTeamActions';
-import { db } from '@/app/db';
-import {
-  workspaceInvites,
-  workspaceMemberships,
-} from '@/app/db/schema';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/patterns/EmptyState';

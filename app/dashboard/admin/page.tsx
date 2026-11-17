@@ -7,25 +7,24 @@ import {
   Users as UsersIcon,
 } from '@/components/icons';
 
-import { db } from '@/app/db';
 import { AdminSection } from '@/components/admin/AdminSection';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/patterns/StatCard';
 import { Button } from '@/components/ui/button';
-import { fetchAdminOverviewStats } from '@/lib/admin/platformReads';
+import { countUsers, fetchAdminOverviewStats } from '@/lib/admin/platformReads';
 import { appPath } from '@/lib/basePath';
 import { requireAdmin } from '@/lib/auth';
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
 
-  const [stats, allUsers] = await Promise.all([
+  const [stats, userCounts] = await Promise.all([
     fetchAdminOverviewStats(),
-    db.query.users.findMany(),
+    countUsers(),
   ]);
 
-  const platformStaffCount = allUsers.filter((u) => u.platformStaff).length;
+  const platformStaffCount = userCounts.platformStaff;
 
   return (
     <AppShell
@@ -105,7 +104,7 @@ export default async function AdminDashboardPage() {
           />
           <StatCard
             label="Total people"
-            value={allUsers.length}
+            value={userCounts.total}
             hint="All roles"
             icon={<UsersIcon className="h-4 w-4" />}
             href="/dashboard/admin/users"

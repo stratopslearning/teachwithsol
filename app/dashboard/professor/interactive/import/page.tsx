@@ -1,8 +1,6 @@
 import { eq } from "drizzle-orm";
 import { requireTeachingAccess } from '@/lib/authz/gates';
 
-import { db } from "@/app/db";
-import { professorSections } from "@/app/db/schema";
 import { H5pImportForm } from "@/components/interactives/H5pImportForm";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
