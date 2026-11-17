@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { isCronAuthorized } from '@/lib/api/cronAuth';
-import { processPendingMaterials } from '@/lib/knowledge';
-import { processPendingKnowledgeDocuments } from '@/lib/knowledge/processDocument';
+import { sweepAndDrain } from '@/lib/jobs/sweep';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 300;
 
-/** Vercel cron / manual: process stuck PENDING course materials. */
+/** Vercel cron / manual: queue stuck materials, documents and books, then drain. */
 export async function GET(req: NextRequest) {
   const ok =
     isCronAuthorized(req) ||
@@ -15,16 +14,5 @@ export async function GET(req: NextRequest) {
   if (!ok) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const processed = await processPendingMaterials(10);
-  // Knowledge documents had no sweep of their own; stuck ones never retried.
-  // Isolated so a failure here (e.g. migration 0114 not applied yet) never
-  // blocks material processing above.
-  let documents = 0;
-  try {
-    documents = await processPendingKnowledgeDocuments(10);
-  } catch (err) {
-    console.error('[cron/process-materials] knowledge document sweep failed', err);
-  }
-  return NextResponse.json({ ok: true, processed, documents });
+  return NextResponse.json({ ok: true, ...(await sweepAndDrain({ budgetMs: 270_000 })) });
 }

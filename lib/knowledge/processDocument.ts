@@ -190,17 +190,18 @@ export async function nextDocumentVersionNumber(
 }
 
 /**
- * Cron sweep: retry PENDING documents and reset PROCESSING ones stuck longer
- * than 15 minutes (a crashed or timed-out job never clears its claim).
+ * Cron sweep: queue a job for each PENDING document, and for PROCESSING ones
+ * stuck longer than 15 minutes (a crashed worker never clears its claim; the
+ * job resets them first).
  */
 export async function processPendingKnowledgeDocuments(limit = 10): Promise<number> {
   const staleBefore = new Date(Date.now() - 15 * 60_000);
   const pending = await listPendingKnowledgeDocumentsDefiner(limit, staleBefore);
+  const { enqueueKnowledgeDocumentProcess } = await import('@/lib/jobs/enqueue');
   for (const row of pending) {
-    if (row.status === 'PROCESSING') {
-      await resetKnowledgeDocumentPendingDefiner(row.id);
-    }
-    await processKnowledgeDocument(row.id);
+    await enqueueKnowledgeDocumentProcess(row.id, 'default', {
+      reset: row.status === 'PROCESSING',
+    });
   }
   return pending.length;
 }

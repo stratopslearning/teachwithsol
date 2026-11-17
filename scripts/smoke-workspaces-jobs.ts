@@ -92,7 +92,7 @@ async function main() {
     wsRow.id,
   );
   ok('enqueueMaterialProcess (no throw)');
-  await enqueueLtiPassbackDrain(1, wsRow.id);
+  await enqueueLtiPassbackDrain(1);
   ok('enqueueLtiPassbackDrain (no throw)');
 
   await pool.end();

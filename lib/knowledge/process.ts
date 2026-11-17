@@ -58,16 +58,20 @@ export async function processMaterial(materialId: string): Promise<void> {
   }
 }
 
-/** Cron helper: pick stuck PENDING / old PROCESSING rows. */
+/**
+ * Cron sweep: queue a job for each PENDING material, and for PROCESSING ones
+ * untouched for 15 minutes (their worker died; the job resets them first).
+ */
 export async function processPendingMaterials(limit = 10): Promise<number> {
   const staleBefore = new Date(Date.now() - 15 * 60_000);
   const pending = await listPendingCourseMaterialsDefiner(limit, staleBefore);
-
+  const { enqueueMaterialProcess } = await import('@/lib/jobs/enqueue');
+  const { getCourseWorkspaceId } = await import('@/lib/workspace');
   for (const row of pending) {
-    if (row.status === 'PROCESSING') {
-      await setCourseMaterialStatusDefiner(row.id, 'PENDING', null);
-    }
-    await processMaterial(row.id);
+    const tenantId = await getCourseWorkspaceId(row.courseId);
+    await enqueueMaterialProcess(row.id, tenantId ?? 'default', {
+      reset: row.status === 'PROCESSING',
+    });
   }
   return pending.length;
 }

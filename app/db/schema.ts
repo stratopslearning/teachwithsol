@@ -990,6 +990,27 @@ export const gradingBatches = pgTable(
   }),
 );
 
+/**
+ * Durable background-job queue (drizzle/0118_job_queue.sql). Cross-tenant:
+ * the runtime role reaches it only through the sol_job_* definers; see
+ * lib/jobs/queue.ts.
+ */
+export const jobQueue = pgTable('job_queue', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  kind: text('kind').notNull(),
+  tenantId: uuid('tenant_id').references(() => workspaces.id, { onDelete: 'cascade' }),
+  payload: jsonb('payload').$type<Record<string, unknown>>().notNull().default({}),
+  dedupeKey: text('dedupe_key'),
+  status: text('status').$type<'queued' | 'running' | 'done' | 'dead'>().notNull().default('queued'),
+  attempts: integer('attempts').notNull().default(0),
+  maxAttempts: integer('max_attempts').notNull().default(5),
+  runAfter: ts('run_after').defaultNow().notNull(),
+  lockedUntil: ts('locked_until'),
+  lastError: text('last_error'),
+  createdAt: ts('created_at').defaultNow().notNull(),
+  updatedAt: ts('updated_at').defaultNow().notNull(),
+});
+
 /** End-of-unit misconception clusters + authoring suggestions. */
 export const unitInsights = pgTable(
   'unit_insights',

@@ -3,6 +3,10 @@
   "installCommand": "npm ci",
   "crons": [
     {
+      "path": "/learning/api/cron/jobs",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/learning/api/cron/grade-pending",
       "schedule": "15 9 * * *"
     },

@@ -161,8 +161,8 @@ export async function processBookFromBuffer(
 }
 
 /**
- * Cron helper: drain stuck PENDING books and stale PROCESSING rows.
- * Mirrors processPendingMaterials — Inngest may miss events after deploy.
+ * Cron sweep: queue a job for each PENDING book, and for PROCESSING ones
+ * untouched for 15 minutes (the job resets them first).
  */
 export async function processPendingBooks(limit = 3): Promise<number> {
   const staleBefore = new Date(Date.now() - 15 * 60_000);
@@ -170,16 +170,13 @@ export async function processPendingBooks(limit = 3): Promise<number> {
     '@/lib/db/bookWriteDefiners'
   );
   const pending = await listPendingHostedBooksDefiner(limit, staleBefore);
-
+  const { enqueueBookProcess } = await import('@/lib/jobs/enqueue');
+  const { getCourseWorkspaceId } = await import('@/lib/workspace');
   for (const row of pending) {
-    if (row.status === 'PROCESSING') {
-      await updateHostedBookDefiner({
-        bookId: row.id,
-        status: 'PENDING',
-        errorMessage: null,
-      });
-    }
-    await processBook(row.id);
+    const tenantId = await getCourseWorkspaceId(row.courseId);
+    await enqueueBookProcess(row.id, tenantId ?? 'default', {
+      reset: row.status === 'PROCESSING',
+    });
   }
   return pending.length;
 }
