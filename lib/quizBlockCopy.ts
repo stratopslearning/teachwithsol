@@ -1,4 +1,3 @@
-import type { QuizAvailabilityBlockReason } from '@/lib/quizAvailability';
 import { SECTION_CONCLUDED_MESSAGE } from '@/lib/sectionAvailability';
 
 export type QuizBlockCode =
@@ -23,13 +22,6 @@ const TITLES: Record<QuizBlockCode, string> = {
   quiz_unavailable: 'This quiz is not available',
 };
 
-export function availabilityReasonToBlockCode(
-  reason: QuizAvailabilityBlockReason,
-): QuizBlockCode {
-  if (reason === 'quizNotStarted') return 'quiz_not_started';
-  if (reason === 'quizEnded') return 'quiz_ended';
-  return 'due_date_passed';
-}
 
 export function isInformationalQuizBlock(code: QuizBlockCode): boolean {
   return code === 'quiz_not_started';

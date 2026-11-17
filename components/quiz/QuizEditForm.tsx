@@ -21,7 +21,7 @@ import {
   AlertCircle
 } from '@/components/icons';
 import { SectionMultiSelect } from '@/components/ui/SectionMultiSelect';
-import { DEFAULT_PASSING_SCORE } from '@/lib/quizSchemas';
+import { DEFAULT_PASSING_SCORE, QUIZ_LIMITS } from '@/lib/quizSchemas';
 import {
   buildQuizDescriptionWithMetadata,
   cleanQuizDescription,
@@ -402,6 +402,7 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
             <Label htmlFor="title">Quiz title</Label>
             <Input
               id="title"
+              maxLength={QUIZ_LIMITS.titleMax}
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Enter quiz title"
@@ -477,7 +478,7 @@ export function QuizEditForm({ quiz, courses, apiEndpoint = `/api/professor/quiz
                 id="timeLimit"
                 type="number"
                 min="1"
-                max="180"
+                max={QUIZ_LIMITS.timeLimitMaxMinutes}
                 placeholder="No limit"
                 value={formData.timeLimit ?? ''}
                 onChange={(e) => {

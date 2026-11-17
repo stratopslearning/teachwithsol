@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { quizCreateBaseSchema } from '@/lib/quizSchemas';
+import { QUIZ_LIMITS, quizCreateBaseSchema } from '@/lib/quizSchemas';
 
 const validQuestion = {
   type: 'TRUE_FALSE' as const,
@@ -70,5 +70,24 @@ describe('quizUpdateSchema (shared by professor and admin update)', () => {
     const { quizUpdateSchema } = await import('@/lib/quizSchemas');
     const r = quizUpdateSchema.safeParse({ ...base, endDate: '2025-12-01T00:00:00.000Z' });
     expect(r.success).toBe(false);
+  });
+});
+
+// The quiz forms import QUIZ_LIMITS; these checks keep the server on the same numbers.
+describe('QUIZ_LIMITS match the server schema', () => {
+  const valid = {
+    ...base,
+    startDate: '2026-09-01T14:00:00.000Z',
+    endDate: '2026-09-02T14:00:00.000Z',
+  };
+  it('title', () => {
+    const ok = 'x'.repeat(QUIZ_LIMITS.titleMax);
+    expect(quizCreateBaseSchema.safeParse({ ...valid, title: ok }).success).toBe(true);
+    expect(quizCreateBaseSchema.safeParse({ ...valid, title: ok + 'x' }).success).toBe(false);
+  });
+  it('time limit', () => {
+    const max = QUIZ_LIMITS.timeLimitMaxMinutes;
+    expect(quizCreateBaseSchema.safeParse({ ...valid, timeLimit: max }).success).toBe(true);
+    expect(quizCreateBaseSchema.safeParse({ ...valid, timeLimit: max + 1 }).success).toBe(false);
   });
 });

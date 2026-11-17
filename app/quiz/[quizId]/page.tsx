@@ -4,19 +4,24 @@ import { QuizUnavailable } from '@/components/quiz/QuizUnavailable';
 import { isStudentEntitled } from '@/lib/featureFlags';
 import { requireLearningAccess } from '@/lib/authz/gates';
 import type { UserData } from '@/lib/getOrCreateUser';
-import {
-  effectiveQuizCloseDate,
-  getQuizAvailability,
-} from '@/lib/quizAvailability';
-import {
-  availabilityReasonToBlockCode,
-  type QuizBlockCode,
-} from '@/lib/quizBlockCopy';
+import { effectiveQuizCloseDate } from '@/lib/quizAvailability';
+import type { QuizBlockCode } from '@/lib/quizBlockCopy';
+import { evaluateQuizAccess, type QuizAccessReason } from '@/lib/quiz/accessPolicy';
 import { assertStudentCanOpenQuiz } from '@/lib/quizEnrollment';
 import { fetchQuizTakeBundleDefiner } from '@/lib/db/studentWriteDefiners';
-import { isSectionConcluded } from '@/lib/sectionAvailability';
 import { appRedirect } from '@/lib/serverRedirect';
 import { cleanQuizDescription, normalizeDatabaseDate } from '@/lib/utils';
+
+const BLOCK_CODE: Record<QuizAccessReason, QuizBlockCode> = {
+  archived: 'quiz_unavailable',
+  notStarted: 'quiz_not_started',
+  ended: 'quiz_ended',
+  dueDatePassed: 'due_date_passed',
+  sectionConcluded: 'section_concluded',
+  // Not checked for `view`; listed for completeness.
+  maxAttempts: 'quiz_unavailable',
+  timeLimit: 'quiz_unavailable',
+};
 
 interface QuizPageProps {
   params: Promise<{ quizId: string }>;
@@ -57,21 +62,6 @@ export default async function QuizPage(props: QuizPageProps) {
   const startDate = normalizeDatabaseDate(quiz.startDate);
   const endDate = normalizeDatabaseDate(quiz.endDate);
 
-  if (startDate && now < startDate) {
-    return blocked(user, {
-      code: 'quiz_not_started',
-      quizTitle: quiz.title,
-      opensAt: startDate,
-    });
-  }
-  if (endDate && now > endDate) {
-    return blocked(user, {
-      code: 'quiz_ended',
-      quizTitle: quiz.title,
-      closedAt: endDate,
-    });
-  }
-
   const open = assertStudentCanOpenQuiz(bundle.resolvedSectionId);
   if (!open.allowed) {
     return blocked(user, { code: 'not_enrolled', quizTitle: quiz.title });
@@ -83,19 +73,23 @@ export default async function QuizPage(props: QuizPageProps) {
   }
 
   const inProgressAttempt = bundle.inProgressAttempt;
-  const section = bundle.section;
 
-  if (isSectionConcluded(section, now) && !inProgressAttempt) {
+  // Same rules as start and submit (lib/quiz/accessPolicy), so the page can't
+  // show a quiz the API then refuses.
+  const access = evaluateQuizAccess(
+    {
+      quiz,
+      assignment,
+      section: bundle.section,
+      inProgressAttempt,
+      submittedCount: 0,
+      now,
+    },
+    'view',
+  );
+  if (!access.ok) {
     return blocked(user, {
-      code: 'section_concluded',
-      quizTitle: quiz.title,
-    });
-  }
-
-  const availability = getQuizAvailability(quiz, assignment, now);
-  if (!availability.allowed && !inProgressAttempt) {
-    return blocked(user, {
-      code: availabilityReasonToBlockCode(availability.reason),
+      code: BLOCK_CODE[access.reason],
       quizTitle: quiz.title,
       opensAt: startDate,
       closedAt: endDate,
