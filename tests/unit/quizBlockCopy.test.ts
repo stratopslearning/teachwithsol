@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { SECTION_CONCLUDED_MESSAGE } from '@/lib/sectionAvailability';
 import {
-  availabilityReasonToBlockCode,
   getQuizBlockCopy,
   isInformationalQuizBlock,
   parseQuizBlockCode,
@@ -10,14 +9,7 @@ import {
 } from '@/lib/quizBlockCopy';
 
 describe('quizBlockCopy', () => {
-  it('maps availability reasons and start-API extras to block codes', () => {
-    expect(availabilityReasonToBlockCode('quizNotStarted')).toBe(
-      'quiz_not_started',
-    );
-    expect(availabilityReasonToBlockCode('quizEnded')).toBe('quiz_ended');
-    expect(availabilityReasonToBlockCode('dueDatePassed')).toBe(
-      'due_date_passed',
-    );
+  it('maps start-API extras to block codes', () => {
     expect(startApiErrorToBlockCode({ quizNotStarted: true })).toBe(
       'quiz_not_started',
     );
