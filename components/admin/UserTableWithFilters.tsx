@@ -7,14 +7,6 @@ import BulkImportModal from "@/components/admin/BulkImportModal";
 import { UserActions } from "@/components/admin/UserActions";
 import { Badge } from "@/components/ui/badge";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
   Table,
   TableBody,
   TableCell,
@@ -28,6 +20,7 @@ import {
   comparePersonsByLastName,
   formatPersonName,
 } from "@/lib/personName";
+import { PageControls } from "@/components/patterns/PageControls";
 
 const ROWS_PER_PAGE = 15;
 
@@ -198,50 +191,7 @@ export default function UserTableWithFilters({
         </Table>
       </div>
 
-      {totalPages > 1 ? (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPage(Math.max(1, page - 1));
-                }}
-                aria-disabled={page <= 1}
-                className={page <= 1 ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <PaginationItem key={p}>
-                <PaginationLink
-                  href="#"
-                  isActive={p === page}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setPage(p);
-                  }}
-                >
-                  {p}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPage(Math.min(totalPages, page + 1));
-                }}
-                aria-disabled={page >= totalPages}
-                className={
-                  page >= totalPages ? "pointer-events-none opacity-50" : ""
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      ) : null}
+      <PageControls page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

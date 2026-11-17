@@ -16,14 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -48,6 +40,7 @@ import { withBasePath } from "@/lib/basePath";
 import { cleanQuizDescription } from "@/lib/utils";
 import { confirmAction } from "@/components/feedback/ConfirmDialog";
 import { useRouter } from "next/navigation";
+import { PageControls } from "@/components/patterns/PageControls";
 
 const ROWS_PER_PAGE = 15;
 type SortMode = "DEFAULT" | "DUE_ASC" | "DUE_DESC";
@@ -419,55 +412,7 @@ export default function AdminQuizzesPageClient({
           </div>
         )}
 
-        {totalPages > 1 ? (
-          <Pagination>
-            <PaginationContent className="gap-1">
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) setPage(currentPage - 1);
-                  }}
-                  className={
-                    currentPage <= 1
-                      ? "pointer-events-none opacity-50"
-                      : "cursor-pointer"
-                  }
-                />
-              </PaginationItem>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <PaginationItem key={p}>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setPage(p);
-                    }}
-                    isActive={p === currentPage}
-                    className="cursor-pointer"
-                  >
-                    {p}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) setPage(currentPage + 1);
-                  }}
-                  className={
-                    currentPage >= totalPages
-                      ? "pointer-events-none opacity-50"
-                      : "cursor-pointer"
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        ) : null}
+        <PageControls page={currentPage} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       {editingQuizId
