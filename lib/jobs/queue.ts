@@ -112,7 +112,11 @@ export async function runJob(job: JobRow): Promise<'done' | 'retried' | 'dead'> 
   }
   const status = await finishJob(job.id, error, retryDelaySeconds(job.attempts));
   if (error === null) return 'done';
-  return status === 'dead' ? 'dead' : 'retried';
+  if (status === 'dead') {
+    console.error('[jobs] job dead after max attempts', { id: job.id, kind: job.kind, attempts: job.attempts, error });
+    return 'dead';
+  }
+  return 'retried';
 }
 
 /**

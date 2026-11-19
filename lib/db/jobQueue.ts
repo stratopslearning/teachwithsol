@@ -60,3 +60,24 @@ export async function finishJob(
   `);
   return rowsFromExecute<{ status: string | null }>(result)[0]?.status ?? null;
 }
+
+export type JobQueueStats = {
+  ready: number;
+  running: number;
+  oldestReadySeconds: number;
+  deadLast24h: number;
+};
+
+/** Counts for health checks (no payloads). */
+export async function jobQueueStats(): Promise<JobQueueStats> {
+  const result = await db.execute(sql`select sol_job_queue_stats() as stats`);
+  const raw = parseJsonb<Partial<JobQueueStats>>(
+    rowsFromExecute<{ stats: unknown }>(result)[0]?.stats,
+  );
+  return {
+    ready: Number(raw?.ready ?? 0),
+    running: Number(raw?.running ?? 0),
+    oldestReadySeconds: Number(raw?.oldestReadySeconds ?? 0),
+    deadLast24h: Number(raw?.deadLast24h ?? 0),
+  };
+}
