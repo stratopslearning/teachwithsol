@@ -181,8 +181,6 @@ export const baseSchema = z.object({
   AI_BUDGET_WINDOW_MS: optionalString,
   /** Set to '1' to wrap OpenAI clients with Braintrust tracing in tests. */
   BRAINTRUST_WRAP: optionalString,
-  /** Pending short answers above this count are graded in batches (default 40). */
-  SOL_GRADING_BATCH_THRESHOLD: optionalString,
   /** Minimum group size before analytics are shown (k-anonymity). */
   ANALYTICS_K_ANONYMITY_MIN: optionalString,
   /** Read legacy course_materials while knowledge documents roll out. */
