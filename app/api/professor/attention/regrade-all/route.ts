@@ -79,23 +79,16 @@ export async function POST(req: NextRequest) {
         await enqueueBulkRegrades({ tenantId, attemptIds, professorId: user.id }),
       );
     }
-    const batch = {
-      mode: batches[0]!.mode,
-      batchId: batches.find((b) => b.batchId)?.batchId,
-    };
 
     return NextResponse.json({
       success: true,
       scheduled: targets.length,
-      mode: batch.mode,
-      batchId: batch.batchId ?? null,
+      mode: batches[0]!.mode,
+      batchId: null,
       backend: jobsBackend(),
-      message:
-        batch.mode === 'openai_batch'
-          ? `Overnight batch regrade submitted for ${targets.length} attempts.`
-          : `Re-grading ${targets.length} attempt${
-              targets.length === 1 ? '' : 's'
-            } in the background. Refresh in a minute to see progress.`,
+      message: `Re-grading ${targets.length} attempt${
+        targets.length === 1 ? '' : 's'
+      } in the background. Refresh in a minute to see progress.`,
     });
   } catch (error) {
     console.error('Bulk re-grade error:', error);
