@@ -25,6 +25,10 @@ const EXTRA_REQUIRED = [
   'authoring_policies',
   'audit_log',
   'role_bindings',
+  // FORCE RLS since drizzle/0119 (#143).
+  'grading_batches',
+  'grading_override_examples',
+  'unit_insights',
 ] as const;
 
 type AllowEntry = { table: string; reason: string };

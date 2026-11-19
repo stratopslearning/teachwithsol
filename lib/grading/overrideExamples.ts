@@ -3,8 +3,8 @@
  */
 import { and, desc, eq, sql } from 'drizzle-orm';
 
-import { db } from '@/app/db';
 import { gradingOverrideExamples } from '@/app/db/schema';
+import { withTenant } from '@/lib/db/tenantContext';
 import { minimizeStudentTextForAi } from '@/lib/ai/minimizeEducationPayload';
 import { wrapStudentData } from '@/lib/ai/structured';
 import type { RubricMatch } from '@/lib/grading/types';
@@ -28,7 +28,8 @@ export async function recordOverrideExample(opts: {
   );
   if (!snippet.trim()) return;
 
-  await db.insert(gradingOverrideExamples).values({
+  // FORCE RLS (drizzle/0119): writes need the tenant pinned.
+  await withTenant(opts.tenantId, null, (tx) => tx.insert(gradingOverrideExamples).values({
     tenantId: opts.tenantId,
     questionId: opts.questionId,
     rubricVersion: opts.rubricVersion,
@@ -37,7 +38,7 @@ export async function recordOverrideExample(opts: {
     instructorCriteria: opts.instructorCriteria ?? null,
     instructorScore: opts.instructorScore ?? null,
     note: opts.note?.trim() || null,
-  });
+  }));
 }
 
 function lexicalOverlap(a: string, b: string): number {
@@ -68,7 +69,7 @@ export async function formatOverrideExamplesForPrompt(opts: {
   const k = opts.k ?? MAX_EXAMPLES;
   let rows: (typeof gradingOverrideExamples.$inferSelect)[] = [];
   try {
-    rows = await db.query.gradingOverrideExamples.findMany({
+    rows = await withTenant(opts.tenantId, null, (tx) => tx.query.gradingOverrideExamples.findMany({
       where: and(
         eq(gradingOverrideExamples.tenantId, opts.tenantId),
         eq(gradingOverrideExamples.questionId, opts.questionId),
@@ -76,7 +77,7 @@ export async function formatOverrideExamplesForPrompt(opts: {
       ),
       orderBy: [desc(gradingOverrideExamples.createdAt)],
       limit: 40,
-    });
+    }));
   } catch {
     // Table may not exist before migration.
     return '';
@@ -114,15 +115,17 @@ export async function countOverrideExamples(
   questionId: string,
 ): Promise<number> {
   try {
-    const [row] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(gradingOverrideExamples)
-      .where(
-        and(
-          eq(gradingOverrideExamples.tenantId, tenantId),
-          eq(gradingOverrideExamples.questionId, questionId),
+    const [row] = await withTenant(tenantId, null, (tx) =>
+      tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(gradingOverrideExamples)
+        .where(
+          and(
+            eq(gradingOverrideExamples.tenantId, tenantId),
+            eq(gradingOverrideExamples.questionId, questionId),
+          ),
         ),
-      );
+    );
     return row?.n ?? 0;
   } catch {
     return 0;

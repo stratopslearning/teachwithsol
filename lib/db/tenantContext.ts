@@ -22,8 +22,10 @@ type SessionClient = {
  * class is bundled twice that check fails, so each statement went over HTTP
  * on its own (the settings were lost and RLS returned no rows, silently).
  *
- * A nested call for the same tenant and user reuses the open transaction (the
- * serverless pool has one connection, so a second checkout would wait).
+ * A nested call for the same tenant reuses the open transaction when it asks
+ * for the same user, or for tenant-only context (userId null): the outer
+ * transaction already has the tenant pinned, and the serverless pool has one
+ * connection, so a second checkout would wait on the first.
  */
 export async function withTenant<T>(
   tenantId: string,
@@ -31,7 +33,7 @@ export async function withTenant<T>(
   fn: (tx: TransactionClient) => Promise<T>,
 ): Promise<T> {
   const current = active.getStore();
-  if (current && current.tenantId === tenantId && current.userId === userId) {
+  if (current && current.tenantId === tenantId && (userId === null || current.userId === userId)) {
     return fn(current.tx);
   }
 
