@@ -9,6 +9,7 @@ const ENV_KEYS = [
   'DATABASE_MIGRATE_URL',
   'I_CONFIRM_DEV_DB',
   'VERCEL_ENV',
+  'PROD_DB_HOSTS',
 ] as const;
 
 const saved: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>> = {};
@@ -116,5 +117,14 @@ describe('assertDevDatabase', () => {
     );
     setEnv('I_CONFIRM_DEV_DB', '1');
     expect(() => assertDevDatabase()).toThrow(/VERCEL_ENV=production/);
+  });
+
+  it('refuses a production host even when it is also in DEV_DB_HOSTS', () => {
+    setEnv('DEV_DB_HOSTS', 'ep-prod-pooler.us-east-1.aws.neon.tech');
+    setEnv('PROD_DB_HOSTS', 'ep-prod-pooler.us-east-1.aws.neon.tech');
+    setEnv('DATABASE_URL', 'postgresql://u:p@ep-prod-pooler.us-east-1.aws.neon.tech/neondb');
+    setEnv('DATABASE_MIGRATE_URL', undefined);
+    setEnv('I_CONFIRM_DEV_DB', '1');
+    expect(() => assertDevDatabase({ argv: [] })).toThrow(/production database/);
   });
 });
