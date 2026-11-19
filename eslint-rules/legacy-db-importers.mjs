@@ -15,7 +15,6 @@ export const LEGACY_DB_IMPORTERS = [
   "lib/email/accessRequestDigest.ts",
   "lib/email/aiCapAlert.ts",
   "lib/getOrCreateUser.ts",
-  "lib/grading/batch.ts",
   "lib/grading/overrideExamples.ts",
   "lib/interactives/mutations.ts",
   "lib/knowledge/materials.ts",
