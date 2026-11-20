@@ -142,6 +142,8 @@ export const baseSchema = z.object({
   PG_POOL_MAX: optionalString,
   /** Comma-separated DATABASE_URL hosts allowed in development. */
   DEV_DB_HOSTS: optionalString,
+  /** Comma-separated production DB hosts: dev scripts refuse them; scripts/prod-migrate.ts requires them. */
+  PROD_DB_HOSTS: optionalString,
   /** Set to '0' to skip the "runtime DB role must not bypass RLS" boot check. */
   SOL_REQUIRE_APP_ROLE: optionalString,
   /** Set to '1' to allow the legacy default workspace. */

@@ -142,6 +142,14 @@ export function assertDevDatabase(
   }
 
   const { host, port, database } = parsePostgresUrl(url);
+  // Production hosts are refused even if they also appear in DEV_DB_HOSTS.
+  // Prod migrations go through scripts/prod-migrate.ts instead.
+  const prodHosts = parseAllowlist(process.env.PROD_DB_HOSTS);
+  if (hostAllowed(host, prodHosts)) {
+    throw new Error(
+      `Refusing DB script: host "${host}" is a production database (PROD_DB_HOSTS). Use scripts/prod-migrate.ts for prod.`,
+    );
+  }
   if (!hostAllowed(host, allowlist)) {
     throw new Error(
       `Refusing DB script: host "${host}" is not in DEV_DB_HOSTS allowlist [${allowlist.join(', ')}].`,
