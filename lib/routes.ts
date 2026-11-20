@@ -32,6 +32,8 @@ export const MACHINE_API_PATHS = [
   '/api/lti',
   // Inngest Dev Server / Cloud (signed requests).
   '/api/inngest',
+  // Uptime monitors (no session; returns only ok + queue counts).
+  '/api/health',
 ] as const;
 
 /** Browser API paths reachable without a session (handlers check the rest). */

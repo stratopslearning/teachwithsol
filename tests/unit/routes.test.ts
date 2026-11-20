@@ -24,7 +24,7 @@ describe('route registry', () => {
       '/llms.txt', '/robots.txt', '/sitemap.xml', '/login', '/login/sso', '/signup',
       '/workspaces/claim', '/workspaces/claim/abc', '/api/user', '/api/stripe/product',
       '/api/stripe/webhook', '/api/clerk/webhook', '/api/lti/launch', '/lti/bridge',
-      '/api/cron/grade-pending', '/api/inngest', '/api/mcp', '/well-known/oauth-protected-resource',
+      '/api/cron/grade-pending', '/api/inngest', '/api/mcp', '/api/health', '/well-known/oauth-protected-resource',
     ]) {
       expect(isPublicPath(p), p).toBe(true);
     }
