@@ -18,6 +18,8 @@ export type AiTask =
   | 'switch_up'
   | 'review'
   | 'insights'
+  /** Authoring chat agent: multi-step tool calling. */
+  | 'agent'
   | 'embed';
 
 export type ModelTier = 'fast' | 'balanced' | 'strong' | 'embed';
@@ -44,10 +46,11 @@ const TASK_TIER: Record<AiTask, ModelTier> = {
   outline: 'fast',
   skeleton: 'fast',
   build: 'strong',
-  refine: 'balanced',
+  refine: 'strong',
   switch_up: 'balanced',
   review: 'strong',
   insights: 'balanced',
+  agent: 'strong',
   embed: 'embed',
 };
 
@@ -70,6 +73,7 @@ const TASK_PURPOSE: Record<AiTask, AiPurpose> = {
   switch_up: 'authoring',
   review: 'authoring',
   insights: 'authoring',
+  agent: 'authoring',
   embed: 'embed',
 };
 
@@ -85,6 +89,7 @@ const TASK_ENV_KEYS: Partial<Record<AiTask, string>> = {
   switch_up: 'SOL_MODEL_SWITCH_UP',
   review: 'SOL_MODEL_REVIEW',
   insights: 'SOL_MODEL_INSIGHTS',
+  agent: 'SOL_MODEL_AGENT',
   embed: 'SOL_MODEL_EMBED',
 };
 

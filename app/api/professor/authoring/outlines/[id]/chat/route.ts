@@ -7,12 +7,16 @@ import { refineOutlineChat } from '@/lib/authoring/refine';
 import { route } from '@/lib/api/route';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+// Multi-step agent turns can write whole quizzes; allow the full window.
+export const maxDuration = 300;
 
 const chatSchema = z.object({
   message: z.string().min(1).max(4000),
   focusItemId: z.string().uuid().optional(),
   materialIds: z.array(z.string().uuid()).max(40).optional(),
+  /** Confirm / Cancel buttons on an action the agent asked about. */
+  confirmPending: z.boolean().optional(),
+  cancelPending: z.boolean().optional(),
 });
 
 export const POST = route<{ id: string }>(
@@ -37,6 +41,8 @@ export const POST = route<{ id: string }>(
         message: body.message,
         focusItemId: body.focusItemId,
         materialIds: body.materialIds,
+        confirmPending: body.confirmPending,
+        cancelPending: body.cancelPending,
       },
       meta,
     );

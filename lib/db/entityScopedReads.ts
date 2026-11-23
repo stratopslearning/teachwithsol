@@ -500,6 +500,14 @@ export async function fetchOutlinesForCourse(
 }
 
 /** Authoring chat messages for an outline — SECURITY DEFINER. */
+/**
+ * The latest `limit` chat messages for an outline, oldest first.
+ *
+ * The definer orders ASC and applies its LIMIT, so asking it for N returns the
+ * *first* N messages of the conversation. Fetch the whole thread (bounded)
+ * and keep the tail. User/assistant pairs share a created_at, so ties put the
+ * user message first.
+ */
 export async function fetchAuthoringMessagesForOutline(
   outlineId: string,
   limit = 40,
@@ -507,7 +515,7 @@ export async function fetchAuthoringMessagesForOutline(
   const result = await db.execute(sql`
     SELECT * FROM sol_authoring_messages_for_outline(
       ${outlineId}::uuid,
-      ${Math.max(limit, 1)}::integer
+      ${AUTHORING_THREAD_CAP}::integer
     )
   `);
   return rowsFromExecute<{
@@ -522,8 +530,19 @@ export async function fetchAuthoringMessagesForOutline(
     role: r.role as 'user' | 'assistant',
     content: r.content,
     createdAt: asDate(r.created_at)!,
-  }));
+  }))
+    .map((m, i) => ({ m, i }))
+    .sort(
+      (a, b) =>
+        a.m.createdAt.getTime() - b.m.createdAt.getTime() ||
+        (a.m.role === b.m.role ? a.i - b.i : a.m.role === 'user' ? -1 : 1),
+    )
+    .map(({ m }) => m)
+    .slice(-Math.max(limit, 1));
 }
+
+/** Upper bound on messages loaded per outline thread. */
+const AUTHORING_THREAD_CAP = 2000;
 
 /** Full outline tree (modules + items) — SECURITY DEFINER JSON. */
 export async function fetchOutlineTreeById(outlineId: string) {

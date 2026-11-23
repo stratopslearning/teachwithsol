@@ -32,7 +32,8 @@ describe('modelRouter', () => {
   it('maps tasks to tiers and purposes', () => {
     expect(tierForTask('grade')).toBe('fast');
     expect(tierForTask('build')).toBe('strong');
-    expect(tierForTask('refine')).toBe('balanced');
+    expect(tierForTask('refine')).toBe('strong');
+    expect(tierForTask('agent')).toBe('strong');
     expect(purposeForTask('tutor')).toBe('chatbot');
     expect(purposeForTask('review')).toBe('authoring');
   });
@@ -44,7 +45,8 @@ describe('modelRouter', () => {
     }
     expect(resolveModel('grade').model).toBe('gpt-5-mini-2025-08-07');
     expect(resolveModel('build').model).toBe('gpt-4.1');
-    expect(resolveModel('refine').model).toBe('gpt-4.1-mini');
+    expect(resolveModel('refine').model).toBe('gpt-4.1');
+    expect(resolveModel('agent').model).toBe('gpt-4.1');
     expect(resolveModel('embed').model).toBe('text-embedding-3-small');
   });
 

@@ -16,7 +16,10 @@ export type AuthoringSuggestedAction = {
     | "publish"
     | "re_propose"
     | "show_artifact"
-    | "prompt";
+    | "prompt"
+    /** Run / drop the action the agent asked the professor to confirm. */
+    | "confirm_pending"
+    | "cancel_pending";
   itemId?: string;
   /** When action is `prompt`, send this as the next chat message. */
   prompt?: string;

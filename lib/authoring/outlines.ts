@@ -1,9 +1,10 @@
-import { and, desc, eq, isNull, ne } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 
 import {
   authoringRevisions,
   courseOutlines,
   outlineItems,
+  outlineModules,
   type OutlineItemBody,
 } from '@/app/db/schema';
 import { ApiError } from '@/lib/api/errors';
@@ -429,6 +430,97 @@ export async function updateOutlineItem(
       .returning();
     return mapItem(row!);
   });
+}
+
+/** Add a draft item at the end of a module (authoring agent create_item). */
+export async function createOutlineItem(
+  user: AuthUser,
+  input: {
+    outlineId: string;
+    moduleId: string;
+    type: OutlineItemType;
+    title: string;
+    body: OutlineItemBody;
+    sourceMaterialIds?: string[];
+    aiMeta?: Record<string, unknown>;
+  },
+): Promise<OutlineItemSummary> {
+  await assertCanManageOutline(user, input.outlineId);
+  return withOutlineTenant(input.outlineId, user.id, async (tx, ctx) => {
+    const mod = await tx.query.outlineModules.findFirst({
+      where: and(
+        eq(outlineModules.id, input.moduleId),
+        eq(outlineModules.outlineId, input.outlineId),
+        isNull(outlineModules.deletedAt),
+      ),
+    });
+    if (!mod) throw ApiError.badRequest('Module not found in this outline');
+    const [{ next }] = await tx
+      .select({ next: sql<number>`coalesce(max(${outlineItems.position}), -1) + 1` })
+      .from(outlineItems)
+      .where(and(eq(outlineItems.moduleId, input.moduleId), isNull(outlineItems.deletedAt)));
+    const [row] = await tx
+      .insert(outlineItems)
+      .values({
+        moduleId: input.moduleId,
+        tenantId: ctx.tenantId,
+        type: input.type,
+        title: input.title.trim().slice(0, 300),
+        status: 'DRAFT',
+        body: input.body,
+        sourceMaterialIds: input.sourceMaterialIds ?? [],
+        aiMeta: input.aiMeta ?? {},
+        position: Number(next ?? 0),
+      })
+      .returning();
+    return mapItem(row!);
+  });
+}
+
+/** Add a module at the end of the outline (authoring agent create_module). */
+export async function createOutlineModule(
+  user: AuthUser,
+  input: { outlineId: string; title: string; summary?: string | null },
+): Promise<{ id: string; title: string; position: number }> {
+  await assertCanManageOutline(user, input.outlineId);
+  return withOutlineTenant(input.outlineId, user.id, async (tx, ctx) => {
+    const [{ next }] = await tx
+      .select({ next: sql<number>`coalesce(max(${outlineModules.position}), -1) + 1` })
+      .from(outlineModules)
+      .where(and(eq(outlineModules.outlineId, input.outlineId), isNull(outlineModules.deletedAt)));
+    const [row] = await tx
+      .insert(outlineModules)
+      .values({
+        outlineId: input.outlineId,
+        tenantId: ctx.tenantId,
+        title: input.title.trim().slice(0, 200),
+        summary: input.summary?.trim() || null,
+        position: Number(next ?? 0),
+      })
+      .returning();
+    return { id: row!.id, title: row!.title, position: row!.position };
+  });
+}
+
+/** Soft-delete an unpublished item (published ones are archived from Assignments instead). */
+export async function deleteOutlineItem(user: AuthUser, itemId: string): Promise<void> {
+  const { item } = await assertCanManageItem(user, itemId);
+  if (
+    item.publishedQuizId ||
+    item.publishedChatbotId ||
+    item.publishedLessonId ||
+    item.publishedInteractiveId
+  ) {
+    throw ApiError.badRequest(
+      'This item is already published; archive it from Assignments instead of deleting it here',
+    );
+  }
+  await withItemTenant(itemId, user.id, (tx) =>
+    tx
+      .update(outlineItems)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(eq(outlineItems.id, itemId)),
+  );
 }
 
 export async function listAuthoringMessages(
