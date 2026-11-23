@@ -83,7 +83,15 @@ export async function kickDrain(kinds: JobKind[], copies = 1): Promise<void> {
 
 let runtimeRoleReady: Promise<void> | undefined;
 function ensureWorkerRuntimeRole(): Promise<void> {
-  runtimeRoleReady ??= requireSafeRuntimeRole().then(() => undefined);
+  runtimeRoleReady ??= requireSafeRuntimeRole().then(
+    () => undefined,
+    (err) => {
+      // Don't cache a failure: a network blip must not disable drains on this
+      // instance for good. (An unsafe role keeps failing on every retry.)
+      runtimeRoleReady = undefined;
+      throw err;
+    },
+  );
   return runtimeRoleReady;
 }
 
