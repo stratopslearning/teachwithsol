@@ -15,7 +15,7 @@ jobs:
     name: Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - run: npm run typecheck
 
@@ -32,7 +32,7 @@ jobs:
       OPENAI_API_KEY: sk-test-dummy
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Unit tests (no DB)
         run: npm test
@@ -45,7 +45,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       # Errors fail the build. Warnings (unused vars etc.) are a tracked backlog.
       - run: npm run lint
@@ -86,7 +86,7 @@ jobs:
       OPENAI_API_KEY: sk-test-dummy
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Apply migrations (as owner)
         env:
