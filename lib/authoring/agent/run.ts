@@ -123,8 +123,9 @@ export async function runAuthoringAgent(
     applyOutlineBuildDefiner,
   } = await import('@/lib/db/entityScopedReads');
 
-  const prior = await fetchAuthoringMessagesForOutline(opts.outlineId, 12);
-  const history = prior.slice().reverse();
+  // Latest messages, oldest first (the loader used to return the oldest
+  // ones, and this reversed them).
+  const history = await fetchAuthoringMessagesForOutline(opts.outlineId, 12);
   const lastAction = findLastActionInHistory(history);
 
   const intent = classifyAuthoringIntent(message, { inventory, lastAction });
@@ -967,7 +968,7 @@ export function fallbackPlan(
   };
 }
 
-async function runContentRefineTool(opts: {
+export async function runContentRefineTool(opts: {
   user: AuthUser;
   outlineId: string;
   detail: OutlineDetail;

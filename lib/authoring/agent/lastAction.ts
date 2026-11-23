@@ -16,8 +16,12 @@ export function encodeLastActionMarker(action: AuthoringLastAction): string {
   return `<!--sol-last-action:${b64}-->`;
 }
 
+/** Agent v2 pending-confirmation marker (lib/authoring/agentV2/pending.ts). */
+const PENDING_MARKER_RE = /\n?<!--sol-pending:[A-Za-z0-9+/=]+-->/;
+
+/** Remove the hidden agent markers before showing a message. */
 export function stripLastActionMarker(content: string): string {
-  return content.replace(MARKER_RE, '').trimEnd();
+  return content.replace(MARKER_RE, '').replace(PENDING_MARKER_RE, '').trimEnd();
 }
 
 export function parseLastActionMarker(

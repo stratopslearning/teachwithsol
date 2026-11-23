@@ -910,7 +910,11 @@ export default function AuthoringClient({
 
   async function runRefine(
     message: string,
-    opts?: { skipAppendUser?: boolean },
+    opts?: {
+      skipAppendUser?: boolean;
+      confirmPending?: boolean;
+      cancelPending?: boolean;
+    },
   ) {
     if (!outline) return;
 
@@ -974,6 +978,8 @@ export default function AuthoringClient({
             message,
             focusItemId,
             ...focusPayload(),
+            ...(opts?.confirmPending ? { confirmPending: true } : {}),
+            ...(opts?.cancelPending ? { cancelPending: true } : {}),
           }),
         },
       );
@@ -1028,8 +1034,23 @@ export default function AuthoringClient({
         nextOutline,
         focusItem?.id ?? selectedItemId ?? undefined,
       );
-      const suggestedActions: AuthoringSuggestedAction[] =
-        buildAuthoringFollowUps({
+      const pendingSummaries: string[] = Array.isArray(data.pendingAction?.summaries)
+        ? data.pendingAction.summaries
+        : [];
+      const suggestedActions: AuthoringSuggestedAction[] = pendingSummaries.length
+        ? [
+            {
+              id: `confirm-${newMessageId()}`,
+              label: "Confirm",
+              action: "confirm_pending",
+            },
+            {
+              id: `cancel-${newMessageId()}`,
+              label: "Cancel",
+              action: "cancel_pending",
+            },
+          ]
+        : buildAuthoringFollowUps({
           userMessage: message,
           inventory,
           patchedItemIds: patchedIds,
@@ -1439,6 +1460,14 @@ export default function AuthoringClient({
         void runRefine(text);
         break;
       }
+      case "confirm_pending":
+        if (busy) return;
+        void runRefine("Confirm", { confirmPending: true });
+        break;
+      case "cancel_pending":
+        if (busy) return;
+        void runRefine("Cancel", { cancelPending: true });
+        break;
       default:
         break;
     }

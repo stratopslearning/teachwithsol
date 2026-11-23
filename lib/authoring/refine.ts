@@ -1,4 +1,5 @@
 import { runAuthoringAgent } from '@/lib/authoring/agent/run';
+import { runAuthoringAgentV2 } from '@/lib/authoring/agentV2/loop';
 import type { OutlineDetail } from '@/lib/authoring/outlines';
 import type { AuthUser } from '@/lib/getOrCreateUser';
 
@@ -13,11 +14,13 @@ export type RefineChatResult = {
     title: string | null;
     error: string;
   }>;
+  /** The reply asks the professor to confirm these before they run. */
+  pendingAction?: { summaries: string[] };
 };
 
 /**
- * Authoring chat entrypoint — grounded tool harness.
- * Side effects only via typed tools; replies templated from results.
+ * Authoring chat entrypoint. The tool-calling agent (v2) is the default;
+ * AUTHORING_AGENT_V1=1 falls back to the old classifier + planner.
  */
 export async function refineOutlineChat(
   user: AuthUser,
@@ -26,8 +29,13 @@ export async function refineOutlineChat(
     message: string;
     focusItemId?: string;
     materialIds?: string[];
+    confirmPending?: boolean;
+    cancelPending?: boolean;
   },
   audit?: { ip?: string | null; userAgent?: string | null },
 ): Promise<RefineChatResult> {
-  return runAuthoringAgent(user, opts, audit);
+  if (process.env.AUTHORING_AGENT_V1 === '1') {
+    return runAuthoringAgent(user, opts, audit);
+  }
+  return runAuthoringAgentV2(user, opts, audit);
 }

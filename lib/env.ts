@@ -175,6 +175,10 @@ export const baseSchema = z.object({
   SOL_MODEL_REVIEW: optionalString,
   SOL_MODEL_SWITCH_UP: optionalString,
   SOL_MODEL_INSIGHTS: optionalString,
+  /** Authoring chat agent model (default: strong tier). */
+  SOL_MODEL_AGENT: optionalString,
+  /** Set to '1' to fall back to the old classifier-based authoring agent. */
+  AUTHORING_AGENT_V1: optionalString,
   /** Legacy alias for the authoring model. */
   OPENAI_AUTHORING_MODEL: optionalString,
   /** Set to '0' to disable the per-tenant AI budget in lib/ai/gateway.ts. */
