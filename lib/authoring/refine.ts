@@ -31,6 +31,7 @@ export async function refineOutlineChat(
     materialIds?: string[];
     confirmPending?: boolean;
     cancelPending?: boolean;
+    onStep?: (label: string) => void;
   },
   audit?: { ip?: string | null; userAgent?: string | null },
 ): Promise<RefineChatResult> {

@@ -257,6 +257,65 @@ function gate(ctx: AgentContext, tool: WriteToolName, args: Record<string, unkno
   });
 }
 
+/** What the professor sees while a tool runs, specific to this call. */
+export function stepLabel(ctx: AgentContext, name: string, rawArgs: string): string {
+  let args: Record<string, unknown> = {};
+  try {
+    args = rawArgs ? (JSON.parse(rawArgs) as Record<string, unknown>) : {};
+  } catch {
+    /* fall through to generic labels */
+  }
+  const named = (list: unknown): string => {
+    const ids = Array.isArray(list) ? list : list ? [list] : [];
+    const found = ids.map((id) => findItem(ctx, String(id))).filter(Boolean) as OutlineItemSummary[];
+    if (found.length === 0) return ids.length ? `${ids.length} item${ids.length === 1 ? '' : 's'}` : 'items';
+    return titles(found, 2);
+  };
+  const q = (v: unknown, max = 60) => {
+    const t = String(v ?? '').trim();
+    return t.length > max ? `${t.slice(0, max)}…` : t;
+  };
+  switch (name) {
+    case 'get_outline':
+      return 'Reading the outline';
+    case 'get_item':
+      return `Reading ${named(args.item_id)}`;
+    case 'search_materials':
+      return `Searching materials for “${q(args.query, 50)}”`;
+    case 'get_course_calendar':
+      return 'Checking section and term dates';
+    case 'get_publish_checks':
+      return 'Reviewing what’s left before publishing';
+    case 'list_revisions':
+      return 'Looking at saved versions';
+    case 'edit_items':
+      return `Editing ${named(args.item_ids)}`;
+    case 'create_item': {
+      const n = typeof args.question_count === 'number' ? `${args.question_count}-question ` : '';
+      const kind = args.type === 'DISCUSSION' ? 'discussion' : `${n}quiz`;
+      return `Writing a ${kind}: “${q(args.title, 50)}”`;
+    }
+    case 'create_module':
+      return `Adding module “${q(args.title, 50)}”`;
+    case 'delete_item':
+      return `Preparing to delete ${named(args.item_id)}`;
+    case 'set_schedule':
+      return `Updating dates on ${named(args.item_ids)}`;
+    case 'publish_items':
+      return `Publishing ${named(args.item_ids)}`;
+    case 'release_items':
+      return `Preparing to release ${named(args.item_ids)}`;
+    case 'restore_revision':
+      return 'Preparing to restore a saved version';
+    case 'add_interactive_lessons':
+      return 'Planning interactive lessons';
+    case 'confirm_pending_action':
+      return 'Running the confirmed changes';
+    default:
+      return 'Working';
+  }
+}
+
 /** Run one tool call; returns the JSON string handed back to the model. */
 export async function runAgentTool(ctx: AgentContext, name: string, rawArgs: string): Promise<string> {
   let args: Record<string, unknown>;

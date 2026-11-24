@@ -269,6 +269,31 @@ describe('authoring agent v2 (from real conversations)', () => {
   });
 });
 
+describe('streamed steps', () => {
+  it('labels each step with what the agent is actually doing', async () => {
+    m.generateItemBody.mockResolvedValue({ title: 'Deadlocks', body: { questions: [] } });
+    m.createOutlineItem.mockResolvedValue({ id: 'new-1', title: 'Deadlocks' });
+    script(
+      [{ tool: 'search_materials', args: { query: 'deadlock prevention' } }],
+      [{ tool: 'get_item', args: { item_id: ITEMS[1]!.id } }],
+      [{ tool: 'create_item', args: { module_id: 'mod-1', type: 'QUIZ', title: 'Deadlocks', brief: 'x', question_count: 20 } }],
+      [{ text: 'Done.' }],
+    );
+    const steps: string[] = [];
+    await runAuthoringAgentV2(user, {
+      outlineId: 'outline-1',
+      message: 'add a deadlocks quiz',
+      onStep: (label) => steps.push(label),
+    });
+    expect(steps).toEqual([
+      'Reading the outline',
+      'Searching materials for “deadlock prevention”',
+      'Reading “Virtual Memory”',
+      'Writing a 20-question quiz: “Deadlocks”',
+    ]);
+  });
+});
+
 describe('needsConfirmation', () => {
   it('matches the agreed rules', () => {
     const one = { count: 1, anyPublished: false };
