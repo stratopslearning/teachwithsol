@@ -33,6 +33,7 @@ import {
   agentToolDefs,
   runAgentTool,
   runConfirmed,
+  stepLabel,
   type ActionEntry,
   type AgentContext,
 } from '@/lib/authoring/agentV2/tools';
@@ -86,9 +87,18 @@ export async function runAuthoringAgentV2(
     /** Confirm / Cancel buttons on a pending action. */
     confirmPending?: boolean;
     cancelPending?: boolean;
+    /** Called with a short, specific label as each step starts (streamed to the UI). */
+    onStep?: (label: string) => void;
   },
   audit?: { ip?: string | null; userAgent?: string | null },
 ): Promise<AgentV2Result> {
+  const step = (label: string) => {
+    try {
+      opts.onStep?.(label);
+    } catch {
+      /* a closed stream must not break the turn */
+    }
+  };
   const { assertCanManageOutline } = await import('@/lib/authoring/access');
   const outlineRow = await assertCanManageOutline(user, opts.outlineId);
   const message = opts.message.trim();
@@ -128,6 +138,7 @@ export async function runAuthoringAgentV2(
     if (!previousPending) {
       modelText = 'There’s nothing waiting for confirmation — it may have been replaced by a newer message.';
     } else {
+      step(previousPending.calls.length === 1 ? previousPending.calls[0]!.summary : `Running ${previousPending.calls.length} confirmed changes`);
       await runConfirmed(ctx, previousPending);
       modelText = ctx.log.every((l) => l.ok) ? 'Done.' : 'Some of that didn’t go through — details below.';
     }
@@ -142,6 +153,7 @@ export async function runAuthoringAgentV2(
       focusItem: focus ? { id: focus.id, title: focus.title, type: focus.type } : null,
       hasPending: Boolean(previousPending),
     });
+    step('Reading the outline');
     const outlineNow = await runAgentTool(ctx, 'get_outline', '{}');
     const messages: ChatMessage[] = [
       {
@@ -158,7 +170,7 @@ export async function runAuthoringAgentV2(
 
     const started = Date.now();
     for (steps = 0; steps < MAX_STEPS; steps++) {
-      const step = steps;
+      const stepNo = steps;
       if (Date.now() - started > TIME_BUDGET_MS) {
         modelText = 'I stopped here to stay within the time limit — here’s what got done. Say “continue” to keep going.';
         break;
@@ -183,14 +195,18 @@ export async function runAuthoringAgentV2(
       // Several new items in one step are written in parallel (each is a slow
       // generation); everything else runs in order so each sees the last result.
       const allCreates = fnCalls.length > 1 && fnCalls.every((c) => c.function.name === 'create_item');
+      if (allCreates) {
+        step(`Writing ${fnCalls.length} new items in parallel`);
+      }
       const results = allCreates
         ? await Promise.all(fnCalls.map((c) => runAgentTool(ctx, c.function.name, c.function.arguments)))
         : null;
       for (const [i, call] of fnCalls.entries()) {
+        if (!results) step(stepLabel(ctx, call.function.name, call.function.arguments));
         const result = results ? results[i]! : await runAgentTool(ctx, call.function.name, call.function.arguments);
         // One line per tool call (no content) so prod logs show what the agent did.
         console.info('[authoring-agent] tool', {
-          step,
+          step: stepNo,
           tool: call.function.name,
           error: result.startsWith('{"error"') ? result.slice(0, 300) : undefined,
           parked: result.includes('"needs_confirmation"') || undefined,

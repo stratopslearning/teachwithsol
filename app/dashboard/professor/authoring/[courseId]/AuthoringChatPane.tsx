@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   Copy,
@@ -50,7 +51,11 @@ import type {
   AuthoringProgress,
   AuthoringSessionListItem,
   AuthoringSuggestedAction,
+  RolloverCheck,
 } from './types';
+
+/** Composer grows with its text up to this height, then scrolls. */
+const COMPOSER_MAX_HEIGHT = 220;
 
 export function AuthoringChatPane({
   courseId,
@@ -93,6 +98,7 @@ export function AuthoringChatPane({
   artifactOpen = false,
   toolStatus,
   progress = null,
+  publishChecks = [],
 }: {
   courseId: string;
   courseTitle: string;
@@ -136,6 +142,8 @@ export function AuthoringChatPane({
   toolStatus?: string | null;
   /** Structured agent progress — drives the expandable thinking trace. */
   progress?: AuthoringProgress | null;
+  /** "Before you publish" warnings, shown as a compact pill in the toolbar. */
+  publishChecks?: RolloverCheck[];
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -145,6 +153,14 @@ export function AuthoringChatPane({
   const [dragOver, setDragOver] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [composerFocused, setComposerFocused] = useState(false);
+
+  // Grow the composer with its text (up to a cap) without re-laying out.
+  useLayoutEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_HEIGHT)}px`;
+  }, [chatInput]);
   const [uploadOpenSignal, setUploadOpenSignal] = useState(0);
   const isWelcome = messages.length === 0 && !hasOutline;
   const streaming = chatting || generating || approving;
@@ -255,12 +271,6 @@ export function AuthoringChatPane({
     ? progress.index
     : 0;
 
-  const islandExpanded =
-    isWelcome ||
-    composerFocused ||
-    Boolean(chatInput.trim()) ||
-    focusedMaterialIds.length > 0 ||
-    Boolean(statusLine);
 
   const plusMenu = (
     <AuthoringPlusMenu
@@ -289,6 +299,56 @@ export function AuthoringChatPane({
           : ''}
       </p>
       <div className="flex shrink-0 items-center gap-1.5">
+        {publishChecks.length > 0 ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 border-amber-500/40 text-ink"
+                aria-label={`${publishChecks.length} things to fix before publishing`}
+              >
+                <AlertTriangle className="size-3.5 text-amber-500" aria-hidden />
+                <span className="tabular-nums">{publishChecks.length}</span>
+                <span className="hidden sm:inline">to fix</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-[min(26rem,calc(100vw-2rem))] p-0">
+              <div className="border-b border-rule/60 px-3.5 py-2.5">
+                <p className="text-[13px] font-medium text-ink">Before you publish</p>
+                <p className="text-[11.5px] text-ink-faint">
+                  {publishChecks.length} check{publishChecks.length === 1 ? '' : 's'} need attention
+                </p>
+              </div>
+              <ul className="max-h-72 space-y-0.5 overflow-y-auto p-1.5">
+                {publishChecks.map((c, i) => (
+                  <li key={`${c.code}-${i}`} className="rounded-md px-2 py-1.5 text-[12.5px] leading-snug hover:bg-surface-sunken">
+                    <span className="font-medium text-ink">{c.title}</span>
+                    <span className="text-ink-muted"> — {c.detail}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="border-t border-rule/60 p-1.5">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    onAction({
+                      id: 'fix-checks',
+                      label: 'Help me fix these',
+                      action: 'prompt',
+                      prompt: 'Help me fix the "Before you publish" checks — what should I do for each?',
+                    })
+                  }
+                  className="w-full rounded-md px-2 py-1.5 text-left text-[12.5px] font-medium text-brand hover:bg-surface-sunken disabled:opacity-50"
+                >
+                  Ask SOL to help fix these
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : null}
         <Popover open={historyOpen} onOpenChange={setHistoryOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -508,12 +568,7 @@ export function AuthoringChatPane({
         ref={formRef}
         onSubmit={onSubmit}
         className={cn(
-          'relative isolate overflow-hidden border bg-surface shadow-[var(--shadow-paper)] transition-[border-color,border-radius,box-shadow,background-color] duration-150',
-          islandExpanded
-            ? focusedMaterialIds.length > 0 || isWelcome
-              ? 'rounded-[22px]'
-              : 'rounded-[18px]'
-            : 'rounded-full',
+          'relative isolate overflow-hidden rounded-[20px] border bg-surface shadow-[var(--shadow-paper)] transition-[border-color,box-shadow,background-color] duration-150',
           dragOver
             ? 'border-brand/45 bg-brand-soft/40'
             : composerFocused
@@ -521,89 +576,67 @@ export function AuthoringChatPane({
               : 'border-rule/80',
         )}
       >
-        <div
-          className={cn(
-            'flex gap-1.5',
-            islandExpanded ? 'flex-col p-2.5' : 'items-end gap-1 p-1.5',
-          )}
-        >
-          <div
+        <div className="flex flex-col gap-1.5 p-2.5">
+          <Textarea
+            ref={composerRef}
+            value={chatInput}
+            onChange={(e) => onChatInputChange(e.target.value)}
+            placeholder={placeholder}
+            rows={1}
+            disabled={busy && !streaming}
+            onFocus={() => setComposerFocused(true)}
+            onBlur={() => setComposerFocused(false)}
             className={cn(
-              'flex min-w-0 flex-1',
-              islandExpanded ? 'items-start gap-1' : 'items-center gap-1',
+              // Fixed shape; height follows the text (see autosize effect) so
+              // typing never re-lays out the composer.
+              'min-w-0 resize-none overflow-y-auto border-0 bg-transparent px-1.5 py-1.5 text-[14px] leading-5 shadow-none placeholder:text-ink-faint focus-visible:ring-0',
+              'transition-[height] duration-100 ease-out',
+              isWelcome ? 'min-h-[4.5rem]' : 'min-h-[2.25rem]',
             )}
-          >
-            {!islandExpanded ? (
+            style={{ maxHeight: COMPOSER_MAX_HEIGHT }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (canSend) onSubmit(e as unknown as React.FormEvent);
+              }
+            }}
+          />
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-1">
               <div className="shrink-0">{plusMenu}</div>
-            ) : null}
-            <Textarea
-              ref={composerRef}
-              value={chatInput}
-              onChange={(e) => onChatInputChange(e.target.value)}
-              placeholder={placeholder}
-              rows={islandExpanded ? (isWelcome ? 3 : 2) : 1}
-              disabled={busy && !streaming}
-              onFocus={() => setComposerFocused(true)}
-              onBlur={() => setComposerFocused(false)}
-              className={cn(
-                'min-w-0 flex-1 resize-none border-0 bg-transparent px-1.5 text-[13px] leading-[18px] shadow-none placeholder:text-ink-faint focus-visible:ring-0',
-                islandExpanded
-                  ? isWelcome
-                    ? 'min-h-[4.5rem] py-1.5 text-sm leading-5'
-                    : 'min-h-[2.75rem] py-1.5'
-                  : 'max-h-7 min-h-7 overflow-hidden py-[5px]',
-              )}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  if (canSend) onSubmit(e as unknown as React.FormEvent);
-                }
-              }}
-            />
-            {!islandExpanded ? (
-              <ComposerSend
-                canSend={canSend}
-                streaming={streaming}
-                onStop={onStop}
-                label={!hasOutline ? 'Propose' : 'Send'}
-                pill
-              />
-            ) : null}
-          </div>
-
-          {islandExpanded ? (
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex min-w-0 flex-1 items-center gap-1">
-                <div className="shrink-0">{plusMenu}</div>
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                  {isWelcome
-                    ? starters.map((chip) => (
-                        <button
-                          key={chip.id}
-                          type="button"
-                          disabled={busy || !canPropose}
-                          onClick={() => onAction(chip)}
-                          className="rounded-full bg-surface-sunken/70 px-2.5 py-1 text-[11.5px] text-ink transition-colors hover:bg-surface-sunken disabled:opacity-50"
-                        >
-                          {chip.label}
-                        </button>
-                      ))
-                    : (
-                        <span className="px-1 text-[11px] text-ink-faint">
-                          Enter to send · Shift+Enter newline ·{' '}
-                          {formatShortcutKeys('⌘/', isMacPlatform())} shortcuts
-                        </span>
-                      )}
-                </div>
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                {isWelcome
+                  ? starters.map((chip) => (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        disabled={busy || !canPropose}
+                        onClick={() => onAction(chip)}
+                        className="rounded-full bg-surface-sunken/70 px-2.5 py-1 text-[11.5px] text-ink transition-colors hover:bg-surface-sunken disabled:opacity-50"
+                      >
+                        {chip.label}
+                      </button>
+                    ))
+                  : (
+                      <span
+                        className={cn(
+                          'truncate px-1 text-[11px] text-ink-faint transition-opacity duration-150',
+                          composerFocused ? 'opacity-100' : 'opacity-0',
+                        )}
+                      >
+                        Enter to send · Shift+Enter newline ·{' '}
+                        {formatShortcutKeys('⌘/', isMacPlatform())} shortcuts
+                      </span>
+                    )}
               </div>
-              <ComposerSend
-                canSend={canSend}
-                streaming={streaming}
-                onStop={onStop}
-                label={!hasOutline ? 'Propose' : 'Send'}
-              />
             </div>
-          ) : null}
+            <ComposerSend
+              canSend={canSend}
+              streaming={streaming}
+              onStop={onStop}
+              label={!hasOutline ? 'Propose' : 'Send'}
+            />
+          </div>
         </div>
       </form>
 
@@ -688,7 +721,8 @@ export function AuthoringChatPane({
                 }
                 variant="Steps"
                 busy
-                active={statusLine?.replace(/…$/, '') || 'Thinking'}
+                inline
+                active={statusLine || 'Thinking…'}
                 rows={thinkingRows}
                 stepIndex={thinkingStepIndex}
               />
@@ -903,6 +937,16 @@ function ChatBubble({
                 <span className="text-ink-faint">· {when}</span>
               ) : null}
             </div>
+          ) : null}
+          {message.trace?.steps.length ? (
+            <ThinkingState
+              variant="Steps"
+              busy={false}
+              inline
+              seconds={message.trace.seconds}
+              rows={message.trace.steps.map((step) => ({ primary: step }))}
+              className="mb-1"
+            />
           ) : null}
           <div
             className={cn(

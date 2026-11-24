@@ -36,6 +36,8 @@ export type AuthoringChatMessage = {
     label: string;
   };
   suggestedActions?: AuthoringSuggestedAction[];
+  /** The agent's steps for this reply, shown collapsed above it. */
+  trace?: { steps: string[]; seconds: number };
 };
 
 export type SwitchDiff = {

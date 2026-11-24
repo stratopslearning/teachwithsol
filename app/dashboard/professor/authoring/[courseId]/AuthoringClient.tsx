@@ -15,7 +15,6 @@ import type { OutlineDetail, OutlineItemSummary } from "@/lib/authoring";
 import { buildAuthoringFollowUps } from "@/lib/authoring/agent/followUps";
 import { buildOutlineInventory } from "@/lib/authoring/agent/inventory";
 import {
-  buildChatProgressPlan,
   looksLikeProposeOutlineRequest,
 } from "@/lib/authoring/intent";
 import type { OutlineItemBody } from "@/app/db/schema";
@@ -961,18 +960,27 @@ export default function AuthoringClient({
       artifactTab === "assignment" && selectedItemId
         ? selectedItemId
         : undefined;
-    const progressTimer = startChatActionProgress({
-      outline,
-      message,
-      focusItemId,
-      setBuildProgress,
-    });
+    // Live trace: the server streams one label per step the agent takes.
+    const traceSteps: string[] = [];
+    const startedAt = Date.now();
+    const showStep = (label: string) => {
+      traceSteps.push(label);
+      setBuildProgress({
+        label: `${label}…`,
+        steps: [...traceSteps],
+        index: traceSteps.length - 1,
+      });
+    };
+    showStep(opts?.confirmPending ? "Running the confirmed changes" : "Reading your request");
 
     try {
       const res = await apiFetch(`/api/professor/authoring/outlines/${outline.id}/chat`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/x-ndjson",
+          },
           signal: ac.signal,
           body: JSON.stringify({
             message,
@@ -983,8 +991,14 @@ export default function AuthoringClient({
           }),
         },
       );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const { data, ok } = await readChatStream(res, (label) => {
+        // The first server step replaces the placeholder.
+        if (traceSteps.length === 1 && traceSteps[0] === "Reading your request") {
+          traceSteps.length = 0;
+        }
+        showStep(label);
+      });
+      if (!ok) {
         const errMsg =
           typeof data.error === "string" && data.error.trim()
             ? data.error.trim()
@@ -996,6 +1010,10 @@ export default function AuthoringClient({
         toast.error(errMsg);
         return;
       }
+      const trace = {
+        steps: [...traceSteps],
+        seconds: Math.max(1, Math.round((Date.now() - startedAt) / 1000)),
+      };
       setOutline(data.outline);
 
       const patchedIds: string[] = Array.isArray(data.patchedItemIds)
@@ -1071,6 +1089,7 @@ export default function AuthoringClient({
       appendMessage({
         role: "assistant",
         content: data.assistantMessage,
+        trace,
         artifactRef: focusItem
           ? {
               kind: "item",
@@ -1108,7 +1127,6 @@ export default function AuthoringClient({
       if ((err as Error)?.name === "AbortError") return;
       toast.error("Refine failed");
     } finally {
-      if (progressTimer != null) window.clearInterval(progressTimer);
       setBuildProgress(null);
       if (abortRef.current === ac) abortRef.current = null;
       setChatting(false);
@@ -1545,21 +1563,6 @@ export default function AuthoringClient({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      {warningChecks.length > 0 ? (
-        <div className="mx-4 mt-3 shrink-0 rounded-2xl border border-amber-500/40 bg-surface px-4 py-3 text-sm shadow-sm">
-          <p className="font-medium text-ink">
-            Before you publish — {warningChecks.length} check
-            {warningChecks.length === 1 ? "" : "s"}
-          </p>
-          <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto text-xs text-ink-muted">
-            {warningChecks.slice(0, 5).map((c, i) => (
-              <li key={`${c.code}-${i}`}>
-                <span className="text-ink">{c.title}</span> — {c.detail}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
 
       <AuthoringWorkspaceShell
         artifactOpen={artifactOpen}
@@ -1615,6 +1618,7 @@ export default function AuthoringClient({
             artifactOpen={artifactOpen}
             toolStatus={buildProgress?.label ?? null}
             progress={buildProgress}
+            publishChecks={warningChecks}
           />
         }
         artifact={renderArtifactStage({ showClose: true })}
@@ -1720,36 +1724,50 @@ function hydrateMessages(
   return mapped;
 }
 
-/** Same concrete title+(n/N) progress for every chat prompt. */
-function startChatActionProgress(opts: {
-  outline: OutlineDetail;
-  message: string;
-  focusItemId?: string;
-  setBuildProgress: (value: AuthoringProgress | null) => void;
-}): number | null {
-  const plan = buildChatProgressPlan(
-    opts.outline,
-    opts.message,
-    opts.focusItemId,
-  );
-  if (plan.steps.length === 0) {
-    opts.setBuildProgress({
-      label: plan.idleLabel,
-      steps: [plan.idleLabel.replace(/…$/, "")],
-      index: 0,
-    });
-    return null;
-  }
+/** Untyped JSON from the chat route (same as `res.json()`). */
+type ChatData = Awaited<ReturnType<Response["json"]>>;
 
-  let index = 0;
-  const show = (i: number) => {
-    opts.setBuildProgress(authoringProgressAt(plan.steps, i));
+/**
+ * Read the chat route's NDJSON stream: `step` events go to onStep, the final
+ * `done` / `error` event becomes the result. Falls back to plain JSON.
+ */
+async function readChatStream(
+  res: Response,
+  onStep: (label: string) => void,
+): Promise<{ ok: boolean; data: ChatData }> {
+  const type = res.headers.get("content-type") ?? "";
+  if (!res.body || !type.includes("ndjson")) {
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data };
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let final: { ok: boolean; data: ChatData } = {
+    ok: false,
+    data: { error: "The response ended early — try again." },
   };
-  show(0);
-  return window.setInterval(() => {
-    index = Math.min(index + 1, plan.steps.length - 1);
-    show(index);
-  }, 1600);
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let nl: number;
+    while ((nl = buffer.indexOf("\n")) >= 0) {
+      const line = buffer.slice(0, nl).trim();
+      buffer = buffer.slice(nl + 1);
+      if (!line) continue;
+      let event: ChatData;
+      try {
+        event = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      if (event.type === "step" && typeof event.label === "string") onStep(event.label);
+      else if (event.type === "done") final = { ok: true, data: event.result ?? {} };
+      else if (event.type === "error") final = { ok: false, data: { error: event.error } };
+    }
+  }
+  return final;
 }
 
 function buildGenerateProgressSteps(opts: {

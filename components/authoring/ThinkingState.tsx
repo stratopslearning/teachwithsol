@@ -137,6 +137,8 @@ export function ThinkingState({
   icon,
   /** Real 0-based index of the in-flight step; drives the spinner + revealed rows. */
   stepIndex,
+  inline = false,
+  seconds,
   className,
 }: {
   variant?: keyof typeof VARIANTS | string;
@@ -148,6 +150,13 @@ export function ThinkingState({
   done?: string;
   icon?: ReactNode;
   stepIndex?: number;
+  /**
+   * Claude-style: while working, one status line that updates in place;
+   * the step list stays collapsed unless the user opens it.
+   */
+  inline?: boolean;
+  /** Settled duration for a finished trace (e.g. attached to a message). */
+  seconds?: number;
   className?: string;
 }) {
   const controlled = busy !== undefined;
@@ -170,7 +179,7 @@ export function ThinkingState({
   const autoExpanded = controlled
     ? working || stage >= 1
     : stage >= 1 && stage < 4;
-  const expanded = manualExpanded ?? (working || autoExpanded);
+  const expanded = manualExpanded ?? (inline ? false : working || autoExpanded);
 
   const currentStep = hasRealTrace
     ? Math.min(Math.max(0, stepIndex!), Math.max(v.rows.length - 1, 0))
@@ -226,18 +235,24 @@ export function ThinkingState({
     onSettled?.();
   }, [working, onSettled]);
 
+  const shownSeconds = seconds ?? (controlled && elapsedSec > 0 ? elapsedSec : null);
+  const stepCount = rows?.length ?? 0;
   const doneLabel =
-    controlled && elapsedSec > 0
-      ? `Thought for ${elapsedSec} second${elapsedSec === 1 ? '' : 's'}`
+    shownSeconds != null
+      ? `Thought for ${shownSeconds}s${inline && stepCount > 1 ? ` · ${stepCount} steps` : ''}`
       : v.done;
 
   return (
     <div
       className={cn('flex w-full max-w-md flex-col', className)}
-      style={{
-        minHeight: working || expanded ? 120 : undefined,
-        transition: 'min-height 400ms cubic-bezier(0.23,1,0.32,1)',
-      }}
+      style={
+        inline
+          ? undefined
+          : {
+              minHeight: working || expanded ? 120 : undefined,
+              transition: 'min-height 400ms cubic-bezier(0.23,1,0.32,1)',
+            }
+      }
     >
       <button
         type="button"
@@ -269,7 +284,14 @@ export function ThinkingState({
         )}
         <span role="status" className="contents">
           {working ? (
-            <span className="thinking-shimmer text-[13px] font-medium whitespace-nowrap">
+            <span
+              // Re-keyed per label so each new step fades in where the last one was.
+              key={inline ? v.active : undefined}
+              className={cn(
+                'thinking-shimmer text-[13px] font-medium',
+                inline ? 'animate-fade-in truncate' : 'whitespace-nowrap',
+              )}
+            >
               {v.active}
             </span>
           ) : (
